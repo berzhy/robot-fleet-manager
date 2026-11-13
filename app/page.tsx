@@ -1,9 +1,17 @@
+import Button from "@mui/material/Button";
+import Link from "@mui/material/Link";
+import Typography from "@mui/material/Typography";
 import Image from "next/image";
+
 import styles from "./page.module.css";
+import ThemeToggle from "./theme-toggle";
 
 export default function Home() {
   return (
     <div className={styles.page}>
+      <header className={styles.toolbar}>
+        <ThemeToggle />
+      </header>
       <main className={styles.main}>
         <Image
           className={styles.logo}
@@ -14,54 +22,58 @@ export default function Home() {
           priority
         />
         <div className={styles.intro}>
-          <h1>
+          <Typography component="h1" variant="h4" className={styles.heading}>
             To get started, edit the{" "}
             <code className={styles.code}>page.tsx</code> file.
-          </h1>
-          <p>
+          </Typography>
+          <Typography color="text.secondary" className={styles.description}>
             Looking for a starting point or more instructions? Head over to{" "}
-            <a
+            <Link
               href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
               target="_blank"
               rel="noopener noreferrer"
             >
               Templates
-            </a>{" "}
+            </Link>{" "}
             or the{" "}
-            <a
+            <Link
               href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
               target="_blank"
               rel="noopener noreferrer"
             >
               Learning
-            </a>{" "}
+            </Link>{" "}
             center.
-          </p>
+          </Typography>
         </div>
         <div className={styles.ctas}>
-          <a
-            className={styles.primary}
+          <Button
+            variant="contained"
+            size="large"
             href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
             target="_blank"
             rel="noopener noreferrer"
+            startIcon={
+              <Image
+                className={styles.logo}
+                src="/vercel.svg"
+                alt=""
+                width={16}
+                height={16}
+              />
+            }
           >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
             Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
+          </Button>
+          <Button
+            variant="outlined"
+            size="large"
             href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
             target="_blank"
             rel="noopener noreferrer"
           >
             Documentation
-          </a>
+          </Button>
         </div>
       </main>
     </div>

@@ -123,7 +123,7 @@ These are candidates, not a requirement to build all of them. Keep the initial f
 
 ## Technology and personalization
 
-No table library, UI kit, or telemetry transport has been selected. AG Grid Community, TanStack Table with shadcn, and MUI X were discussed. The table engine and the rest of the UI kit are separate choices.
+Material UI is installed as the UI kit, with its Next.js App Router integration and a shared theme using the existing Geist font. Light/dark mode defaults to the system preference; a top-right button allows switching modes and persists the selection locally. No custom visual theme has been chosen yet. The standard Material UI Table is the current table candidate; no separate table engine or telemetry transport has been selected.
 
 Possible personalization includes visible columns, row density, page size, and saved filters/sorting. This is optional scope. An arbitrary dashboard builder is not part of the current plan.
 

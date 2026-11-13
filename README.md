@@ -20,6 +20,8 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+Material UI is configured with the Next.js App Router style cache and a shared theme in `app/theme-provider.tsx`. It uses Geist and defaults to the system light/dark preference. The top-right theme button switches modes and saves the selection locally. See [decisions.md](./decisions.md) for the current product direction and open questions.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
