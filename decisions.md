@@ -21,14 +21,14 @@ The assignment allows a frontend implementation with a mocked backend. Whether w
 
 These are the starting fields, not a final data schema.
 
-| Field | Contents | Expected changes |
-| --- | --- | --- |
-| Robot | Recognizable name, with ID and robot type as secondary information | Rarely |
-| Location | Assigned site, plus observed floor or area when available | Site changes rarely; observed area changes when the robot crosses a boundary |
-| Activity | Working, idle, charging, blocked, or unknown | On a state transition |
-| Battery | Whole percentage and charging indication | Reports may arrive every second; the displayed percentage changes less often |
-| Connection | Connected, delayed, or no contact; last-seen information when relevant | When freshness crosses a threshold or contact resumes |
-| Attention | A concrete reason such as path blocked, low battery, or contact lost; otherwise none | When an issue appears, changes, or resolves |
+| Field      | Contents                                                                             | Expected changes                                                             |
+| ---------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| Robot      | Recognizable name, with ID and robot type as secondary information                   | Rarely                                                                       |
+| Location   | Assigned site, plus observed floor or area when available                            | Site changes rarely; observed area changes when the robot crosses a boundary |
+| Activity   | Working, idle, charging, blocked, or unknown                                         | On a state transition                                                        |
+| Battery    | Whole percentage and charging indication                                             | Reports may arrive every second; the displayed percentage changes less often |
+| Connection | Connected, delayed, or no contact; last-seen information when relevant               | When freshness crosses a threshold or contact resumes                        |
+| Attention  | A concrete reason such as path blocked, low battery, or contact lost; otherwise none | When an issue appears, changes, or resolves                                  |
 
 ### Meaning and freshness
 
