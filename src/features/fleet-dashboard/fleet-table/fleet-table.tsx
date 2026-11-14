@@ -21,6 +21,7 @@ import {
 
 const columns = ["Robot", "Manufacturer", "Location", "Activity", "Battery"];
 const pageSize = 20;
+const rowHeight = 70;
 
 export default function FleetTable({
   state,
@@ -70,20 +71,12 @@ export default function FleetTable({
           sx={{
             minWidth: 650,
             flexShrink: 0,
-            height: state.status === "loading" ? "100%" : undefined,
           }}
         >
           <TableHead ref={headerRef}>
             <TableRow>
               {columns.map((column) => (
-                <TableCell
-                  key={column}
-                  scope="col"
-                  sx={{
-                    bgcolor: "background.paper",
-                    backgroundImage: "var(--Paper-overlay)",
-                  }}
-                >
+                <TableCell key={column} scope="col">
                   {column}
                 </TableCell>
               ))}
@@ -95,12 +88,17 @@ export default function FleetTable({
                 containerRef={containerRef}
                 headerRef={headerRef}
                 columnCount={columns.length}
+                rowHeight={rowHeight}
               />
             )}
             {sorted
               .slice(page * pageSize, (page + 1) * pageSize)
               .map((robot) => (
-                <FleetTableRow key={robot.id} robot={robot} />
+                <FleetTableRow
+                  key={robot.id}
+                  robot={robot}
+                  rowHeight={rowHeight}
+                />
               ))}
           </TableBody>
         </Table>
@@ -109,7 +107,7 @@ export default function FleetTable({
         )}
         {state.status === "error" && <FleetTableErrorState onRetry={onRetry} />}
       </TableContainer>
-      <Box sx={{ minHeight: 52, flexShrink: 0 }}>
+      <Box sx={{ minHeight: 52, flexShrink: 0, bgcolor: "background.default" }}>
         {sorted.length > 0 && (
           <TablePagination
             component="div"
@@ -119,7 +117,10 @@ export default function FleetTable({
             rowsPerPageOptions={[]}
             slotProps={{
               spacer: { sx: { display: "none" } },
-              toolbar: { sx: { justifyContent: "flex-start" } },
+              toolbar: {
+                disableGutters: true,
+                sx: { justifyContent: "flex-start", pl: 2 },
+              },
             }}
             onPageChange={(_, nextPage) => onPageChange(nextPage)}
           />

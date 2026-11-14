@@ -24,12 +24,14 @@ export function FleetTableEmptyState() {
         component={Image}
         src={fleetEmpty}
         alt=""
-        width={160}
-        height={160}
+        width={240}
+        height={240}
         sx={[
           {
             display: "block",
             flexShrink: 0,
+            maxWidth: "100%",
+            height: "auto",
             objectFit: "contain",
             filter: "brightness(0.8)",
           },

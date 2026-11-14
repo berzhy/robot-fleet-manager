@@ -8,9 +8,23 @@ import NextLink from "next/link";
 import type { Robot } from "../types/robot";
 import { formatActivity, formatBattery } from "../utils/robot-formatters";
 
-export default function FleetTableRow({ robot }: { robot: Robot }) {
+export default function FleetTableRow({
+  robot,
+  rowHeight,
+}: {
+  robot: Robot;
+  rowHeight: number;
+}) {
   return (
-    <TableRow hover sx={{ position: "relative", cursor: "pointer" }}>
+    <TableRow
+      hover
+      sx={{
+        position: "relative",
+        cursor: "pointer",
+        height: rowHeight,
+        whiteSpace: "nowrap",
+      }}
+    >
       <TableCell component="th" scope="row">
         <Typography>{robot.name}</Typography>
         <Link

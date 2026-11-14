@@ -5,16 +5,16 @@ import TableCell from "@mui/material/TableCell";
 import TableRow from "@mui/material/TableRow";
 import { type RefObject, useEffect, useState } from "react";
 
-const skeletonRowHeight = 73;
-
 export default function FleetTableSkeleton({
   containerRef,
   headerRef,
   columnCount,
+  rowHeight,
 }: {
   containerRef: RefObject<HTMLDivElement | null>;
   headerRef: RefObject<HTMLTableSectionElement | null>;
   columnCount: number;
+  rowHeight: number;
 }) {
   const [rows, setRows] = useState(20);
   useEffect(() => {
@@ -25,19 +25,17 @@ export default function FleetTableSkeleton({
       setRows(
         Math.max(
           1,
-          Math.ceil(
-            (container.clientHeight - header.clientHeight) / skeletonRowHeight,
-          ),
+          Math.ceil((container.clientHeight - header.clientHeight) / rowHeight),
         ),
       );
     });
     observer.observe(container);
     observer.observe(header);
     return () => observer.disconnect();
-  }, [containerRef, headerRef]);
+  }, [containerRef, headerRef, rowHeight]);
 
   return Array.from({ length: rows }, (_, row) => (
-    <TableRow key={row}>
+    <TableRow key={row} sx={{ height: rowHeight }}>
       {Array.from({ length: columnCount }, (_, column) => (
         <TableCell key={column}>
           <Skeleton height={40} animation={false} aria-hidden="true" />
