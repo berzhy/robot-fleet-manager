@@ -7,7 +7,8 @@ import Toolbar from "@mui/material/Toolbar";
 import Image from "next/image";
 import NextLink from "next/link";
 
-import ThemeToggle from "./theme-toggle";
+import fleetLogo from "@/assets/fleet-orchestrator-logo.png";
+import ThemeToggle from "@/theme/theme-toggle";
 
 export default function AppHeader() {
   return (
@@ -29,7 +30,7 @@ export default function AppHeader() {
         >
           <Box
             component={Image}
-            src="/fleet-orchestrator-logo.png"
+            src={fleetLogo}
             alt=""
             width={48}
             height={48}

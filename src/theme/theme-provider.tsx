@@ -1,21 +1,10 @@
 "use client";
 
 import CssBaseline from "@mui/material/CssBaseline";
-import { createTheme, ThemeProvider } from "@mui/material/styles";
+import { ThemeProvider } from "@mui/material/styles";
 import type { ReactNode } from "react";
 
-const theme = createTheme({
-  cssVariables: {
-    colorSchemeSelector: "class",
-  },
-  colorSchemes: {
-    light: true,
-    dark: true,
-  },
-  typography: {
-    fontFamily: "var(--font-geist-sans), Arial, sans-serif",
-  },
-});
+import theme from "./theme";
 
 export default function AppThemeProvider({
   children,

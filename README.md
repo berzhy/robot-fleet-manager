@@ -16,11 +16,44 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The dashboard uses ten fictional robots and a mock query with a 1.5-second delay. Use **Demo state** to choose Success, Empty, or Error; **Reload** replays the selected scenario. Retry repeats an error until you select a different scenario. Pagination is fixed at 20 rows per page. Robot rows open a basic details page with breadcrumbs. The backend and live telemetry are intentionally deferred so this first slice focuses on the interface and its loading, empty, and failure behaviour.
+
+Run `npm test` for unit and component tests. They cover the mock query, table states, stale responses, pagination with a larger test fixture, and basic details.
+
+## Project organization
+
+Application code lives under `src/`, while configuration remains at the project root:
+
+```text
+src/
+  app/                         # Thin Next.js routes, metadata, and route boundaries
+    (fleet-dashboard)/         # Groups overview and details without changing URLs
+  assets/                      # Images imported by components
+  app-shell/                   # Header, main content area, and viewport layout
+  theme/                       # Theme configuration, provider, and toggle
+  features/
+    fleet-dashboard/
+      fleet-dashboard.tsx      # Feature entry component
+      fleet-demo-controls.tsx
+      fleet-table/             # Table entry, rows, skeletons, and empty/error states
+      robot-details/           # Details entry and presentation
+      api/                     # Robot queries and current mock fixtures
+      hooks/                   # React request lifecycle
+      types/                   # Feature data contracts
+      utils/                   # Feature-specific formatting helpers
+```
+
+Component images live in `src/assets/` and use static imports through Next.js Image. Reserve root `public/` for files requiring a fixed public URL; the favicon follows the `src/app/favicon.ico` convention.
+
+Group code by feature, then by responsibility. A feature or composed component folder has a matching entry file, such as `fleet-table/fleet-table.tsx`. Tests live beside their subjects. Use direct imports; `@/` resolves to `src/`.
+
+Future zones such as skills, integrations, producers, and admin belong beside `fleet-dashboard` under `features/`. Introduce focused `shared/` utilities or reusable `modules/` only when code is actually needed across features. Data access stays behind the feature's query functions so fixtures can later be replaced with backend requests.
+
+The dashboard route is `src/app/(fleet-dashboard)/page.tsx`; its screen implementation is `src/features/fleet-dashboard/fleet-dashboard.tsx`.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-Material UI is configured with the Next.js App Router style cache and a shared theme in `app/theme-provider.tsx`. It uses Geist and defaults to the system light/dark preference. The top-right theme button switches modes and saves the selection locally. See [decisions.md](./decisions.md) for the current product direction and open questions.
+Material UI is configured with the Next.js App Router style cache and a shared theme in `src/theme/theme.ts`. It uses Geist and defaults to the system light/dark preference. The top-right theme button switches modes and saves the selection locally. See [decisions.md](./decisions.md) for the current product direction and open questions.
 
 ## Learn More
 

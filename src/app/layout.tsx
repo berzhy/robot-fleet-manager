@@ -1,11 +1,10 @@
-import Box from "@mui/material/Box";
 import InitColorSchemeScript from "@mui/material/InitColorSchemeScript";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
-import AppHeader from "./app-header";
-import AppThemeProvider from "./theme-provider";
+import AppShell from "@/app-shell/app-shell";
+import AppThemeProvider from "@/theme/theme-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,18 +32,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <InitColorSchemeScript attribute="class" defaultMode="system" />
         <AppRouterCacheProvider options={{ enableCssLayer: true }}>
           <AppThemeProvider>
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                minHeight: "100dvh",
-              }}
-            >
-              <AppHeader />
-              <Box component="main" sx={{ flex: 1, p: { xs: 2, sm: 3 } }}>
-                {children}
-              </Box>
-            </Box>
+            <AppShell>{children}</AppShell>
           </AppThemeProvider>
         </AppRouterCacheProvider>
       </body>

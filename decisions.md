@@ -6,6 +6,16 @@ This records the working direction from our discussion. Proposals and open quest
 
 ## Product scope
 
+### Implemented first slice
+
+The dashboard starts with ten fixed fictional robots and a standard MUI table: Robot, Manufacturer, Location, Activity, and Battery. Charging is an activity; there is no separate charging flag. Missing battery and area values remain unknown. Connection freshness and attention rules are deferred.
+
+Pagination is fixed at 20 rows per page. Results are sorted by name, with ID breaking ties, before pagination. The mock query takes 1.5 seconds. A visible Demo state selector chooses Success, Empty, or Error; Reload repeats the query, and the error state provides Retry. The Error scenario deliberately continues failing until another scenario is selected. There is no backend or live telemetry yet.
+
+Robot details reuse the fixtures and show only basic fields and a breadcrumb back to the dashboard. Unknown IDs show a not-found state. The broader direction and open questions below remain future work.
+
+Source is organized under `src/`, with thin Next.js route adapters, a separate application shell and theme, and a `features/fleet-dashboard` feature. Feature UI is grouped by composed component, with API access, hooks, types, and utilities in dedicated local folders. Tests stay beside the code they exercise. See the README for the directory structure and future feature placement.
+
 Build a focused fleet operations interface for robots deployed across sites. The operator should be able to answer:
 
 - Which robots need attention, and why?
