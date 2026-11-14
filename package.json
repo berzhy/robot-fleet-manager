@@ -9,6 +9,7 @@
     "lint": "eslint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "knip": "knip",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -36,6 +37,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "jsdom": "^31.0.1",
+    "knip": "^6.45.1",
     "prettier": "^3.10.1",
     "typescript": "^5",
     "typescript-eslint": "^8.72.2",
