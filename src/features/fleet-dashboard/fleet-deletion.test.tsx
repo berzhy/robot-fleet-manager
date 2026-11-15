@@ -1,3 +1,4 @@
+import { pageMetadata } from "./test-fixtures";
 import {
   act,
   fireEvent,
@@ -31,7 +32,13 @@ const robot: Robot = {
   createdAt: "2026-11-14T12:00:00.000Z",
 };
 function response(items: Robot[], total = items.length, page = 0) {
-  return Response.json({ items, total, page, pageSize: 20 });
+  return Response.json({
+    items,
+    total,
+    page,
+    pageSize: 20,
+    ...pageMetadata(total),
+  });
 }
 afterEach(() => {
   vi.unstubAllGlobals();

@@ -1,3 +1,4 @@
+import type { RobotFilters } from "@/modules/robots/robot-filters";
 import type { RobotAction } from "@/modules/robots/robot-actions";
 import type { CreateRobotInput } from "@/modules/robots/robot-validation";
 import {
@@ -9,14 +10,20 @@ export async function getRobots(
   page: number,
   pageSize = robotPageSize,
   signal?: AbortSignal,
+  filters: RobotFilters = { view: "all" },
 ): Promise<RobotPage> {
-  const response = await fetch(
-    `/api/robots?page=${page}&pageSize=${pageSize}`,
-    {
-      signal,
-      cache: "no-store",
-    },
-  );
+  const params = new URLSearchParams({
+    page: String(page),
+    pageSize: String(pageSize),
+  });
+  for (const [key, value] of Object.entries(filters)) {
+    if (value !== undefined && !(key === "view" && value === "all"))
+      params.set(key, value);
+  }
+  const response = await fetch(`/api/robots?${params}`, {
+    signal,
+    cache: "no-store",
+  });
   if (!response.ok) throw new Error("Unable to load robots.");
   return response.json() as Promise<RobotPage>;
 }

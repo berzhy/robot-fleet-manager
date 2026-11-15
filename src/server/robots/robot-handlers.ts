@@ -1,3 +1,4 @@
+import { robotFiltersSchema } from "@/modules/robots/robot-filters";
 import "server-only";
 
 import { robotPageSize } from "@/modules/robots/robot";
@@ -53,8 +54,19 @@ export function robotHandlers(database: () => FleetDatabase) {
           "INVALID_INPUT",
           "Page must be a nonnegative integer.",
         );
+      const filters = robotFiltersSchema.safeParse(
+        Object.fromEntries(
+          ["site", "manufacturer", "integrationType", "type", "view"].flatMap(
+            (key) => (params.has(key) ? [[key, params.get(key)]] : []),
+          ),
+        ),
+      );
+      if (!filters.success)
+        return errorResponse(400, "INVALID_INPUT", "Invalid robot filters.");
       return safely(() =>
-        jsonResponse(listRobots(database(), page.data, pageSize.data)),
+        jsonResponse(
+          listRobots(database(), page.data, pageSize.data, filters.data),
+        ),
       );
     },
     async create(request: Request) {

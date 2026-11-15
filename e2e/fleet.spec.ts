@@ -165,3 +165,162 @@ test("keyboard explanations and Stop/Retry requests follow reported activity", a
     timeout: 15000,
   });
 });
+
+async function seedFleet(request: APIRequestContext, count = 1) {
+  const response = await request.post("/api/robots/batch", {
+    data: {
+      robots: Array.from({ length: count }, (_, index) => ({
+        name: `Filter robot ${index}`,
+        manufacturer: "Boston Dynamics",
+        type: "inspection",
+        integrationType: "ros2",
+        site: "Munich",
+      })),
+    },
+  });
+  expect(response.status()).toBe(201);
+  return ((await response.json()) as { items: Robot[] }).items;
+}
+async function chooseFilter(page: Page, label: string, value: string) {
+  await page.getByRole("combobox", { name: label, exact: true }).click();
+  await page.getByRole("option", { name: value, exact: true }).click();
+}
+async function sendProblem(
+  request: APIRequestContext,
+  robot: Robot,
+  problem: boolean,
+) {
+  const response = await request.post("/api/telemetry/batch", {
+    data: {
+      reports: [
+        {
+          robotId: robot.id,
+          activity: problem ? "needs-attention" : "working",
+          problemCode: problem ? "path-blocked" : null,
+          appliedControlRevision: 0,
+          batteryPercent: 80,
+          area: "Lobby",
+          observedAt: new Date().toISOString(),
+        },
+      ],
+    },
+  });
+  expect(response.status()).toBe(204);
+}
+
+test("combines dropdowns and tiles, removes chips and retries a failed filter request", async ({
+  page,
+  request,
+}) => {
+  const [robot] = await seedFleet(request);
+  await sendProblem(request, robot, true);
+  await page.goto("/");
+  await chooseFilter(page, "Location", "Munich");
+  await chooseFilter(page, "Manufacturer", "Boston Dynamics");
+  await chooseFilter(page, "Integration", "ROS 2");
+  await chooseFilter(page, "Type", "Inspection robot");
+  await page
+    .getByRole("button", { name: "Needs attention", exact: true })
+    .click();
+  await expect(page.getByTestId(`robot-row-${robot.id}`)).toBeVisible();
+  await expect(
+    page.getByText("Location: Munich", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Type: Inspection robot", { exact: true }),
+  ).toBeVisible();
+  const removable = page.getByTestId("fleet-chip-view");
+  await removable.focus();
+  await page.keyboard.press("Delete");
+  await expect(
+    page.getByRole("button", { name: "All robots", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(
+    page.getByText("Integration: ROS 2", { exact: true }),
+  ).toBeVisible();
+  let fail = true;
+  await page.route("**/api/robots?*", (route) =>
+    fail ? route.fulfill({ status: 500, body: "error" }) : route.continue(),
+  );
+  await page.getByRole("button", { name: "Low battery", exact: true }).click();
+  await expect(page.getByTestId("fleet-load-error")).toBeVisible();
+  fail = false;
+  await page.getByTestId("fleet-retry").click();
+  await expect(page.getByText("No robots match these filters.")).toBeVisible();
+  await page.getByRole("button", { name: "Clear filters" }).first().click();
+  await expect(page.getByTestId(`robot-row-${robot.id}`)).toBeVisible();
+  fail = true;
+  await expect(page.getByTestId("fleet-refresh-warning")).toBeVisible({
+    timeout: 15000,
+  });
+  await expect(page.getByTestId(`robot-row-${robot.id}`)).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "All robots", exact: true }),
+  ).toContainText("1");
+  fail = false;
+  await expect(page.getByTestId("fleet-refresh-warning")).toHaveCount(0, {
+    timeout: 15000,
+  });
+  await page.setViewportSize({ width: 600, height: 900 });
+  await expect(
+    page.getByRole("combobox", { name: "Integration", exact: true }),
+  ).toBeVisible();
+  await page.screenshot({ path: "/tmp/fleet-filters-narrow.png" });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.getByRole("button", { name: "Switch to dark theme" }).click();
+  await expect(
+    page.getByRole("button", { name: "Switch to light theme" }),
+  ).toBeVisible();
+  await page.screenshot({ path: "/tmp/fleet-filters-dark.png" });
+});
+
+test("live filtered recovery pauses for menus and restores focus when the row leaves", async ({
+  page,
+  request,
+}) => {
+  const [robot] = await seedFleet(request);
+  await sendProblem(request, robot, true);
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Needs attention", exact: true })
+    .click();
+  const row = page.getByTestId(`robot-row-${robot.id}`);
+  await expect(row).toBeVisible();
+  await row.getByTestId("robot-actions").click();
+  await sendProblem(request, robot, false);
+  await expect(page.getByRole("menu")).toBeVisible();
+  await expect(row).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("menu")).toHaveCount(0);
+  await expect(row).toHaveCount(0, { timeout: 15000 });
+  await expect(page.getByTestId("fleet-heading")).toBeFocused();
+  await expect(
+    page.getByRole("button", {
+      name: "Needs attention",
+      exact: true,
+      pressed: true,
+    }),
+  ).toContainText("0");
+});
+
+test("deleting the last filtered page corrects pagination and retains filters", async ({
+  page,
+  request,
+}) => {
+  await seedFleet(request, 21);
+  await page.goto("/");
+  await chooseFilter(page, "Location", "Munich");
+  await page.getByTestId("fleet-next-page").click();
+  await expect(page.getByTestId("fleet-page-summary")).toHaveText(
+    "21–21 of 21",
+  );
+  const row = page.getByTestId("fleet-table").locator("tbody tr");
+  await row.getByTestId("robot-actions").click();
+  await page.getByTestId("robot-delete").click();
+  await page.getByTestId("delete-robot-confirm").click();
+  await expect(page.getByTestId("fleet-page-summary")).toHaveText("1–20 of 20");
+  await expect(
+    page.getByText("Location: Munich", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByTestId("fleet-notification")).toContainText("deleted");
+});

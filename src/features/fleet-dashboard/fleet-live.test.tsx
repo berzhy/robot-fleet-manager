@@ -1,3 +1,4 @@
+import { pageMetadata } from "./test-fixtures";
 import {
   act,
   fireEvent,
@@ -35,6 +36,7 @@ const page = (battery = 50) =>
     total: 1,
     page: 0,
     pageSize: 20,
+    ...pageMetadata(1),
   });
 afterEach(() => {
   vi.useRealTimers();
@@ -170,7 +172,7 @@ test("detail refreshes quietly and stops when its robot is deleted", async () =>
   expect(fetch).toHaveBeenCalledTimes(2);
 });
 
-test("report age appears for delayed robots while online labels stay calm", async () => {
+test("connection classification stays on the last fleet snapshot between refreshes", async () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date(Date.parse(robot.lastReceivedAt!) + 10000));
   vi.stubGlobal(
@@ -183,10 +185,8 @@ test("report age appears for delayed robots while online labels stay calm", asyn
   expect(row.getByTestId("robot-connection")).toHaveTextContent(/^Online$/);
   expect(row.queryByTestId("robot-report-age")).not.toBeInTheDocument();
   await tick(1000);
-  expect(row.getByTestId("robot-connection")).toHaveTextContent(/^Delayed$/);
-  expect(row.getByTestId("robot-report-age")).toHaveTextContent(
-    "Last report 11s ago",
-  );
+  expect(row.getByTestId("robot-connection")).toHaveTextContent(/^Online$/);
+  expect(row.queryByTestId("robot-report-age")).not.toBeInTheDocument();
 });
 
 test("a confirmed detail deletion clears an earlier refresh warning", async () => {
@@ -220,4 +220,20 @@ test("failed initial detail refresh keeps server-verified connection information
     within(screen.getByTestId("robot-details")).getByTestId("robot-connection"),
   ).toHaveTextContent(/^Offline \(unverified\)$/);
   expect(screen.queryByText("Checking")).not.toBeInTheDocument();
+});
+
+test("filter dropdowns pause polling without hiding the current snapshot", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date(robot.lastReceivedAt!));
+  const fetcher = vi.fn().mockImplementation(() => Promise.resolve(page()));
+  vi.stubGlobal("fetch", fetcher);
+  render(<FleetDashboard />);
+  await tick();
+  fireEvent.mouseDown(screen.getByRole("combobox", { name: "Location" }));
+  await tick(20000);
+  expect(fetcher).toHaveBeenCalledTimes(1);
+  expect(screen.getByTestId("robot-row-live")).toBeInTheDocument();
+  fireEvent.keyDown(screen.getByRole("listbox"), { key: "Escape" });
+  await tick(300);
+  expect(fetcher).toHaveBeenCalledTimes(2);
 });

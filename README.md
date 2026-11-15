@@ -23,7 +23,7 @@ During this POC, schema changes may replace migration history and discard develo
 
 ## Robot API
 
-- `GET /api/robots?page=0&pageSize=20`: `{ items, total, page, pageSize }`, ordered by creation time descending, then ID descending.
+- `GET /api/robots?page=0&pageSize=20`: `{ items, total, page, pageSize, summary, fleetTotal, filterOptions, evaluatedAt }`, ordered by creation time descending, then ID descending.
 - `GET /api/robots/:id`: one robot, or 404.
 - `POST /api/robots/batch`: accept `{ robots: [...] }` with 1–100 metadata records; return 201 with `{ items: [...] }`. All records are created in one transaction.
 - `POST /api/robots`: create metadata from `name`, `manufacturer`, `site`, `type`, and `integrationType`; returns 201 with unknown telemetry.
@@ -113,8 +113,16 @@ Restart restores activity, battery, area, the blockage, and manual intent from p
 
 Only latest telemetry is stored. `lastTelemetryAt` is observation time; `lastReceivedAt` is server receipt time. Connection is derived: Online up to 10 seconds, Delayed through 15 seconds, Offline thereafter, Unknown before the first report. Offline means no recent reports, not powered off or disabled. Old telemetry remains visible as last known.
 
-Dashboard and detail views poll quietly every five seconds, retaining rows during refresh. Failed background requests show a warning and unverified connection labels until recovery. Hidden tabs stop polling and refresh on return. Row menus, delete dialogs, and mutations pause dashboard updates without shifting the layout to preserve interaction focus. Addition/deletion refetch the current page, correcting it if it no longer exists; new records may shift page composition.
+Dashboard and detail views poll quietly every five seconds, retaining rows during refresh. Failed background requests show a warning and unverified connection labels until recovery. Hidden tabs stop polling and refresh on return. Row menus, filter dropdowns, delete dialogs, and mutations pause dashboard updates without shifting the layout to preserve interaction focus. Addition/deletion refetch the current page, correcting it if it no longer exists; new records may shift page composition.
 
-This targets one local Node server with persistent SQLite. There is no guaranteed real-time latency, history, authentication, SSE/WebSockets, broker, or command queue. Future filters must run before pagination and return matching totals; live filtered membership behaviour is still undecided.
+This targets one local Node server with persistent SQLite. There is no guaranteed real-time latency, history, authentication, SSE/WebSockets, broker, or command queue. Filters run before pagination, and live membership is recomputed on every refresh.
 
 Online robots show a stable connection label; report age is shown only for Delayed and Offline robots. The simulator still produces telemetry approximately once a second.
+
+## Fleet filters
+
+Four tiles select All robots, Needs attention, Offline, or Low battery. Location (assigned site), Manufacturer, Type, and Integration dropdowns combine with the tile using AND. Removing an operational chip selects All robots and preserves dropdowns; Clear filters resets all selections. Filter changes return to page one; refresh and mutations preserve filters and correct invalid pages. Added robots may fall outside the selected filters.
+
+The list API accepts optional `site`, `manufacturer`, `integrationType` (`ros2`, `vda5050`, `vendor-api`), `type` (`cleaning`, `security`, `delivery`, `inspection`), and `view` (`all`, `needs-attention`, `offline`, `low-battery`) query parameters. Summary counts respect dropdowns but ignore the tile. Dropdown options describe the full fleet. Rows, counts and dashboard connection classification share the response evaluation time; report-age text may continue ticking. Failed background refresh retains that snapshot.
+
+Offline means more than 15 seconds since receipt; no reports means Unknown. Low battery means a last-reported level ≤20%, excluding Charging and Returning. Needs attention includes Offline, a reported problem, or Low battery; robots are counted once per tile. Categories overlap. Search is deferred and will narrow this same scope, including tile counts.

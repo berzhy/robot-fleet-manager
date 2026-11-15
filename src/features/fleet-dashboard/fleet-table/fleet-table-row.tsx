@@ -19,6 +19,7 @@ import {
 } from "../utils/robot-formatters";
 
 export default function FleetTableRow({
+  connectionAt,
   now,
   verifiedAt,
   unverified,
@@ -30,6 +31,7 @@ export default function FleetTableRow({
   adding,
 }: {
   adding: boolean;
+  connectionAt?: number;
   now: number;
   verifiedAt: number;
   unverified: boolean;
@@ -41,7 +43,7 @@ export default function FleetTableRow({
 }) {
   const connection = connectionStatus(
     robot.lastReceivedAt,
-    unverified || !now ? verifiedAt : now,
+    connectionAt ?? (unverified || !now ? verifiedAt : now),
   );
   const showReportAge = connection === "Delayed" || connection === "Offline";
   return (

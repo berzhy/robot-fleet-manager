@@ -19,12 +19,14 @@ import {
 } from "./api/robot-api";
 import AddRobotSplitButton from "./fleet-table/add-robot-split-button";
 import DeleteRobotDialog from "./fleet-table/delete-robot-dialog";
+import FleetFilters from "./fleet-filters/fleet-filters";
 import FleetTable from "./fleet-table/fleet-table";
 import useReportClock from "./hooks/use-report-clock";
 import useRobots from "./hooks/use-robots";
 import { generateRobotInput } from "./utils/generate-robot-input";
 
 export default function FleetDashboard() {
+  const [filterOpen, setFilterOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const addButtonRef = useRef<HTMLButtonElement>(null);
   const addFocusRef = useRef<HTMLElement | null>(null);
@@ -39,7 +41,12 @@ export default function FleetDashboard() {
   } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const paused =
-    acting || adding || deleting || menuOpen || Boolean(deleteTarget);
+    acting ||
+    adding ||
+    deleting ||
+    menuOpen ||
+    filterOpen ||
+    Boolean(deleteTarget);
   const now = useReportClock(paused);
   const {
     state,
@@ -53,6 +60,9 @@ export default function FleetDashboard() {
     interrupted,
     unverified,
     verifiedAt,
+    snapshot,
+    filters,
+    setFilters,
   } = useRobots(paused);
   const [notification, setNotification] = useState<{
     severity: "success" | "error";
@@ -261,7 +271,17 @@ export default function FleetDashboard() {
           states.
         </Alert>
       )}
+      <FleetFilters
+        filters={filters}
+        onChange={setFilters}
+        onOpenChange={setFilterOpen}
+        summary={state.status === "success" ? snapshot?.summary : undefined}
+        options={snapshot?.filterOptions}
+      />
       <FleetTable
+        fleetTotal={snapshot?.fleetTotal}
+        onClearFilters={() => setFilters({ view: "all" })}
+        headingRef={headingRef}
         now={now}
         verifiedAt={verifiedAt}
         unverified={unverified}

@@ -1,3 +1,4 @@
+import { pageMetadata } from "./test-fixtures";
 import {
   fireEvent,
   render,
@@ -72,6 +73,7 @@ test.each([202, 409, 500])(
           items: [{ ...robot, lastReceivedAt: new Date().toISOString() }],
           page: 0,
           pageSize: 20,
+          ...pageMetadata(1),
           total: 1,
         }),
       );
@@ -113,6 +115,7 @@ test("pending action prevents overlapping mutations without replacing the table"
         total: 1,
         page: 0,
         pageSize: 20,
+        ...pageMetadata(1),
       }),
     );
   });

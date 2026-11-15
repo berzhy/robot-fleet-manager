@@ -8,7 +8,7 @@ This records the working direction from our discussion. Proposals and open quest
 
 ### Implemented first slice
 
-The dashboard uses a real Next.js API and SQLite database with Drizzle migrations. The standard MUI table shows Robot (name with manufacturer beneath), Type, Added, Location, Connection, Activity, Battery, and Integration, followed by Actions. Charging is an activity; there is no separate charging flag. Missing telemetry is unknown. Connection freshness is derived from server receipt time; attention rules are deferred.
+The dashboard uses a real Next.js API and SQLite database with Drizzle migrations. The standard MUI table shows Robot (name with manufacturer beneath), Type, Added, Location, Connection, Activity, Battery, and Integration, followed by Actions. Charging is an activity; there is no separate charging flag. Missing telemetry is unknown. Connection freshness is derived from server receipt time; attention rules are implemented below.
 
 Pagination defaults to 20 rows per page, with 10, 20, and 100 available through MUI TablePagination. Changing page size resets to page one. Results are ordered server-side by creation time descending, then ID descending. Count and rows share a database snapshot. Automatic refresh after addition or deletion preserves the page; out-of-range pages are corrected without showing the empty-fleet state. There is no manual Refresh button. Runtime fixtures, demo controls, and artificial delays have been removed.
 
@@ -60,26 +60,13 @@ Integration is stable metadata: ROS 2, VDA5050, or Vendor API. The table and det
 
 The working direction is a small set of counts that also act as quick filters, rather than a separate chart-heavy dashboard.
 
-Initial candidates:
+Implemented tiles: All robots, Needs attention, Offline, and Low battery. Location (assigned site), Manufacturer, Type, and Integration are single-select dropdowns, combined with the tile through AND. Active selections appear as removable chips; removing the operational chip returns to All robots. Clear filters resets all filters. Filter changes return to page one; refresh and mutations preserve filters and correct invalid pages.
 
-- All robots.
-- Needs attention.
-- No contact.
-- Working.
+Counts refer to robots, not incidents, and categories overlap. They respect dropdown selections but ignore the selected tile. Metadata choices come from the entire fleet, not current matches. Search is deferred; it will narrow the same scope and all tile counts.
 
-Counts refer to robots, not the number of incidents. Categories can overlap; a robot with no contact may also need attention.
+### Attention rules
 
-Search and site selection are the primary controls. Additional filters can cover activity, connection, battery, and area. The exact set and layout remain to be chosen.
-
-Counts should have a consistent scope. For example, with Munich selected, all quick-filter counts describe Munich. Selecting Needs attention should not make every other count describe only the already-filtered attention results.
-
-### Proposed attention rules
-
-- A reported fault or blocked operation.
-- Low battery while not charging.
-- Lost contact when the robot is expected to be connected.
-
-These are proposed demo rules. Battery thresholds, freshness timeouts, expected connectivity, and treatment of robots taken out of service still need definitions. A single missed report should not automatically mean no contact.
+Needs attention matches Offline OR a reported problem OR Low battery. Offline uses the existing >15-second receipt threshold; Unknown and Delayed alone do not qualify. Low battery uses the last-reported battery ≤20%, excluding Charging and Returning. Missing battery never qualifies. These filters are derived, without a persisted attention flag. Operational tiles have accessible explanations.
 
 ## Live updates and ordering
 
@@ -96,15 +83,9 @@ The current order is newest-added first, using the server-created timestamp and 
 
 In future, sorting can be limited to stable metadata such as name, assigned site, and type. Sorting by battery, activity, connection, attention, or current area is not currently planned. Filters provide access to these operational subsets, but filtering and prioritizing by sort order are different capabilities.
 
-### Deferred: live result membership
+### Live result membership
 
-We have not decided what happens when a robot starts or stops matching an active filter.
-
-Disabling dynamic sorting does not solve this: a recovered robot can still leave Needs attention, causing other rows to move or another row to enter the page.
-
-Options discussed include live membership, a paused snapshot, and holding the result set while values continue updating. The last option would need an explicit explanation and a way to apply changed results. None is selected. Pause behaviour is also open.
-
-Do not implement automatic removal, a no-longer-matches row, or an Update results banner as an agreed requirement yet.
+Recompute membership on every five-second refresh. Robots can enter or leave a selected filter as their state changes. Rows, counts, and connection classification use one server snapshot and timestamp. Report-age text can keep ticking. Row menus, filter dropdowns, dialogs, and mutations pause polling; closing resumes it. A removed focused row returns focus to the dashboard heading. There is no held result set or Update results banner.
 
 ## Navigation and scale
 
@@ -112,7 +93,7 @@ Pagination is implemented with a default page size of 20 and options for 10, 20,
 
 Pagination controls navigation. Virtualization controls how many rows are rendered. They can coexist, and neither solves changing filter membership or live reordering.
 
-For larger fleets, filtering and sorting must cover the full result set before pagination. Subscribing only to visible robot IDs would miss an off-page robot entering a filter. The production approach to query membership, subscriptions, and fleet-wide counts remains open.
+For larger fleets, filtering and sorting must cover the full result set before pagination. Subscribing only to visible robot IDs would miss an off-page robot entering a filter. The POC uses server-side predicates and aggregates before pagination; production subscriptions remain future work.
 
 ## Robot detail
 
@@ -159,7 +140,7 @@ The separate TypeScript simulator discovers the fleet through a single registry 
 
 Receipt time determines Online (≤10 seconds), Delayed (>10–15 seconds), Offline (>15 seconds), or Unknown (no report). Observation time determines whether an update is newer; ignored reports do not refresh receipt time. Missing data stays unknown. Connection labels are unverified after interrupted requests or while awaiting refresh after a hidden tab. Intentional interaction pauses freeze the display clock and do not relabel robots. After a dashboard outage, connection states remain last verified rather than implying that individual robots lost contact.
 
-Polling preserves rows, IDs, focus, and scroll during background refresh. Mutations invalidate older requests and refetch the current page and total; page membership may shift. Row menus and dialogs pause polling without inserting a layout-shifting message. Hidden tabs pause, then refresh on return. Background failure preserves last-known values and shows one warning. Live membership for future operational filters remains undecided.
+Polling preserves rows, IDs, focus, and scroll during background refresh. Mutations invalidate older requests and refetch the current page and total; page membership may shift. Row menus and dialogs pause polling without inserting a layout-shifting message. Hidden tabs pause, then refresh on return. Background failure preserves last-known values and shows one warning. Operational filter membership is recomputed on each refresh.
 
 Report age is hidden for Online robots and retained for Delayed/Offline robots. The 10-second Online window tolerates the five-second polling cadence.
 

@@ -1,3 +1,4 @@
+import { pageMetadata } from "./test-fixtures";
 import {
   act,
   fireEvent,
@@ -32,7 +33,13 @@ const robot: Robot = {
   createdAt: "2026-11-14T12:00:00.000Z",
 };
 function response(items: Robot[], total = items.length, page = 0) {
-  return Response.json({ items, total, page, pageSize: 20 });
+  return Response.json({
+    items,
+    total,
+    page,
+    pageSize: 20,
+    ...pageMetadata(total),
+  });
 }
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -289,4 +296,42 @@ test("batch failure preserves rows and resumes fleet updates", async () => {
   ).toBeInTheDocument();
   expect(fetcher).toHaveBeenCalledTimes(3);
   await waitFor(() => expect(more).toHaveFocus());
+});
+
+test("addition outside the selected view retains filters and reports success without revealing the robot", async () => {
+  const filtered = () =>
+    Response.json({
+      items: [],
+      total: 0,
+      page: 0,
+      pageSize: 20,
+      ...pageMetadata(1),
+    });
+  const fetcher = vi
+    .fn()
+    .mockResolvedValueOnce(response([robot]))
+    .mockResolvedValueOnce(filtered())
+    .mockResolvedValueOnce(Response.json(robot, { status: 201 }))
+    .mockImplementation(() => Promise.resolve(filtered()));
+  vi.stubGlobal("fetch", fetcher);
+  render(<FleetDashboard />);
+  await screen.findByTestId("robot-row-new");
+  fireEvent.click(screen.getByRole("button", { name: "Offline" }));
+  await screen.findByText("No robots match these filters.");
+  fireEvent.click(screen.getByTestId("fleet-add-robot"));
+  await waitFor(() =>
+    expect(screen.getByTestId("fleet-notification")).toHaveTextContent("added"),
+  );
+  await waitFor(() =>
+    expect(screen.getByTestId("fleet-add-robot")).not.toBeDisabled(),
+  );
+  expect(
+    screen.getByRole("button", { name: "Offline", pressed: true }),
+  ).toBeVisible();
+  expect(screen.getByText("Connection: Offline")).toBeVisible();
+  expect(screen.queryByTestId("robot-row-new")).not.toBeInTheDocument();
+  expect(fetcher).toHaveBeenLastCalledWith(
+    expect.stringContaining("view=offline"),
+    expect.any(Object),
+  );
 });

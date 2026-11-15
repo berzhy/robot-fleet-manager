@@ -1,3 +1,4 @@
+import { pageMetadata } from "./test-fixtures";
 import {
   act,
   fireEvent,
@@ -32,6 +33,7 @@ const page = (items: Robot[], total = items.length, index = 0): RobotPage => ({
   total,
   page: index,
   pageSize: 20,
+  ...pageMetadata(total),
 });
 afterEach(() => vi.unstubAllGlobals());
 test("loads real API data with accessible loading status", async () => {
@@ -117,7 +119,13 @@ test("changing rows per page resets to the first page and requests the selected 
     .mockResolvedValueOnce(Response.json(page([robot], 21)))
     .mockResolvedValueOnce(Response.json(page([robot], 21, 1)))
     .mockResolvedValueOnce(
-      Response.json({ items: [robot], total: 21, page: 0, pageSize: 10 }),
+      Response.json({
+        items: [robot],
+        total: 21,
+        page: 0,
+        pageSize: 10,
+        ...pageMetadata(21),
+      }),
     );
   vi.stubGlobal("fetch", fetcher);
   render(<FleetDashboard />);

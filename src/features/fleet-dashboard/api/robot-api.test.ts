@@ -1,3 +1,4 @@
+import { pageMetadata } from "../test-fixtures";
 import { afterEach, expect, test, vi } from "vitest";
 import {
   createRobot,
@@ -10,7 +11,13 @@ test("requests a server page with cancellation and rejects HTTP failures", async
   const fetcher = vi
     .fn()
     .mockResolvedValueOnce(
-      Response.json({ items: [], total: 0, page: 2, pageSize: 20 }),
+      Response.json({
+        items: [],
+        total: 0,
+        page: 2,
+        pageSize: 20,
+        ...pageMetadata(),
+      }),
     )
     .mockResolvedValueOnce(new Response(null, { status: 500 }));
   vi.stubGlobal("fetch", fetcher);
@@ -20,6 +27,8 @@ test("requests a server page with cancellation and rejects HTTP failures", async
     total: 0,
     page: 2,
     pageSize: 20,
+    ...pageMetadata(),
+    evaluatedAt: expect.any(Number) as number,
   });
   expect(fetcher).toHaveBeenCalledWith("/api/robots?page=2&pageSize=20", {
     signal: controller.signal,
@@ -88,4 +97,24 @@ test("detail requests encode IDs, support cancellation, and distinguish deletion
     signal: controller.signal,
   });
   await expect(getRobot("failure")).rejects.toThrow("Unable to refresh robot.");
+});
+
+test("encodes combined filter values in the list request", async () => {
+  const fetcher = vi.fn().mockResolvedValue(Response.json({}));
+  vi.stubGlobal("fetch", fetcher);
+  await getRobots(0, 20, undefined, {
+    view: "offline",
+    site: "Munich & Berlin",
+    manufacturer: "A/B",
+    integrationType: "ros2",
+  });
+  const url = new URL(fetcher.mock.calls[0][0] as string, "http://localhost");
+  expect(Object.fromEntries(url.searchParams)).toEqual({
+    page: "0",
+    pageSize: "20",
+    view: "offline",
+    site: "Munich & Berlin",
+    manufacturer: "A/B",
+    integrationType: "ros2",
+  });
 });

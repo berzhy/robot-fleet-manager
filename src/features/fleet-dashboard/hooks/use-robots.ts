@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import type { RobotFilters } from "@/modules/robots/robot-filters";
+import type { RobotPage } from "@/modules/robots/robot";
 import { robotPageSize } from "@/modules/robots/robot";
 import { getRobots } from "../api/robot-api";
 import type { RobotQueryState } from "../types/robot-query-state";
@@ -7,14 +9,18 @@ function lastRobotPage(total: number, pageSize: number) {
   return Math.max(0, Math.ceil(total / pageSize) - 1);
 }
 export default function useRobots(paused = false) {
-  const [request, setRequest] = useState({ page: 0, pageSize: robotPageSize });
+  const [request, setRequest] = useState<{
+    page: number;
+    pageSize: number;
+    filters: RobotFilters;
+  }>({ page: 0, pageSize: robotPageSize, filters: { view: "all" } });
   const [state, setState] = useState<RobotQueryState>({ status: "loading" });
-  const [total, setTotal] = useState(0);
   const [interrupted, setInterrupted] = useState(false);
   const [hidden, setHidden] = useState(
     () => typeof document !== "undefined" && document.hidden,
   );
-  const [verifiedAt, setVerifiedAt] = useState(0);
+  const [snapshot, setSnapshot] = useState<RobotPage | null>(null);
+  const total = snapshot?.total ?? 0;
   const active = useRef<AbortController | null>(null);
   const page = Math.min(request.page, lastRobotPage(total, request.pageSize));
   function invalidate() {
@@ -28,7 +34,12 @@ export default function useRobots(paused = false) {
   function setPageSize(pageSize: number) {
     invalidate();
     setState({ status: "loading" });
-    setRequest({ page: 0, pageSize });
+    setRequest((previous) => ({ ...previous, page: 0, pageSize }));
+  }
+  function setFilters(filters: RobotFilters) {
+    invalidate();
+    setState({ status: "loading" });
+    setRequest((previous) => ({ ...previous, page: 0, filters }));
   }
   function reload() {
     invalidate();
@@ -50,18 +61,18 @@ export default function useRobots(paused = false) {
           request.page,
           request.pageSize,
           AbortSignal.any([controller.signal, AbortSignal.timeout(5000)]),
+          request.filters,
         );
         if (controller.signal.aborted || disposed) return;
-        setTotal(result.total);
         const last = lastRobotPage(result.total, result.pageSize);
-        if (request.page > last && result.total > 0) {
+        if (request.page > last) {
           setState({ status: "loading" });
           setRequest((previous) => ({ ...previous, page: last }));
           return;
         }
         setState({ status: "success", robots: result.items });
         setInterrupted(false);
-        setVerifiedAt(Date.now());
+        setSnapshot(result);
         setHidden(false);
       } catch {
         if (controller.signal.aborted || disposed) return;
@@ -97,6 +108,9 @@ export default function useRobots(paused = false) {
     invalidate,
     interrupted,
     unverified: interrupted || hidden,
-    verifiedAt,
+    verifiedAt: snapshot?.evaluatedAt ?? 0,
+    snapshot,
+    filters: request.filters,
+    setFilters,
   };
 }

@@ -1,3 +1,4 @@
+import type { FleetSummary, FilterOptions } from "./robot-filters";
 export const robotTypes = [
   "cleaning",
   "security",
@@ -38,6 +39,10 @@ export type Robot = {
   lastReceivedAt: string | null;
 };
 export type RobotPage = {
+  summary: FleetSummary;
+  fleetTotal: number;
+  filterOptions: FilterOptions;
+  evaluatedAt: number;
   items: Robot[];
   total: number;
   page: number;

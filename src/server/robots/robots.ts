@@ -1,8 +1,9 @@
 import "server-only";
 
-import { count, desc, eq, sql } from "drizzle-orm";
+import { and, count, desc, eq, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 
+import type { RobotFilters } from "@/modules/robots/robot-filters";
 import {
   robotPageSize,
   type Robot,
@@ -15,6 +16,7 @@ import {
 
 import type { FleetDatabase } from "../db/database";
 import { latestTelemetry, robots } from "../db/schema";
+
 const selection = {
   controlTarget: robots.controlTarget,
   controlRevision: robots.controlRevision,
@@ -39,21 +41,79 @@ export function listRobots(
   db: FleetDatabase,
   page: number,
   pageSize = robotPageSize,
+  filters: RobotFilters = { view: "all" },
 ): RobotPage {
-  return db.transaction((tx) => ({
-    items: tx
-      .select(selection)
+  const evaluatedAt = Date.now();
+  const offline = sql<boolean>`${latestTelemetry.receivedAt} < ${new Date(evaluatedAt - 15000).toISOString()}`;
+  const lowBattery = sql<boolean>`${latestTelemetry.batteryPercent} <= 20 and ${latestTelemetry.activity} not in ('charging', 'returning')`;
+  const attention = or(
+    offline,
+    sql`${latestTelemetry.problemCode} is not null`,
+    lowBattery,
+  )!;
+  const views = {
+    all: sql`1`,
+    "needs-attention": attention,
+    offline,
+    "low-battery": lowBattery,
+  };
+  const scope = and(
+    filters.type === undefined ? undefined : eq(robots.type, filters.type),
+    filters.site === undefined ? undefined : eq(robots.site, filters.site),
+    filters.manufacturer === undefined
+      ? undefined
+      : eq(robots.manufacturer, filters.manufacturer),
+    filters.integrationType === undefined
+      ? undefined
+      : eq(robots.integrationType, filters.integrationType),
+  );
+  const matching = and(scope, views[filters.view]);
+  return db.transaction((tx) => {
+    const summary = tx
+      .select({
+        all: count(),
+        "needs-attention": sql<number>`coalesce(sum(case when ${attention} then 1 else 0 end), 0)`,
+        offline: sql<number>`coalesce(sum(case when ${offline} then 1 else 0 end), 0)`,
+        "low-battery": sql<number>`coalesce(sum(case when ${lowBattery} then 1 else 0 end), 0)`,
+      })
       .from(robots)
       .leftJoin(latestTelemetry, eq(robots.id, latestTelemetry.robotId))
-      .orderBy(desc(robots.createdAt), desc(robots.id))
-      .limit(pageSize)
-      .offset(page * pageSize)
-      .all(),
-    total: tx.select({ value: count() }).from(robots).get()!.value,
-    page,
-    pageSize,
-  }));
+      .where(scope)
+      .get()!;
+    return {
+      items: tx
+        .select(selection)
+        .from(robots)
+        .leftJoin(latestTelemetry, eq(robots.id, latestTelemetry.robotId))
+        .where(matching)
+        .orderBy(desc(robots.createdAt), desc(robots.id))
+        .limit(pageSize)
+        .offset(page * pageSize)
+        .all(),
+      total: summary[filters.view],
+      page,
+      pageSize,
+      summary,
+      evaluatedAt,
+      fleetTotal: tx.select({ value: count() }).from(robots).get()!.value,
+      filterOptions: {
+        sites: tx
+          .selectDistinct({ value: robots.site })
+          .from(robots)
+          .orderBy(robots.site)
+          .all()
+          .map((row) => row.value),
+        manufacturers: tx
+          .selectDistinct({ value: robots.manufacturer })
+          .from(robots)
+          .orderBy(robots.manufacturer)
+          .all()
+          .map((row) => row.value),
+      },
+    };
+  });
 }
+
 export function getRobot(
   db: Pick<FleetDatabase, "select">,
   id: string,
