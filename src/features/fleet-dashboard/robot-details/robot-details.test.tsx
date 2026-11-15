@@ -13,6 +13,7 @@ const robot: Robot = {
   activity: "charging",
   batteryPercent: null,
   lastTelemetryAt: null,
+  lastReceivedAt: null,
   createdAt: "2026-11-14T12:00:00.000Z",
 };
 
@@ -36,7 +37,8 @@ test("details show fields, missing values, and breadcrumbs", () => {
     "Area",
     "Activity",
     "Battery",
+    "Connection",
   ]);
   expect(screen.getByText("Charging")).toBeInTheDocument();
-  expect(screen.getAllByText("Unknown")).toHaveLength(2);
+  expect(screen.getAllByText("Unknown")).toHaveLength(3);
 });

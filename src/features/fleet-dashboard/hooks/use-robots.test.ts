@@ -45,3 +45,19 @@ test("page size changes cancel old requests and reload preserves the selection",
   await waitFor(() => expect(result.current.state.status).toBe("success"));
   expect(getRobots).toHaveBeenLastCalledWith(0, 10, expect.any(AbortSignal));
 });
+
+test("failed page correction never presents previous-page rows under the new pager", async () => {
+  vi.mocked(getRobots)
+    .mockResolvedValueOnce({ items: [], total: 21, page: 0, pageSize: 20 })
+    .mockResolvedValueOnce({ items: [], total: 21, page: 1, pageSize: 20 })
+    .mockResolvedValueOnce({ items: [], total: 20, page: 1, pageSize: 20 })
+    .mockRejectedValueOnce(new Error("correction failed"));
+  const { result } = renderHook(() => useRobots());
+  await waitFor(() => expect(result.current.state.status).toBe("success"));
+  act(() => result.current.setPage(1));
+  await waitFor(() => expect(result.current.state.status).toBe("success"));
+  act(() => result.current.reload());
+  await waitFor(() => expect(result.current.state.status).toBe("error"));
+  expect(result.current.page).toBe(0);
+  expect(getRobots).toHaveBeenLastCalledWith(0, 20, expect.any(AbortSignal));
+});

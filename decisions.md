@@ -1,6 +1,6 @@
 # Fleet manager decisions
 
-Updated: 2026-11-14
+Updated: 2026-11-15
 
 This records the working direction from our discussion. Proposals and open questions are called out below; they are not implementation commitments.
 
@@ -8,7 +8,7 @@ This records the working direction from our discussion. Proposals and open quest
 
 ### Implemented first slice
 
-The dashboard uses a real Next.js API and SQLite database with Drizzle migrations. The standard MUI table shows Robot, Manufacturer, Location, Activity, Battery, and Added, followed by Actions. Charging is an activity; there is no separate charging flag. Missing telemetry is unknown. Connection freshness and attention rules are deferred.
+The dashboard uses a real Next.js API and SQLite database with Drizzle migrations. The standard MUI table shows Robot, Manufacturer, Location, Activity, Battery, and Added, followed by Actions. Charging is an activity; there is no separate charging flag. Missing telemetry is unknown. Connection freshness is derived from server receipt time; attention rules are deferred.
 
 Pagination defaults to 20 rows per page, with 10, 20, and 100 available through MUI TablePagination. Changing page size resets to page one. Results are ordered server-side by creation time descending, then ID descending. Count and rows share a database snapshot. Automatic refresh after addition or deletion preserves the page; out-of-range pages are corrected without showing the empty-fleet state. There is no manual Refresh button. Runtime fixtures, demo controls, and artificial delays have been removed.
 
@@ -16,7 +16,7 @@ Robot details read the same persisted records and retain breadcrumbs and not-fou
 
 Thin routes remain in `src/app`, UI under `features/fleet-dashboard`, shared robot contracts under `modules/robots`, and backend operations under `server/robots`. Operations accept a connection and remain independent of Next rendering APIs. The database connection is lazy; synchronous reads are excluded from prerendering in the Next adapters. See README for setup and API usage.
 
-This slice targets local development or one Node server with persistent disk. There is no authentication or automatic polling. Metadata and latest telemetry are separate tables; telemetry history, ingestion, simulation, and commands remain future work. A future simulator will be a separate producer, not an interval embedded in an HTTP request. Commands should represent requests and acknowledgments rather than directly setting observed activity.
+This slice targets local development or one Node server with persistent disk. There is no authentication. Dashboard and detail views poll in the background. Metadata and latest telemetry are separate tables; Telemetry ingestion and a separate simulator are implemented; history and commands remain future work. The simulator runs through its own command, outside HTTP request lifetimes. Commands should represent requests and acknowledgments rather than directly setting observed activity.
 
 Build a focused fleet operations interface for robots deployed across sites. The operator should be able to answer:
 
@@ -27,7 +27,7 @@ Build a focused fleet operations interface for robots deployed across sites. The
 
 Start with a fleet table, summary filters above it, and a detail view for one robot. Stable metadata and live telemetry belong together in the same robot row. We do not currently need separate tables for each.
 
-The assignment allows a frontend implementation with a mocked backend. A server is now implemented; a separate simulator is deferred.
+The assignment allows a frontend implementation with a mocked backend. A server is now implemented; a separate HTTP simulator is implemented.
 
 ## Fleet table fields
 
@@ -78,7 +78,7 @@ These are proposed demo rules. Battery thresholds, freshness timeouts, expected 
 
 ## Live updates and ordering
 
-Use roughly one second as the initial display-update target, matching the assignment's approximate telemetry cadence. This is a working target, not a guarantee that every cell or count changes every second.
+Poll dashboard and details every five seconds while the simulator reports approximately once a second. This is a working target, not a guarantee that every cell or count changes every second.
 
 - Derive table values and summary counts from a consistent state snapshot.
 - Only change displayed values when their meaning changes. Receiving another identical report does not need a visual effect.
@@ -135,7 +135,7 @@ These are candidates, not a requirement to build all of them. Keep the initial f
 
 ## Technology and personalization
 
-Material UI is installed as the UI kit, with its Next.js App Router integration and a shared theme using the existing Geist font. Light/dark mode defaults to the system preference; a top-right button allows switching modes and persists the selection locally. No custom visual theme has been chosen yet. The standard Material UI Table is the current table candidate; no separate table engine or telemetry transport has been selected.
+Material UI is installed as the UI kit, with its Next.js App Router integration and a shared theme using the existing Geist font. Light/dark mode defaults to the system preference; a top-right button allows switching modes and persists the selection locally. No custom visual theme has been chosen yet. The standard Material UI Table is the current table candidate; no separate table engine has been selected. Live updates use HTTP polling.
 
 Possible personalization includes visible columns, row density, page size, and saved filters/sorting. This is optional scope. An arbitrary dashboard builder is not part of the current plan.
 
@@ -147,3 +147,13 @@ Possible personalization includes visible columns, row density, page size, and s
 - [AG Grid accessibility guidance](https://www.ag-grid.com/react-data-grid/accessibility/) and [W3C table properties](https://www.w3.org/WAI/ARIA/apg/practices/grid-and-table-properties/): rendering and navigation choices need explicit accessibility consideration.
 
 Public competitor screenshots illustrate product patterns. They do not establish the current implementation or exact live-update behaviour of either product.
+
+## Implemented simulation and polling
+
+The separate TypeScript simulator discovers the fleet through a single registry snapshot and sends transactional batches of up to 100 reports. Default behaviour is working/charging with gradual battery and area changes; named scenarios and faults are deferred. No history or command infrastructure is added.
+
+Receipt time determines Online (≤10 seconds), Delayed (>10–15 seconds), Offline (>15 seconds), or Unknown (no report). Observation time determines whether an update is newer; ignored reports do not refresh receipt time. Missing data stays unknown. Connection labels are unverified after interrupted requests or while awaiting refresh after a hidden tab. Intentional interaction pauses freeze the display clock and do not relabel robots. After a dashboard outage, connection states remain last verified rather than implying that individual robots lost contact.
+
+Polling preserves rows, IDs, focus, and scroll during background refresh. Mutations invalidate older requests and refetch the current page and total; page membership may shift. Row menus and dialogs pause polling without inserting a layout-shifting message. Hidden tabs pause, then refresh on return. Background failure preserves last-known values and shows one warning. Live membership for future operational filters remains undecided.
+
+Report age is hidden for Online robots and retained for Delayed/Offline robots. The 10-second Online window tolerates the five-second polling cadence.

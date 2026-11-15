@@ -12,6 +12,7 @@ export type Robot = {
   activity: RobotActivity;
   batteryPercent: number | null;
   lastTelemetryAt: string | null;
+  lastReceivedAt: string | null;
 };
 export type RobotPage = {
   items: Robot[];

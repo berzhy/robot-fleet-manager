@@ -11,6 +11,7 @@ const robot: Robot = {
   activity: "unknown",
   batteryPercent: null,
   lastTelemetryAt: null,
+  lastReceivedAt: null,
   createdAt: "2026-11-14T12:00:00.000Z",
 };
 const page = (items: Robot[], total = items.length, index = 0): RobotPage => ({

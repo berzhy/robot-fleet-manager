@@ -28,12 +28,17 @@ const columns = [
   "Location",
   "Activity",
   "Battery",
+  "Connection",
   "Added",
   "Actions",
 ];
 const rowHeight = 70;
 
 export default function FleetTable({
+  now = 0,
+  verifiedAt = now,
+  unverified = false,
+  onMenuOpenChange,
   state,
   page,
   pageSize,
@@ -45,6 +50,10 @@ export default function FleetTable({
   onAdd,
   adding,
 }: {
+  now?: number;
+  verifiedAt?: number;
+  unverified?: boolean;
+  onMenuOpenChange?: (open: boolean) => void;
   onAdd: (trigger: HTMLButtonElement) => void;
   adding: boolean;
   state: RobotQueryState;
@@ -129,6 +138,10 @@ export default function FleetTable({
               <FleetTableRow
                 key={robot.id}
                 robot={robot}
+                now={now}
+                verifiedAt={verifiedAt}
+                unverified={unverified}
+                onMenuOpenChange={onMenuOpenChange}
                 adding={adding}
                 onDelete={onDelete}
                 rowHeight={rowHeight}

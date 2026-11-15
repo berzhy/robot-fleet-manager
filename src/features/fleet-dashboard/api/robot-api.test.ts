@@ -2,6 +2,7 @@ import { afterEach, expect, test, vi } from "vitest";
 import {
   createRobot,
   getRobots,
+  getRobot,
   deleteRobot as dataDeleteRobot,
 } from "./robot-api";
 afterEach(() => vi.unstubAllGlobals());
@@ -56,6 +57,7 @@ test("creates metadata using POST and requires a 201 response", async () => {
     area: null,
     batteryPercent: null,
     lastTelemetryAt: null,
+    lastReceivedAt: null,
   };
   const fetcher = vi
     .fn()
@@ -69,4 +71,19 @@ test("creates metadata using POST and requires a 201 response", async () => {
     body: JSON.stringify(input),
   });
   await expect(createRobot(input)).rejects.toThrow("Unable to add robot.");
+});
+
+test("detail requests encode IDs, support cancellation, and distinguish deletion from failure", async () => {
+  const fetcher = vi
+    .fn()
+    .mockResolvedValueOnce(new Response(null, { status: 404 }))
+    .mockResolvedValueOnce(new Response(null, { status: 500 }));
+  vi.stubGlobal("fetch", fetcher);
+  const controller = new AbortController();
+  expect(await getRobot("robot/id", controller.signal)).toBeNull();
+  expect(fetcher).toHaveBeenCalledWith("/api/robots/robot%2Fid", {
+    cache: "no-store",
+    signal: controller.signal,
+  });
+  await expect(getRobot("failure")).rejects.toThrow("Unable to refresh robot.");
 });

@@ -12,10 +12,12 @@ import { useId, useState } from "react";
 import type { Robot } from "@/modules/robots/robot";
 
 export default function RobotActions({
+  onOpenChange,
   robot,
   onDelete,
   disabled,
 }: {
+  onOpenChange?: (open: boolean) => void;
   disabled: boolean;
   robot: Robot;
   onDelete: (robot: Robot, trigger: HTMLButtonElement) => void;
@@ -30,7 +32,10 @@ export default function RobotActions({
         aria-haspopup="menu"
         aria-controls={anchor ? id : undefined}
         aria-expanded={anchor ? true : undefined}
-        onClick={(event) => setAnchor(event.currentTarget)}
+        onClick={(event) => {
+          setAnchor(event.currentTarget);
+          onOpenChange?.(true);
+        }}
       >
         <MenuIcon />
       </IconButton>
@@ -38,12 +43,16 @@ export default function RobotActions({
         id={id}
         anchorEl={anchor}
         open={Boolean(anchor)}
-        onClose={() => setAnchor(null)}
+        onClose={() => {
+          setAnchor(null);
+          onOpenChange?.(false);
+        }}
       >
         <MenuItem
           onClick={() => {
             if (anchor) onDelete(robot, anchor);
             setAnchor(null);
+            onOpenChange?.(false);
           }}
         >
           <ListItemIcon>

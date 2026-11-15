@@ -18,6 +18,7 @@ export const latestTelemetry = sqliteTable(
     activity: text("activity").$type<RobotActivity>().notNull(),
     batteryPercent: real("battery_percent"),
     area: text("area"),
+    receivedAt: text("received_at"),
     observedAt: text("observed_at").notNull(),
   },
   (table) => [

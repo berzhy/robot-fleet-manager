@@ -21,6 +21,7 @@ const robot: Robot = {
   activity: "unknown",
   batteryPercent: null,
   lastTelemetryAt: null,
+  lastReceivedAt: null,
   createdAt: "2026-11-14T12:00:00.000Z",
 };
 function response(items: Robot[], total = items.length, page = 0) {
@@ -66,7 +67,9 @@ test("both add buttons share pending state; empty creation reloads and restores 
   await screen.findByRole("link", { name: "New robot" });
   expect(screen.getByText("“New robot” added.")).toBeInTheDocument();
   await waitFor(() =>
-    expect(screen.getByRole("button", { name: "Add robot" })).toHaveFocus(),
+    expect(
+      screen.getAllByRole("button", { name: "Add robot" })[0],
+    ).toHaveFocus(),
   );
   expect(screen.queryByText("No robots available.")).not.toBeInTheDocument();
   expect(
@@ -88,8 +91,9 @@ test.each(["HTTP", "network"])(
       fetcher.mockResolvedValueOnce(new Response(null, { status: 500 }));
     else fetcher.mockRejectedValueOnce(new TypeError("Network failed"));
     fetcher
+      .mockResolvedValueOnce(response([robot]))
       .mockResolvedValueOnce(Response.json(robot, { status: 201 }))
-      .mockResolvedValueOnce(response([robot]));
+      .mockResolvedValue(response([robot]));
     vi.stubGlobal("fetch", fetcher);
     render(<FleetDashboard />);
     await screen.findByRole("link", { name: "New robot" });
@@ -100,10 +104,10 @@ test.each(["HTTP", "network"])(
     );
     expect(screen.getByRole("link", { name: "New robot" })).toBeInTheDocument();
     await waitFor(() => expect(add).toHaveFocus());
-    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(fetcher).toHaveBeenCalledTimes(3);
     fireEvent.click(add);
     await screen.findByText("“New robot” added.");
-    await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(4));
+    await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(5));
   },
 );
 
@@ -161,10 +165,12 @@ test("successful creation followed by failed reload keeps success and restores f
   fireEvent.click(screen.getAllByRole("button", { name: "Add robot" })[1]);
   expect(await screen.findByText("“New robot” added.")).toBeInTheDocument();
   expect(await screen.findByRole("alert")).toHaveTextContent(
-    "Unable to load robots",
+    "Live updates interrupted",
   );
   await waitFor(() =>
-    expect(screen.getByRole("button", { name: "Add robot" })).toHaveFocus(),
+    expect(
+      screen.getAllByRole("button", { name: "Add robot" })[0],
+    ).toHaveFocus(),
   );
 });
 
@@ -225,17 +231,20 @@ test.each([10, 100])(
       await screen.findByText(`${count} robots added.`),
     ).toBeInTheDocument();
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Add robot" })).toHaveFocus(),
+      expect(
+        screen.getAllByRole("button", { name: "Add robot" })[0],
+      ).toHaveFocus(),
     );
     expect(fetcher).toHaveBeenCalledTimes(3);
   },
 );
 
-test("batch failure shows an error without refreshing the existing fleet", async () => {
+test("batch failure preserves rows and resumes fleet updates", async () => {
   const fetcher = vi
     .fn()
     .mockResolvedValueOnce(response([robot]))
-    .mockResolvedValueOnce(new Response(null, { status: 500 }));
+    .mockResolvedValueOnce(new Response(null, { status: 500 }))
+    .mockResolvedValue(response([robot]));
   vi.stubGlobal("fetch", fetcher);
   render(<FleetDashboard />);
   await screen.findByRole("link", { name: "New robot" });
@@ -249,6 +258,6 @@ test("batch failure shows an error without refreshing the existing fleet", async
     "Unable to add robots. Please try again.",
   );
   expect(screen.getByRole("link", { name: "New robot" })).toBeInTheDocument();
-  expect(fetcher).toHaveBeenCalledTimes(2);
+  expect(fetcher).toHaveBeenCalledTimes(3);
   await waitFor(() => expect(more).toHaveFocus());
 });

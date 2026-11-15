@@ -14,12 +14,12 @@ import { createRobot, createRobots, deleteRobot } from "./api/robot-api";
 import AddRobotSplitButton from "./fleet-table/add-robot-split-button";
 import DeleteRobotDialog from "./fleet-table/delete-robot-dialog";
 import FleetTable from "./fleet-table/fleet-table";
+import useReportClock from "./hooks/use-report-clock";
 import useRobots from "./hooks/use-robots";
 import { generateRobotInput } from "./utils/generate-robot-input";
 
 export default function FleetDashboard() {
-  const { state, total, page, pageSize, setPage, setPageSize, reload } =
-    useRobots();
+  const [menuOpen, setMenuOpen] = useState(false);
   const addButtonRef = useRef<HTMLButtonElement>(null);
   const addFocusRef = useRef<HTMLElement | null>(null);
   const [adding, setAdding] = useState(false);
@@ -31,6 +31,21 @@ export default function FleetDashboard() {
     open: boolean;
   } | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const paused = adding || deleting || menuOpen || Boolean(deleteTarget);
+  const now = useReportClock(paused);
+  const {
+    state,
+    total,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    reload,
+    invalidate,
+    interrupted,
+    unverified,
+    verifiedAt,
+  } = useRobots(paused);
   const [notification, setNotification] = useState<{
     severity: "success" | "error";
     message: string;
@@ -46,6 +61,7 @@ export default function FleetDashboard() {
   async function addRobot(trigger: HTMLButtonElement, count: 1 | 10 | 100 = 1) {
     if (inFlightRef.current || deleteTarget || state.status === "loading")
       return;
+    invalidate();
     inFlightRef.current = true;
     setAdding(true);
     setNotification(null);
@@ -82,6 +98,7 @@ export default function FleetDashboard() {
 
   function requestDelete(robot: Robot, trigger: HTMLButtonElement) {
     if (inFlightRef.current) return;
+    invalidate();
     setNotification(null);
     returnFocusRef.current = trigger;
     setDeleteTarget({ robot, open: true });
@@ -95,6 +112,7 @@ export default function FleetDashboard() {
   async function confirmDelete() {
     if (!deleteTarget?.open || inFlightRef.current) return;
     setNotification(null);
+    invalidate();
     inFlightRef.current = true;
     setDeleting(true);
     try {
@@ -191,7 +209,17 @@ export default function FleetDashboard() {
       >
         {state.status === "loading" ? "Loading robots" : ""}
       </Box>
+      {interrupted && state.status === "success" && (
+        <Alert severity="warning">
+          Live updates interrupted. Showing last-known data and connection
+          states.
+        </Alert>
+      )}
       <FleetTable
+        now={now}
+        verifiedAt={verifiedAt}
+        unverified={unverified}
+        onMenuOpenChange={setMenuOpen}
         state={state}
         total={total}
         page={page}

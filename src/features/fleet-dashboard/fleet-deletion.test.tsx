@@ -21,6 +21,7 @@ const robot: Robot = {
   activity: "unknown",
   batteryPercent: null,
   lastTelemetryAt: null,
+  lastReceivedAt: null,
   createdAt: "2026-11-14T12:00:00.000Z",
 };
 function response(items: Robot[], total = items.length, page = 0) {
@@ -64,7 +65,11 @@ test("menu targets the robot, cancellation sends no DELETE and restores focus", 
   expect(
     screen.getByRole("button", { name: "Actions for Atlas" }),
   ).toHaveFocus();
-  expect(fetcher).toHaveBeenCalledTimes(1);
+  expect(
+    fetcher.mock.calls.filter(
+      (call: unknown[]) => (call[1] as RequestInit)?.method === "DELETE",
+    ),
+  ).toHaveLength(0);
 });
 
 test("pending deletion blocks duplicate submission and dismissal; failure permits retry", async () => {
@@ -148,7 +153,7 @@ test("successful deletion stays successful when the table refresh fails", async 
   fireEvent.click(within(dialog).getByRole("button", { name: "Delete" }));
   expect(await screen.findByText("“Atlas” deleted.")).toBeInTheDocument();
   expect(await screen.findByRole("alert")).toHaveTextContent(
-    "Unable to load robots",
+    "Live updates interrupted",
   );
   await waitFor(() =>
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),

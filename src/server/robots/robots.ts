@@ -26,6 +26,7 @@ const selection = {
     Robot["activity"]
   >`coalesce(${latestTelemetry.activity}, 'unknown')`,
   batteryPercent: latestTelemetry.batteryPercent,
+  lastReceivedAt: latestTelemetry.receivedAt,
   lastTelemetryAt: latestTelemetry.observedAt,
 };
 export function listRobots(
@@ -77,10 +78,24 @@ export function createRobots(
       area: null,
       batteryPercent: null,
       lastTelemetryAt: null,
+      lastReceivedAt: null,
     }));
   });
 }
 
 export function deleteRobot(db: FleetDatabase, id: string) {
   return db.delete(robots).where(eq(robots.id, id)).run().changes > 0;
+}
+
+export function robotRegistry(db: FleetDatabase): Robot[] {
+  return db
+    .select(selection)
+    .from(robots)
+    .leftJoin(latestTelemetry, eq(robots.id, latestTelemetry.robotId))
+    .all();
+}
+
+export function getRobotSnapshot(db: FleetDatabase, id: string) {
+  const robot = getRobot(db, id);
+  return robot ? { robot, verifiedAt: Date.now() } : undefined;
 }

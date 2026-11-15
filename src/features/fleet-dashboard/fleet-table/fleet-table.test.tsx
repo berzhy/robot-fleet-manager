@@ -13,6 +13,7 @@ const robot: Robot = {
   activity: "charging",
   batteryPercent: null,
   lastTelemetryAt: null,
+  lastReceivedAt: null,
   createdAt: "2026-11-14T12:00:00.000Z",
 };
 
@@ -36,7 +37,7 @@ test("table renders the supplied server page without slicing or sorting", () => 
   expect(screen.getByText("21–21 of 21")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Go to previous page" }));
   expect(onPageChange).toHaveBeenCalledWith(0);
-  expect(screen.getByRole("cell", { name: "Unknown" })).toBeInTheDocument();
+  expect(screen.getAllByRole("cell", { name: "Unknown" })).toHaveLength(2);
 });
 
 test("robot names are plain text with one accessible navigation link per row", () => {
