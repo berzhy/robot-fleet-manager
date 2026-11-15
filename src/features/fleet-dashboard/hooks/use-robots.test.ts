@@ -1,39 +1,47 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
-
-import * as data from "../api/robot-query";
-import type { Robot } from "../types/robot";
+import type { RobotPage } from "@/modules/robots/robot";
+import { getRobots } from "../api/robot-api";
 import useRobots from "./use-robots";
-
-afterEach(() => vi.restoreAllMocks());
-
-test("late responses cannot overwrite a newly selected scenario", async () => {
-  let resolveOld: (robots: Robot[]) => void = () => {};
-  const oldRequest = new Promise<Robot[]>((resolve) => {
-    resolveOld = resolve;
-  });
-  vi.spyOn(data, "getRobots")
-    .mockReturnValueOnce(oldRequest)
-    .mockResolvedValueOnce([]);
+vi.mock("../api/robot-api");
+afterEach(() => vi.resetAllMocks());
+test("aborts old requests and ignores their late responses", async () => {
+  let resolveOld!: (page: RobotPage) => void;
+  vi.mocked(getRobots)
+    .mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveOld = resolve;
+      }),
+    )
+    .mockResolvedValueOnce({ items: [], total: 0, page: 1, pageSize: 20 });
   const { result } = renderHook(() => useRobots());
-  expect(result.current.state.status).toBe("loading");
-  act(() => result.current.setScenario("empty"));
-  await waitFor(() =>
-    expect(result.current.state).toEqual({ status: "success", robots: [] }),
-  );
+  const signal = vi.mocked(getRobots).mock.calls[0][2];
+  act(() => result.current.setPage(1));
+  expect(signal?.aborted).toBe(true);
+  await waitFor(() => expect(result.current.state.status).toBe("success"));
   await act(async () => {
-    resolveOld([
-      {
-        id: "old",
-        name: "Old robot",
-        manufacturer: "Test",
-        site: "Munich",
-        area: null,
-        activity: "idle",
-        batteryPercent: 50,
-      },
-    ]);
-    await oldRequest;
+    resolveOld({ items: [], total: 100, page: 0, pageSize: 20 });
+    await Promise.resolve();
   });
-  expect(result.current.state).toEqual({ status: "success", robots: [] });
+  expect(result.current.total).toBe(0);
+  expect(result.current.page).toBe(0);
+});
+
+test("page size changes cancel old requests and reload preserves the selection", async () => {
+  vi.mocked(getRobots).mockResolvedValue({
+    items: [],
+    total: 0,
+    page: 0,
+    pageSize: 10,
+  });
+  const { result } = renderHook(() => useRobots());
+  await waitFor(() => expect(result.current.state.status).toBe("success"));
+  const oldSignal = vi.mocked(getRobots).mock.calls[0][2];
+  act(() => result.current.setPageSize(10));
+  await waitFor(() => expect(result.current.state.status).toBe("success"));
+  expect(oldSignal?.aborted).toBe(true);
+  expect(result.current.pageSize).toBe(10);
+  act(() => result.current.reload());
+  await waitFor(() => expect(result.current.state.status).toBe("success"));
+  expect(getRobots).toHaveBeenLastCalledWith(0, 10, expect.any(AbortSignal));
 });

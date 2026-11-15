@@ -1,4 +1,5 @@
 "use client";
+import AddIcon from "@mui/icons-material/Add";
 import ErrorOutlinedIcon from "@mui/icons-material/ErrorOutlined";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -8,7 +9,13 @@ import Image from "next/image";
 
 import fleetEmpty from "@/assets/fleet-empty.png";
 
-export function FleetTableEmptyState() {
+export function FleetTableEmptyState({
+  onAdd,
+  adding,
+}: {
+  onAdd: (trigger: HTMLButtonElement) => void;
+  adding: boolean;
+}) {
   return (
     <Stack
       spacing={2}
@@ -39,6 +46,14 @@ export function FleetTableEmptyState() {
         ]}
       />
       <Typography role="status">No robots available.</Typography>
+      <Button
+        variant="text"
+        startIcon={<AddIcon />}
+        loading={adding}
+        onClick={(event) => onAdd(event.currentTarget)}
+      >
+        Add robot
+      </Button>
     </Stack>
   );
 }

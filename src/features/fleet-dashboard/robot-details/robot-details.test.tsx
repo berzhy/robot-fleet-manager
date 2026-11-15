@@ -1,7 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import { expect, test } from "vitest";
 
-import type { Robot } from "@/features/fleet-dashboard/types/robot";
+import type { Robot } from "@/modules/robots/robot";
 import RobotDetails from "@/features/fleet-dashboard/robot-details/robot-details";
 
 const robot: Robot = {
@@ -12,6 +12,8 @@ const robot: Robot = {
   area: null,
   activity: "charging",
   batteryPercent: null,
+  lastTelemetryAt: null,
+  createdAt: "2026-11-14T12:00:00.000Z",
 };
 
 test("details show fields, missing values, and breadcrumbs", () => {

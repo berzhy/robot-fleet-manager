@@ -1,6 +1,6 @@
 # Fleet manager decisions
 
-Updated: 2026-11-13
+Updated: 2026-11-14
 
 This records the working direction from our discussion. Proposals and open questions are called out below; they are not implementation commitments.
 
@@ -8,13 +8,15 @@ This records the working direction from our discussion. Proposals and open quest
 
 ### Implemented first slice
 
-The dashboard starts with ten fixed fictional robots and a standard MUI table: Robot, Manufacturer, Location, Activity, and Battery. Charging is an activity; there is no separate charging flag. Missing battery and area values remain unknown. Connection freshness and attention rules are deferred.
+The dashboard uses a real Next.js API and SQLite database with Drizzle migrations. The standard MUI table shows Robot, Manufacturer, Location, Activity, Battery, and Added, followed by Actions. Charging is an activity; there is no separate charging flag. Missing telemetry is unknown. Connection freshness and attention rules are deferred.
 
-Pagination is fixed at 20 rows per page. Results are sorted by name, with ID breaking ties, before pagination. The mock query takes 1.5 seconds. A visible Demo state selector chooses Success, Empty, or Error; Reload repeats the query, and the error state provides Retry. The Error scenario deliberately continues failing until another scenario is selected. There is no backend or live telemetry yet.
+Pagination defaults to 20 rows per page, with 10, 20, and 100 available through MUI TablePagination. Changing page size resets to page one. Results are ordered server-side by creation time descending, then ID descending. Count and rows share a database snapshot. Automatic refresh after addition or deletion preserves the page; out-of-range pages are corrected without showing the empty-fleet state. There is no manual Refresh button. Runtime fixtures, demo controls, and artificial delays have been removed.
 
-Robot details reuse the fixtures and show only basic fields and a breadcrumb back to the dashboard. Unknown IDs show a not-found state. The broader direction and open questions below remain future work.
+Robot details read the same persisted records and retain breadcrumbs and not-found handling. Create and permanent delete endpoints exist. The fleet table offers deletion through a stacked-lines Actions menu and confirmation dialog; creation uses an outlined Add robot split button with a plain plus icon: the main action adds one, while the dropdown immediately adds 10 or 100. The empty-state text button adds one. Bulk additions use a single API request and transaction, with one notification and reload; a failed batch writes nothing. A creation form is deferred. Addition and deletion notifications report only mutation outcomes, while refresh failures use the existing table error state. New robots receive metadata only. A new database starts empty and is populated through the Add robot actions. Runtime seed/reset scripts have been removed; telemetry fixtures remain local to tests.
 
-Source is organized under `src/`, with thin Next.js route adapters, a separate application shell and theme, and a `features/fleet-dashboard` feature. Feature UI is grouped by composed component, with API access, hooks, types, and utilities in dedicated local folders. Tests stay beside the code they exercise. See the README for the directory structure and future feature placement.
+Thin routes remain in `src/app`, UI under `features/fleet-dashboard`, shared robot contracts under `modules/robots`, and backend operations under `server/robots`. Operations accept a connection and remain independent of Next rendering APIs. The database connection is lazy; synchronous reads are excluded from prerendering in the Next adapters. See README for setup and API usage.
+
+This slice targets local development or one Node server with persistent disk. There is no authentication or automatic polling. Metadata and latest telemetry are separate tables; telemetry history, ingestion, simulation, and commands remain future work. A future simulator will be a separate producer, not an interval embedded in an HTTP request. Commands should represent requests and acknowledgments rather than directly setting observed activity.
 
 Build a focused fleet operations interface for robots deployed across sites. The operator should be able to answer:
 
@@ -25,7 +27,7 @@ Build a focused fleet operations interface for robots deployed across sites. The
 
 Start with a fleet table, summary filters above it, and a detail view for one robot. Stable metadata and live telemetry belong together in the same robot row. We do not currently need separate tables for each.
 
-The assignment allows a frontend implementation with a mocked backend. Whether we also build a server or a separate simulator remains open.
+The assignment allows a frontend implementation with a mocked backend. A server is now implemented; a separate simulator is deferred.
 
 ## Fleet table fields
 
@@ -85,9 +87,9 @@ Use roughly one second as the initial display-update target, matching the assign
 - Keep robot identity stable by ID across updates and navigation.
 - Keep an opened robot detail attached to its ID if its table position or filter membership changes.
 
-The working sorting proposal is alphabetical robot name, with robot ID breaking ties. An explicit default is more predictable than relying on arrival order or server return order.
+The current order is newest-added first, using the server-created timestamp and ID descending as a deterministic tie-breaker. User-selectable sorting is deferred.
 
-Initially, sorting can be limited to stable metadata such as name, assigned site, and type. Sorting by battery, activity, connection, attention, or current area is not currently planned. Filters provide access to these operational subsets, but filtering and prioritizing by sort order are different capabilities.
+In future, sorting can be limited to stable metadata such as name, assigned site, and type. Sorting by battery, activity, connection, attention, or current area is not currently planned. Filters provide access to these operational subsets, but filtering and prioritizing by sort order are different capabilities.
 
 ### Deferred: live result membership
 
@@ -101,7 +103,7 @@ Do not implement automatic removal, a no-longer-matches row, or an Update result
 
 ## Navigation and scale
 
-Pagination is the current recommendation, not a confirmed choice. A proposed default is 25 rows, with 50 and 100 as options. A finite scrolling table with virtualization remains an alternative. Endless automatic loading is not the preferred starting direction.
+Pagination is implemented with a default page size of 20 and options for 10, 20, and 100. Virtualization remains an option if larger page sizes become necessary.
 
 Pagination controls navigation. Virtualization controls how many rows are rendered. They can coexist, and neither solves changing filter membership or live reordering.
 

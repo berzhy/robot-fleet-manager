@@ -1,7 +1,9 @@
 "use client";
 
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
+import Stack from "@mui/material/Stack";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -11,7 +13,8 @@ import TablePagination from "@mui/material/TablePagination";
 import TableRow from "@mui/material/TableRow";
 import { useRef } from "react";
 
-import type { RobotQueryState } from "../types/robot";
+import { robotPageSizes, type Robot } from "@/modules/robots/robot";
+import type { RobotQueryState } from "../types/robot-query-state";
 import FleetTableRow from "./fleet-table-row";
 import FleetTableSkeleton from "./fleet-table-skeleton";
 import {
@@ -19,29 +22,43 @@ import {
   FleetTableErrorState,
 } from "./fleet-table-states";
 
-const columns = ["Robot", "Manufacturer", "Location", "Activity", "Battery"];
-const pageSize = 20;
+const columns = [
+  "Robot",
+  "Manufacturer",
+  "Location",
+  "Activity",
+  "Battery",
+  "Added",
+  "Actions",
+];
 const rowHeight = 70;
 
 export default function FleetTable({
   state,
   page,
+  pageSize,
+  onPageSizeChange,
+  total,
   onPageChange,
   onRetry,
+  onDelete,
+  onAdd,
+  adding,
 }: {
+  onAdd: (trigger: HTMLButtonElement) => void;
+  adding: boolean;
   state: RobotQueryState;
   page: number;
+  pageSize: number;
+  onPageSizeChange: (pageSize: number) => void;
+  total: number;
   onPageChange: (page: number) => void;
   onRetry: () => void;
+  onDelete: (robot: Robot, trigger: HTMLButtonElement) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLTableSectionElement>(null);
-  const sorted =
-    state.status === "success"
-      ? [...state.robots].sort(
-          (a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id),
-        )
-      : [];
+  const items = state.status === "success" ? state.robots : [];
   return (
     <Paper
       elevation={2}
@@ -76,8 +93,25 @@ export default function FleetTable({
           <TableHead ref={headerRef}>
             <TableRow>
               {columns.map((column) => (
-                <TableCell key={column} scope="col">
-                  {column}
+                <TableCell
+                  key={column}
+                  scope="col"
+                  aria-sort={column === "Added" ? "descending" : undefined}
+                  align={column === "Actions" ? "right" : "left"}
+                >
+                  {column === "Added" ? (
+                    <Stack
+                      component="span"
+                      direction="row"
+                      spacing={0.5}
+                      sx={{ alignItems: "center" }}
+                    >
+                      <span>{column}</span>
+                      <ArrowDownwardIcon fontSize="small" color="action" />
+                    </Stack>
+                  ) : (
+                    column
+                  )}
                 </TableCell>
               ))}
             </TableRow>
@@ -91,30 +125,34 @@ export default function FleetTable({
                 rowHeight={rowHeight}
               />
             )}
-            {sorted
-              .slice(page * pageSize, (page + 1) * pageSize)
-              .map((robot) => (
-                <FleetTableRow
-                  key={robot.id}
-                  robot={robot}
-                  rowHeight={rowHeight}
-                />
-              ))}
+            {items.map((robot) => (
+              <FleetTableRow
+                key={robot.id}
+                robot={robot}
+                adding={adding}
+                onDelete={onDelete}
+                rowHeight={rowHeight}
+              />
+            ))}
           </TableBody>
         </Table>
-        {state.status === "success" && sorted.length === 0 && (
-          <FleetTableEmptyState />
+        {state.status === "success" && total === 0 && (
+          <FleetTableEmptyState onAdd={onAdd} adding={adding} />
         )}
         {state.status === "error" && <FleetTableErrorState onRetry={onRetry} />}
       </TableContainer>
       <Box sx={{ minHeight: 52, flexShrink: 0, bgcolor: "background.default" }}>
-        {sorted.length > 0 && (
+        {total > 0 && (
           <TablePagination
             component="div"
-            count={sorted.length}
+            count={total}
             page={page}
             rowsPerPage={pageSize}
-            rowsPerPageOptions={[]}
+            rowsPerPageOptions={robotPageSizes}
+            onRowsPerPageChange={(event) =>
+              onPageSizeChange(Number(event.target.value))
+            }
+            disabled={adding || state.status !== "success"}
             slotProps={{
               spacer: { sx: { display: "none" } },
               toolbar: {

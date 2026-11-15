@@ -7,7 +7,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 
-import type { Robot } from "../types/robot";
+import type { Robot } from "@/modules/robots/robot";
 import { formatActivity, formatBattery } from "../utils/robot-formatters";
 
 export default function RobotDetails({ robot }: { robot: Robot }) {

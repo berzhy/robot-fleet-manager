@@ -1,109 +1,119 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
-
-import type { Robot } from "@/features/fleet-dashboard/types/robot";
+import type { Robot, RobotPage } from "@/modules/robots/robot";
 import FleetDashboard from "./fleet-dashboard";
-import * as data from "./api/robot-query";
-
 const robot: Robot = {
-  id: "test",
-  name: "Test robot",
-  manufacturer: "Test manufacturer",
+  id: "one",
+  name: "Atlas",
+  manufacturer: "Maker",
   site: "Munich",
   area: null,
-  activity: "charging",
+  activity: "unknown",
   batteryPercent: null,
+  lastTelemetryAt: null,
+  createdAt: "2026-11-14T12:00:00.000Z",
 };
-afterEach(() => {
-  vi.useRealTimers();
-  vi.restoreAllMocks();
+const page = (items: Robot[], total = items.length, index = 0): RobotPage => ({
+  items,
+  total,
+  page: index,
+  pageSize: 20,
 });
-async function finishQuery() {
-  await act(() => vi.advanceTimersByTimeAsync(1500));
-}
-function selectScenario(name: string) {
-  fireEvent.mouseDown(screen.getByRole("combobox", { name: "Demo state" }));
-  fireEvent.click(screen.getByRole("option", { name }));
-}
-
-test("dashboard loads ten robots and reloads", async () => {
-  vi.useFakeTimers();
+afterEach(() => vi.unstubAllGlobals());
+test("loads real API data with accessible loading status", async () => {
+  let resolve!: (response: Response) => void;
+  const fetcher = vi.fn().mockReturnValueOnce(
+    new Promise((r) => {
+      resolve = r;
+    }),
+  );
+  vi.stubGlobal("fetch", fetcher);
   render(<FleetDashboard />);
-  expect(
-    screen.getByRole("heading", { level: 1, name: "Fleet dashboard" }),
-  ).toBeInTheDocument();
-  const loadingStatus = screen.getByRole("status", {
-    name: "Fleet loading status",
-  });
-  expect(loadingStatus).toHaveTextContent("Loading robots");
-  const busyRegion = screen.getByRole("table").closest("[aria-busy]");
-  expect(busyRegion).toHaveAttribute("aria-busy", "true");
-  expect(busyRegion).not.toContainElement(loadingStatus);
-  expect(screen.getByRole("button", { name: "Reload" })).toBeDisabled();
-  await finishQuery();
-  expect(screen.getAllByRole("row")).toHaveLength(11);
-  expect(screen.getByRole("link", { name: "Atlas" })).toHaveAttribute(
+  const status = screen.getByRole("status", { name: "Fleet loading status" });
+  expect(status).toHaveTextContent("Loading robots");
+  expect(screen.getByRole("table").closest("[aria-busy]")).not.toContainElement(
+    status,
+  );
+  act(() => resolve(Response.json(page([robot]))));
+  expect(await screen.findByRole("link", { name: "Atlas" })).toHaveAttribute(
     "href",
-    "/robots/robot-01",
+    "/robots/one",
   );
   expect(
-    screen.getByRole("button", { name: "Go to next page" }),
-  ).toBeDisabled();
-  expect(loadingStatus).toHaveTextContent("");
-  fireEvent.click(screen.getByRole("button", { name: "Reload" }));
-  expect(screen.getByRole("status", { name: "Fleet loading status" })).toBe(
-    loadingStatus,
-  );
-  expect(loadingStatus).toHaveTextContent("Loading robots");
-  await finishQuery();
-  expect(screen.getByRole("link", { name: "Atlas" })).toBeInTheDocument();
-});
-
-test("selector exposes empty, error, retry, and recovery", async () => {
-  vi.useFakeTimers();
-  render(<FleetDashboard />);
-  selectScenario("Empty");
-  await finishQuery();
-  expect(screen.getByText("No robots available.")).toBeInTheDocument();
-  expect(
-    screen.queryByRole("button", { name: "Go to next page" }),
+    screen.queryByRole("button", { name: "Refresh" }),
   ).not.toBeInTheDocument();
-  selectScenario("Error");
-  expect(
-    screen.getByRole("status", { name: "Fleet loading status" }),
-  ).toBeInTheDocument();
-  await finishQuery();
-  expect(screen.getByRole("alert")).toHaveTextContent("Unable to load robots.");
+  expect(fetcher).toHaveBeenCalledTimes(1);
+});
+test("handles HTTP failure, retry, and empty fleet without demo controls", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 500 }))
+      .mockResolvedValueOnce(Response.json(page([]))),
+  );
+  render(<FleetDashboard />);
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Unable to load robots",
+  );
   fireEvent.click(screen.getByRole("button", { name: "Retry" }));
-  expect(
-    screen.getByRole("status", { name: "Fleet loading status" }),
-  ).toBeInTheDocument();
-  await finishQuery();
-  expect(screen.getByRole("alert")).toBeInTheDocument();
-  selectScenario("Success");
-  await finishQuery();
-  expect(screen.getByRole("link", { name: "Atlas" })).toBeInTheDocument();
+  expect(await screen.findByText("No robots available.")).toBeInTheDocument();
+});
+test("requests pages and keeps the pager mounted while loading", async () => {
+  const rows = Array.from({ length: 20 }, (_, i) => ({
+    ...robot,
+    id: String(i),
+    name: `Robot ${i}`,
+  }));
+  let resolve!: (response: Response) => void;
+  const fetcher = vi
+    .fn()
+    .mockResolvedValueOnce(Response.json(page(rows, 21)))
+    .mockReturnValueOnce(
+      new Promise((r) => {
+        resolve = r;
+      }),
+    );
+  vi.stubGlobal("fetch", fetcher);
+  render(<FleetDashboard />);
+  await screen.findByRole("link", { name: "Robot 0" });
+  const next = screen.getByRole("button", { name: "Go to next page" });
+  fireEvent.click(next);
+  expect(next).toBeInTheDocument();
+  expect(next).toBeDisabled();
+  act(() =>
+    resolve(Response.json(page([{ ...robot, name: "Last robot" }], 21, 1))),
+  );
+  await screen.findByRole("link", { name: "Last robot" });
+  expect(fetcher).toHaveBeenNthCalledWith(
+    2,
+    "/api/robots?page=1&pageSize=20",
+    expect.objectContaining({ cache: "no-store" }),
+  );
 });
 
-test("changing demo state resets pagination to the first page", async () => {
-  const robots = Array.from({ length: 21 }, (_, i) => ({
-    ...robot,
-    id: `robot-${i}`,
-    name: `Robot ${String(i).padStart(2, "0")}`,
-  }));
-  vi.spyOn(data, "getRobots")
-    .mockResolvedValueOnce(robots)
-    .mockResolvedValueOnce([])
-    .mockResolvedValueOnce(robots);
+test("changing rows per page resets to the first page and requests the selected size", async () => {
+  const fetcher = vi
+    .fn()
+    .mockResolvedValueOnce(Response.json(page([robot], 21)))
+    .mockResolvedValueOnce(Response.json(page([robot], 21, 1)))
+    .mockResolvedValueOnce(
+      Response.json({ items: [robot], total: 21, page: 0, pageSize: 10 }),
+    );
+  vi.stubGlobal("fetch", fetcher);
   render(<FleetDashboard />);
-  await screen.findByRole("link", { name: "Robot 00" });
+  await screen.findByRole("link", { name: "Atlas" });
   fireEvent.click(screen.getByRole("button", { name: "Go to next page" }));
-  expect(screen.getByText("21–21 of 21")).toBeInTheDocument();
-  selectScenario("Empty");
-  await screen.findByText("No robots available.");
-  selectScenario("Success");
-  await screen.findByRole("link", { name: "Robot 00" });
-  expect(screen.getByText("1–20 of 21")).toBeInTheDocument();
+  await screen.findByText("21–21 of 21");
+  await screen.findByRole("link", { name: "Atlas" });
+  fireEvent.mouseDown(screen.getByRole("combobox", { name: /Rows per page/ }));
+  fireEvent.click(screen.getByRole("option", { name: "10" }));
+  await screen.findByText("1–10 of 21");
+  expect(fetcher).toHaveBeenNthCalledWith(
+    3,
+    "/api/robots?page=0&pageSize=10",
+    expect.anything(),
+  );
   expect(
     screen.getByRole("button", { name: "Go to previous page" }),
   ).toBeDisabled();
