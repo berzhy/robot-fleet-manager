@@ -37,6 +37,8 @@ Name, manufacturer, and site are trimmed, required, and limited to 100 character
 
 Run `npm test` for browser component tests and Node database/API tests. Database tests use isolated temporary files and real migrations. Run `npm run build`, `npm run lint`, `npm run format:check`, and `npm run knip` for the remaining checks.
 
+Run `npm run test:e2e` for the Playwright browser journey. Local runs open the installed Google Chrome; CI runs headless with Playwright's Chromium (`npx playwright install --with-deps chromium`). The tests start their own server on port 3100 with a temporary database and send deterministic telemetry through the API. The development server and simulator on port 3000 can stay running. Use `npm run test:e2e -- --repeat-each=2` to check repeated runs.
+
 ## Project organization
 
 Application code lives under `src/`, while configuration remains at the project root:
