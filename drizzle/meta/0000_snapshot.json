@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "774009c6-700c-4a15-88d2-a0c031fe2e7d",
+  "id": "ff3933d3-334f-4c1d-84ed-a9849a485778",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "latest_telemetry": {
@@ -30,6 +30,13 @@
         },
         "area": {
           "name": "area",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "received_at": {
+          "name": "received_at",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -92,6 +99,20 @@
           "notNull": true,
           "autoincrement": false
         },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "integration_type": {
+          "name": "integration_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
         "site": {
           "name": "site",
           "type": "text",
@@ -111,7 +132,16 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraints": {
+        "integration_type_value": {
+          "name": "integration_type_value",
+          "value": "\"robots\".\"integration_type\" in ('ros2', 'vda5050', 'vendor-api')"
+        },
+        "robot_type_value": {
+          "name": "robot_type_value",
+          "value": "\"robots\".\"type\" in ('cleaning', 'security', 'delivery', 'inspection')"
+        }
+      }
     }
   },
   "views": {},

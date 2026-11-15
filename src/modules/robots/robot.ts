@@ -1,3 +1,13 @@
+export const robotTypes = [
+  "cleaning",
+  "security",
+  "delivery",
+  "inspection",
+] as const;
+type RobotType = (typeof robotTypes)[number];
+
+export const integrationTypes = ["ros2", "vda5050", "vendor-api"] as const;
+
 export const robotPageSize = 20;
 export const robotPageSizes = [10, 20, 100] as const;
 export type RobotActivity =
@@ -7,6 +17,8 @@ export type Robot = {
   name: string;
   createdAt: string;
   manufacturer: string;
+  type: RobotType;
+  integrationType: (typeof integrationTypes)[number];
   site: string;
   area: string | null;
   activity: RobotActivity;

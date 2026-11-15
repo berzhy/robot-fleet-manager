@@ -1,6 +1,5 @@
 import { afterAll, afterEach, beforeEach, expect, test, vi } from "vitest";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
-import { readFileSync } from "node:fs";
 import { openDatabase } from "../db/database";
 import { createRobot, deleteRobot, getRobot } from "../robots/robots";
 import { robotHandlers } from "../robots/robot-handlers";
@@ -9,7 +8,13 @@ import { ingestTelemetry } from "./telemetry";
 import { telemetryBatchSchema } from "@/modules/telemetry/telemetry";
 const db = openDatabase(":memory:");
 afterAll(() => db.$client.close());
-const input = { name: "Test", manufacturer: "Maker", site: "Munich" };
+const input = {
+  name: "Test",
+  manufacturer: "Maker",
+  type: "inspection" as const,
+  integrationType: "vendor-api" as const,
+  site: "Munich",
+};
 const observedAt = "2026-01-01T00:00:00.000Z";
 let id: string;
 beforeEach(() => {
@@ -114,28 +119,4 @@ test("a database error rolls back the complete batch", async () => {
       .status,
   ).toBe(500);
   expect(getRobot(db, id)?.lastReceivedAt).toBeNull();
-});
-test("receipt migration preserves old timestamps in populated databases", () => {
-  const legacy = openDatabase(":memory:");
-  try {
-    legacy.$client.exec(
-      readFileSync("drizzle/0000_public_genesis.sql", "utf8"),
-    );
-    legacy.$client
-      .prepare("INSERT INTO robots VALUES (?, ?, ?, ?, ?)")
-      .run("legacy", "Name", "Maker", "Site", observedAt);
-    legacy.$client
-      .prepare(
-        "INSERT INTO latest_telemetry (robot_id, activity, battery_percent, area, observed_at) VALUES (?, ?, ?, ?, ?)",
-      )
-      .run("legacy", "working", 50, "Lobby", observedAt);
-    legacy.$client.exec(
-      readFileSync("drizzle/0001_gray_frightful_four.sql", "utf8"),
-    );
-    expect(
-      legacy.$client.prepare("SELECT received_at FROM latest_telemetry").get(),
-    ).toEqual({ received_at: observedAt });
-  } finally {
-    legacy.$client.close();
-  }
 });

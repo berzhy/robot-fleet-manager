@@ -5,6 +5,8 @@ const robot: Robot = {
   id: "one",
   name: "Test",
   manufacturer: "Maker",
+  type: "inspection" as const,
+  integrationType: "vendor-api" as const,
   site: "Site",
   createdAt: "2026-01-01T00:00:00.000Z",
   lastTelemetryAt: null,

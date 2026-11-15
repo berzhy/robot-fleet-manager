@@ -8,7 +8,7 @@ This records the working direction from our discussion. Proposals and open quest
 
 ### Implemented first slice
 
-The dashboard uses a real Next.js API and SQLite database with Drizzle migrations. The standard MUI table shows Robot, Manufacturer, Location, Activity, Battery, and Added, followed by Actions. Charging is an activity; there is no separate charging flag. Missing telemetry is unknown. Connection freshness is derived from server receipt time; attention rules are deferred.
+The dashboard uses a real Next.js API and SQLite database with Drizzle migrations. The standard MUI table shows Robot (name with manufacturer beneath), Type, Integration, Location, Activity, Battery, Connection, and Added, followed by Actions. Charging is an activity; there is no separate charging flag. Missing telemetry is unknown. Connection freshness is derived from server receipt time; attention rules are deferred.
 
 Pagination defaults to 20 rows per page, with 10, 20, and 100 available through MUI TablePagination. Changing page size resets to page one. Results are ordered server-side by creation time descending, then ID descending. Count and rows share a database snapshot. Automatic refresh after addition or deletion preserves the page; out-of-range pages are corrected without showing the empty-fleet state. There is no manual Refresh button. Runtime fixtures, demo controls, and artificial delays have been removed.
 
@@ -35,12 +35,17 @@ These are the starting fields, not a final data schema.
 
 | Field      | Contents                                                                             | Expected changes                                                             |
 | ---------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
-| Robot      | Recognizable name, with ID and robot type as secondary information                   | Rarely                                                                       |
+| Robot      | Recognizable name, with manufacturer as secondary information                        | Rarely                                                                       |
+| Type       | Cleaning robot, Security robot, Delivery robot, or Inspection robot                  | Rarely                                                                       |
 | Location   | Assigned site, plus observed floor or area when available                            | Site changes rarely; observed area changes when the robot crosses a boundary |
 | Activity   | Working, idle, charging, blocked, or unknown                                         | On a state transition                                                        |
 | Battery    | Whole percentage and charging indication                                             | Reports may arrive every second; the displayed percentage changes less often |
 | Connection | Connected, delayed, or no contact; last-seen information when relevant               | When freshness crosses a threshold or contact resumes                        |
 | Attention  | A concrete reason such as path blocked, low battery, or contact lost; otherwise none | When an issue appears, changes, or resolves                                  |
+
+Robot type is required stable metadata: Cleaning robot, Security robot, Delivery robot, or Inspection robot. It appears in its own table column and in details. Generated additions select compatible manufacturer/type pairs: Samsung or iRobot for cleaning, LG for delivery, Ascento for security, and Boston Dynamics for inspection; all types currently share the same simulation behaviour. Unknown is reserved for missing telemetry, not robot type. During development, schema changes may replace migrations and reset the local database; preserving existing data is not required.
+
+Integration is stable metadata: ROS 2, VDA5050, or Vendor API. The table and details display it separately from connection health. Generated values illustrate possible integrations and do not assert manufacturer compatibility; all simulated robots still use the existing HTTP ingestion API. Real connectors are deferred.
 
 ### Meaning and freshness
 

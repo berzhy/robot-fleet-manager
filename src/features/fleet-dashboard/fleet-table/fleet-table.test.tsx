@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 
 import type { Robot } from "@/modules/robots/robot";
@@ -8,6 +8,8 @@ const robot: Robot = {
   id: "test",
   name: "Test robot",
   manufacturer: "Test manufacturer",
+  type: "inspection" as const,
+  integrationType: "vendor-api" as const,
   site: "Munich",
   area: null,
   activity: "charging",
@@ -55,6 +57,22 @@ test("robot names are plain text with one accessible navigation link per row", (
       onDelete={() => {}}
     />,
   );
+  const identity = screen.getByRole("rowheader");
+  expect(within(identity).getByText(robot.name)).toBeInTheDocument();
+  expect(within(identity).getByText(robot.manufacturer)).toBeInTheDocument();
+  expect(
+    screen.queryByRole("columnheader", { name: "Manufacturer" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("columnheader", { name: "Type" }),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole("cell", { name: "Inspection robot" }),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole("columnheader", { name: "Integration" }),
+  ).toBeInTheDocument();
+  expect(screen.getByRole("cell", { name: "Vendor API" })).toBeInTheDocument();
   expect(screen.getByText(robot.name).closest("a")).toBeNull();
   expect(screen.getAllByRole("link")).toHaveLength(1);
   expect(screen.getByRole("link", { name: robot.name })).toHaveAttribute(

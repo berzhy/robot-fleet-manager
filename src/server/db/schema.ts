@@ -1,14 +1,41 @@
 import { sql } from "drizzle-orm";
 import { check, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
-import type { RobotActivity } from "@/modules/robots/robot";
-export const robots = sqliteTable("robots", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  manufacturer: text("manufacturer").notNull(),
-  site: text("site").notNull(),
-  createdAt: text("created_at").notNull(),
-});
+import {
+  robotTypes,
+  integrationTypes,
+  type RobotActivity,
+} from "@/modules/robots/robot";
+export const robots = sqliteTable(
+  "robots",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    manufacturer: text("manufacturer").notNull(),
+    type: text("type", { enum: robotTypes }).notNull(),
+    integrationType: text("integration_type", {
+      enum: integrationTypes,
+    }).notNull(),
+    site: text("site").notNull(),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    check(
+      "integration_type_value",
+      sql`${table.integrationType} in (${sql.join(
+        integrationTypes.map((type) => sql.raw("'" + type + "'")),
+        sql`, `,
+      )})`,
+    ),
+    check(
+      "robot_type_value",
+      sql`${table.type} in (${sql.join(
+        robotTypes.map((type) => sql.raw("'" + type + "'")),
+        sql`, `,
+      )})`,
+    ),
+  ],
+);
 export const latestTelemetry = sqliteTable(
   "latest_telemetry",
   {

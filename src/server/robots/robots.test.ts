@@ -4,7 +4,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 
-import type { Robot } from "@/modules/robots/robot";
+import {
+  robotTypes,
+  integrationTypes,
+  type Robot,
+} from "@/modules/robots/robot";
 
 import { openDatabase, type FleetDatabase } from "../db/database";
 import { latestTelemetry, robots } from "../db/schema";
@@ -15,6 +19,7 @@ import {
   getRobot,
   getRobotSnapshot,
   listRobots,
+  robotRegistry,
 } from "./robots";
 import { robotHandlers } from "./robot-handlers";
 let directory: string;
@@ -29,7 +34,13 @@ afterEach(() => {
   rmSync(directory, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
-const input = { name: "New robot", manufacturer: "Maker", site: "Munich" };
+const input = {
+  name: "New robot",
+  manufacturer: "Maker",
+  type: "inspection" as const,
+  integrationType: "vendor-api" as const,
+  site: "Munich",
+};
 test("created metadata persists after reopening with unknown telemetry", () => {
   const robot = createRobot(db, { ...input, name: "  New robot  " });
   expect(robot).toMatchObject({
@@ -130,6 +141,22 @@ test("HTTP contracts create/read/list/delete and reject invalid requests", async
         body: JSON.stringify(value),
       }),
     );
+  const missingType = {
+    name: input.name,
+    manufacturer: input.manufacturer,
+    site: input.site,
+    integrationType: input.integrationType,
+  };
+  expect((await post(missingType)).status).toBe(400);
+  for (const type of ["unknown", "measurement", "", null])
+    expect((await post({ ...input, type })).status).toBe(400);
+  expect((await post({ ...input, integrationType: undefined })).status).toBe(
+    400,
+  );
+  expect(
+    (await post({ ...input, integrationType: "unsupported" })).status,
+  ).toBe(400);
+  expect(listRobots(db, 0).total).toBe(0);
   expect((await post({ ...input, extra: true })).status).toBe(400);
   expect((await post({ ...input, name: " " })).status).toBe(400);
   expect((await post({ ...input, name: "x".repeat(101) })).status).toBe(400);
@@ -241,6 +268,10 @@ test("invalid, empty and oversized batches write nothing", async () => {
     [],
     Array.from({ length: 101 }, () => input),
     [input, { ...input, name: "" }],
+    [input, { ...input, type: "unknown" }],
+    [input, { ...input, integrationType: "unsupported" }],
+    [input, { ...input, integrationType: undefined }],
+    [input, { name: "No type", manufacturer: "Maker", site: "Munich" }],
   ]) {
     const response = await api.createBatch(
       new Request("http://local/api/robots/batch", {
@@ -251,4 +282,53 @@ test("invalid, empty and oversized batches write nothing", async () => {
     expect(response.status).toBe(400);
     expect(listRobots(db, 0).total).toBe(0);
   }
+});
+
+test.each(robotTypes)(
+  "%s type persists in creation, list, details and registry",
+  (type) => {
+    const robot = createRobot(db, { ...input, type });
+    expect(robot.type).toBe(type);
+    expect(getRobot(db, robot.id)).toEqual(robot);
+    expect(listRobots(db, 0).items).toEqual([robot]);
+    expect(robotRegistry(db)).toEqual([robot]);
+  },
+);
+
+test("fresh schema rejects missing and unsupported types even outside the API", () => {
+  const insert = db.$client.prepare(
+    "INSERT INTO robots (id, name, manufacturer, site, created_at, type, integration_type) VALUES (?, ?, ?, ?, ?, ?, 'vendor-api')",
+  );
+  for (const type of [null, "unknown", "measurement"])
+    expect(() =>
+      insert.run(
+        "invalid",
+        "Name",
+        "Maker",
+        "Site",
+        "2026-01-01T00:00:00.000Z",
+        type,
+      ),
+    ).toThrow();
+  expect(listRobots(db, 0).total).toBe(0);
+});
+
+test.each(integrationTypes)(
+  "%s integration persists in list, details and registry",
+  (integrationType) => {
+    const robot = createRobot(db, { ...input, integrationType });
+    expect(robot.integrationType).toBe(integrationType);
+    expect(getRobot(db, robot.id)).toEqual(robot);
+    expect(listRobots(db, 0).items).toEqual([robot]);
+    expect(robotRegistry(db)).toEqual([robot]);
+  },
+);
+
+test("fresh schema rejects missing and unsupported integrations outside the API", () => {
+  const insert = db.$client.prepare(
+    "INSERT INTO robots (id, name, manufacturer, site, created_at, type, integration_type) VALUES ('invalid', 'Name', 'Maker', 'Site', '2026-01-01T00:00:00Z', 'inspection', ?)",
+  );
+  for (const integrationType of [null, "unsupported"])
+    expect(() => insert.run(integrationType)).toThrow();
+  expect(listRobots(db, 0).total).toBe(0);
 });

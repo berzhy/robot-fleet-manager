@@ -1,10 +1,12 @@
 import { z } from "zod";
 
-import { robotPageSizes } from "./robot";
+import { robotPageSizes, robotTypes, integrationTypes } from "./robot";
 const label = z.string().trim().min(1).max(100);
 export const createRobotSchema = z.strictObject({
   name: label,
   manufacturer: label,
+  type: z.enum(robotTypes),
+  integrationType: z.enum(integrationTypes),
   site: label,
 });
 export type CreateRobotInput = z.infer<typeof createRobotSchema>;

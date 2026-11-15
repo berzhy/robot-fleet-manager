@@ -8,6 +8,8 @@ const robot: Robot = {
   id: "test",
   name: "Test robot",
   manufacturer: "Test manufacturer",
+  type: "inspection" as const,
+  integrationType: "vendor-api" as const,
   site: "Munich",
   area: null,
   activity: "charging",
@@ -33,12 +35,16 @@ test("details show fields, missing values, and breadcrumbs", () => {
   expect(screen.getAllByRole("term").map((term) => term.textContent)).toEqual([
     "ID",
     "Manufacturer",
+    "Type",
+    "Integration",
     "Site",
     "Area",
     "Activity",
     "Battery",
     "Connection",
   ]);
+  expect(screen.getByText("Vendor API")).toBeInTheDocument();
+  expect(screen.getByText("Inspection robot")).toBeInTheDocument();
   expect(screen.getByText("Charging")).toBeInTheDocument();
   expect(screen.getAllByText("Unknown")).toHaveLength(3);
 });

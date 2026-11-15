@@ -24,7 +24,8 @@ import {
 
 const columns = [
   "Robot",
-  "Manufacturer",
+  "Type",
+  "Integration",
   "Location",
   "Activity",
   "Battery",

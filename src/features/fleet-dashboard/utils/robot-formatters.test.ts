@@ -13,12 +13,12 @@ test("activity formatting includes charging and unknown states", () => {
   expect(formatActivity("unknown")).toBe("Unknown");
 });
 
-test("Added shows localized date and time", () => {
-  const timestamp = "2026-11-14T12:00:00.000Z";
+test("Added shows localized date and time including seconds", () => {
+  const timestamp = "2026-11-14T12:34:56.000Z";
   expect(formatAdded(timestamp)).toBe(
     new Intl.DateTimeFormat(undefined, {
       dateStyle: "medium",
-      timeStyle: "short",
+      timeStyle: "medium",
     }).format(new Date(timestamp)),
   );
 });

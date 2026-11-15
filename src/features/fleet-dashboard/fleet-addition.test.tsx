@@ -16,6 +16,8 @@ const robot: Robot = {
   id: "new",
   name: "New robot",
   manufacturer: "Maker",
+  type: "inspection" as const,
+  integrationType: "vendor-api" as const,
   site: "Munich",
   area: null,
   activity: "unknown",

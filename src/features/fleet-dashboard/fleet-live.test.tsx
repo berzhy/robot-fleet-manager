@@ -14,6 +14,8 @@ const robot: Robot = {
   id: "live",
   name: "Live robot",
   manufacturer: "Maker",
+  type: "inspection" as const,
+  integrationType: "vendor-api" as const,
   site: "Munich",
   createdAt: "2026-01-01T00:00:00.000Z",
   batteryPercent: 50,

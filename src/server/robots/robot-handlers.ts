@@ -69,7 +69,7 @@ export function robotHandlers(database: () => FleetDatabase) {
         return errorResponse(
           400,
           "INVALID_INPUT",
-          "Provide name, manufacturer and site, each between 1 and 100 characters.",
+          "Provide name, manufacturer and site (1–100 characters each), and valid robot and integration types.",
         );
       return safely(() =>
         jsonResponse(createRobot(database(), input.data), 201),

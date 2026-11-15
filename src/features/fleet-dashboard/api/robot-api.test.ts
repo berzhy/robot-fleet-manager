@@ -47,6 +47,8 @@ test("creates metadata using POST and requires a 201 response", async () => {
   const input = {
     name: "Robot ABCD1234",
     manufacturer: "Maker",
+    type: "inspection" as const,
+    integrationType: "vendor-api" as const,
     site: "Munich",
   };
   const created = {

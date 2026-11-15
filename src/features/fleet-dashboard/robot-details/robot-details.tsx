@@ -14,7 +14,12 @@ import { connectionStatus, reportAge } from "@/modules/telemetry/freshness";
 import ConnectionStatus from "../connection-status/connection-status";
 import useLiveRobot from "../hooks/use-live-robot";
 import useReportClock from "../hooks/use-report-clock";
-import { formatActivity, formatBattery } from "../utils/robot-formatters";
+import {
+  formatActivity,
+  formatBattery,
+  formatRobotType,
+  formatIntegrationType,
+} from "../utils/robot-formatters";
 
 export default function RobotDetails({
   robot: initial,
@@ -36,6 +41,8 @@ export default function RobotDetails({
   const fields = {
     ID: robot.id,
     Manufacturer: robot.manufacturer,
+    Type: formatRobotType(robot.type),
+    Integration: formatIntegrationType(robot.integrationType),
     Site: robot.site,
     Area: robot.area ?? "Unknown",
     Activity: formatActivity(robot.activity),
@@ -86,7 +93,7 @@ export default function RobotDetails({
         <Box component="dl" sx={{ m: 0 }}>
           {Object.entries(fields).map(([label, value]) => (
             <Box key={label} sx={{ mb: 2 }}>
-              <Typography component="dt" variant="body2" color="text.secondary">
+              <Typography component="dt" variant="body2" color="textSecondary">
                 {label}
               </Typography>
               <Typography component="dd" sx={{ m: 0 }}>

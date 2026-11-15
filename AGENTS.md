@@ -1,6 +1,6 @@
-<!-- BEGIN:nextjs-agent-rules -->
-
 Pay extra attention to architecture, structure, code cleanlines and code quality! No "AI slop" please!
+
+<!-- BEGIN:nextjs-agent-rules -->
 
 ## This is NOT the Next.js you know
 

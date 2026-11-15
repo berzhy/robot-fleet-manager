@@ -20,6 +20,8 @@ const selection = {
   name: robots.name,
   createdAt: robots.createdAt,
   manufacturer: robots.manufacturer,
+  type: robots.type,
+  integrationType: robots.integrationType,
   site: robots.site,
   area: latestTelemetry.area,
   activity: sql<

@@ -12,28 +12,28 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000). SQLite persists the fleet in `data/fleet.sqlite`; set `DATABASE_PATH` to use another file. Run commands from the project root. Migrations are explicit and never run during requests or builds.
 
-A new database starts empty. Newly added robots have unknown telemetry until their first report arrives. Use the outlined **Add robot** split button to add one robot, or its dropdown to add 10 or 100. The empty-state button adds one. Bulk additions use one transaction and succeed or roll back together. Metadata is generated without a form. The Added column shows registration time, with newest robots first. Addition preserves the current page, so the new robot may be on another page. The table reloads automatically after creation or deletion; Retry is available if loading fails. Pagination defaults to 20 rows, with 10, 20, and 100 available in the native Rows per page selector. Changing the size returns to the first page. Rows open details with breadcrumbs. The trailing Actions menu supports deletion with confirmation, a pending state, and success/error notifications.
+A new database starts empty. Newly added robots have unknown telemetry until their first report arrives. Use the outlined **Add robot** split button to add one robot, or its dropdown to add 10 or 100. The empty-state button adds one. Bulk additions use one transaction and succeed or roll back together. Metadata is generated without a form, including one of four required types: Cleaning robot, Security robot, Delivery robot, or Inspection robot. Generated manufacturer/type pairs use Samsung and iRobot for cleaning, LG for delivery, Ascento for security, and Boston Dynamics for inspection. The table groups manufacturer beneath the robot name and shows Type in its own column. Integration metadata is required: `ros2` (ROS 2), `vda5050` (VDA5050), or `vendor-api` (Vendor API), shown in the Integration column and details. Generated integrations are illustrative demo metadata, assigned independently of manufacturer; these labels do not claim vendor compatibility or implemented connectors. All telemetry still arrives through the simulator HTTP API. The Added column shows registration time, with newest robots first. Addition preserves the current page, so the new robot may be on another page. The table reloads automatically after creation or deletion; Retry is available if loading fails. Pagination defaults to 20 rows, with 10, 20, and 100 available in the native Rows per page selector. Changing the size returns to the first page. Rows open details with breadcrumbs. The trailing Actions menu supports deletion with confirmation, a pending state, and success/error notifications.
 
 ```bash
 npm run db:generate  # Generate a migration after changing the schema
 npm run db:migrate
 ```
 
-Migrations run explicitly; the application does not populate or reset the fleet on startup.
+During this POC, schema changes may replace migration history and discard development data. When that happens, stop the app and simulator, remove the configured SQLite file and its `-wal` and `-shm` sidecars, then run `npm run db:migrate` before restarting. Migrations run explicitly; the application does not populate or reset the fleet on startup.
 
 ## Robot API
 
 - `GET /api/robots?page=0&pageSize=20`: `{ items, total, page, pageSize }`, ordered by creation time descending, then ID descending.
 - `GET /api/robots/:id`: one robot, or 404.
 - `POST /api/robots/batch`: accept `{ robots: [...] }` with 1–100 metadata records; return 201 with `{ items: [...] }`. All records are created in one transaction.
-- `POST /api/robots`: create metadata from `name`, `manufacturer`, and `site`; returns 201 with unknown telemetry.
+- `POST /api/robots`: create metadata from `name`, `manufacturer`, `site`, `type`, and `integrationType`; returns 201 with unknown telemetry.
 - `DELETE /api/robots/:id`: permanently remove a robot and its latest telemetry; returns 204, or 404.
 
 ```bash
-curl -X POST http://localhost:3000/api/robots -H 'Content-Type: application/json' -d '{"name":"Dara","manufacturer":"Nova Automation","site":"Hamburg"}'
+curl -X POST http://localhost:3000/api/robots -H 'Content-Type: application/json' -d '{"name":"Dara","manufacturer":"Boston Dynamics","site":"Hamburg","type":"inspection","integrationType":"vendor-api"}'
 ```
 
-Input fields are trimmed, required, and limited to 100 characters. Errors use `{ error: { code, message } }`. The API is intended for local development or a single Node server with persistent disk. Authentication, a creation form, command handling, and telemetry history are deferred. Local SQLite is not a shared database for disposable serverless instances.
+Name, manufacturer, and site are trimmed, required, and limited to 100 characters. Type is required and must be `cleaning`, `security`, `delivery`, or `inspection`; there is no unknown type. Errors use `{ error: { code, message } }`. The API is intended for local development or a single Node server with persistent disk. Authentication, a creation form, command handling, and telemetry history are deferred. Local SQLite is not a shared database for disposable serverless instances.
 
 Run `npm test` for browser component tests and Node database/API tests. Database tests use isolated temporary files and real migrations. Run `npm run build`, `npm run lint`, `npm run format:check`, and `npm run knip` for the remaining checks.
 

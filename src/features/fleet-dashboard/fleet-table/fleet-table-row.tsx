@@ -11,6 +11,8 @@ import ConnectionStatus from "../connection-status/connection-status";
 import RobotActions from "./robot-actions";
 import {
   formatActivity,
+  formatRobotType,
+  formatIntegrationType,
   formatBattery,
   formatAdded,
 } from "../utils/robot-formatters";
@@ -51,6 +53,9 @@ export default function FleetTableRow({
     >
       <TableCell component="th" scope="row">
         <Typography variant="body2">{robot.name}</Typography>
+        <Typography variant="body2" color="textSecondary">
+          {robot.manufacturer}
+        </Typography>
         <Link
           component={NextLink}
           href={`/robots/${robot.id}`}
@@ -59,11 +64,12 @@ export default function FleetTableRow({
           sx={{ position: "absolute", inset: 0 }}
         />
       </TableCell>
-      <TableCell>{robot.manufacturer}</TableCell>
+      <TableCell>{formatRobotType(robot.type)}</TableCell>
+      <TableCell>{formatIntegrationType(robot.integrationType)}</TableCell>
       <TableCell>
         {robot.site}
         {robot.area && (
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" color="textSecondary">
             {robot.area}
           </Typography>
         )}
@@ -75,7 +81,7 @@ export default function FleetTableRow({
           <ConnectionStatus status={connection} unverified={unverified} />
         </Typography>
         {showReportAge && (
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" color="textSecondary">
             {reportAge(robot.lastReceivedAt, now || verifiedAt)}
           </Typography>
         )}
