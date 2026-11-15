@@ -18,7 +18,15 @@ export function formatIntegrationType(type: Robot["integrationType"]) {
 }
 
 export function formatActivity(activity: Robot["activity"]) {
-  return activity.charAt(0).toUpperCase() + activity.slice(1);
+  const labels = {
+    working: "Working",
+    idle: "Idle",
+    returning: "Returning",
+    charging: "Charging",
+    "needs-attention": "Needs attention",
+    unknown: "Unknown",
+  };
+  return labels[activity];
 }
 
 const addedFormatter = new Intl.DateTimeFormat(undefined, {

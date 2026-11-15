@@ -8,9 +8,15 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { useEffect, useRef, useState } from "react";
 
+import type { RobotAction } from "@/modules/robots/robot-actions";
 import type { Robot } from "@/modules/robots/robot";
 
-import { createRobot, createRobots, deleteRobot } from "./api/robot-api";
+import {
+  createRobot,
+  createRobots,
+  deleteRobot,
+  sendRobotAction,
+} from "./api/robot-api";
 import AddRobotSplitButton from "./fleet-table/add-robot-split-button";
 import DeleteRobotDialog from "./fleet-table/delete-robot-dialog";
 import FleetTable from "./fleet-table/fleet-table";
@@ -22,6 +28,7 @@ export default function FleetDashboard() {
   const [menuOpen, setMenuOpen] = useState(false);
   const addButtonRef = useRef<HTMLButtonElement>(null);
   const addFocusRef = useRef<HTMLElement | null>(null);
+  const [acting, setActing] = useState(false);
   const [adding, setAdding] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
@@ -31,7 +38,8 @@ export default function FleetDashboard() {
     open: boolean;
   } | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const paused = adding || deleting || menuOpen || Boolean(deleteTarget);
+  const paused =
+    acting || adding || deleting || menuOpen || Boolean(deleteTarget);
   const now = useReportClock(paused);
   const {
     state,
@@ -93,6 +101,36 @@ export default function FleetDashboard() {
     } finally {
       inFlightRef.current = false;
       setAdding(false);
+    }
+  }
+
+  async function actOnRobot(robot: Robot, action: RobotAction) {
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
+    invalidate();
+    setActing(true);
+    setNotification(null);
+    try {
+      await sendRobotAction(robot.id, action);
+      const messages = {
+        start: "Start requested",
+        stop: "Stop requested",
+        "return-to-base": "Return requested",
+        retry: "Retry requested",
+      };
+      setNotification({
+        severity: "success",
+        message: `${messages[action]} for “${robot.name}”.`,
+      });
+    } catch {
+      setNotification({
+        severity: "error",
+        message: `Unable to request action for “${robot.name}”. Please try again.`,
+      });
+    } finally {
+      inFlightRef.current = false;
+      setActing(false);
+      reload();
     }
   }
 
@@ -193,7 +231,9 @@ export default function FleetDashboard() {
         <AddRobotSplitButton
           buttonRef={addButtonRef}
           loading={adding}
-          disabled={state.status === "loading" || Boolean(deleteTarget)}
+          disabled={
+            acting || state.status === "loading" || Boolean(deleteTarget)
+          }
           onAdd={(trigger, count) => void addRobot(trigger, count)}
         />
       </Stack>
@@ -233,9 +273,10 @@ export default function FleetDashboard() {
         onPageSizeChange={setPageSize}
         onPageChange={setPage}
         onRetry={reload}
+        onAction={(robot, action) => void actOnRobot(robot, action)}
         onDelete={requestDelete}
         onAdd={(trigger) => void addRobot(trigger)}
-        adding={adding}
+        adding={adding || acting}
       />
       {deleteTarget && (
         <DeleteRobotDialog

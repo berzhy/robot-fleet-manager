@@ -8,7 +8,7 @@ This records the working direction from our discussion. Proposals and open quest
 
 ### Implemented first slice
 
-The dashboard uses a real Next.js API and SQLite database with Drizzle migrations. The standard MUI table shows Robot (name with manufacturer beneath), Type, Integration, Location, Activity, Battery, Connection, and Added, followed by Actions. Charging is an activity; there is no separate charging flag. Missing telemetry is unknown. Connection freshness is derived from server receipt time; attention rules are deferred.
+The dashboard uses a real Next.js API and SQLite database with Drizzle migrations. The standard MUI table shows Robot (name with manufacturer beneath), Type, Added, Location, Connection, Activity, Battery, and Integration, followed by Actions. Charging is an activity; there is no separate charging flag. Missing telemetry is unknown. Connection freshness is derived from server receipt time; attention rules are deferred.
 
 Pagination defaults to 20 rows per page, with 10, 20, and 100 available through MUI TablePagination. Changing page size resets to page one. Results are ordered server-side by creation time descending, then ID descending. Count and rows share a database snapshot. Automatic refresh after addition or deletion preserves the page; out-of-range pages are corrected without showing the empty-fleet state. There is no manual Refresh button. Runtime fixtures, demo controls, and artificial delays have been removed.
 
@@ -16,7 +16,7 @@ Robot details read the same persisted records and retain breadcrumbs and not-fou
 
 Thin routes remain in `src/app`, UI under `features/fleet-dashboard`, shared robot contracts under `modules/robots`, and backend operations under `server/robots`. Operations accept a connection and remain independent of Next rendering APIs. The database connection is lazy; synchronous reads are excluded from prerendering in the Next adapters. See README for setup and API usage.
 
-This slice targets local development or one Node server with persistent disk. There is no authentication. Dashboard and detail views poll in the background. Metadata and latest telemetry are separate tables; Telemetry ingestion and a separate simulator are implemented; history and commands remain future work. The simulator runs through its own command, outside HTTP request lifetimes. Commands should represent requests and acknowledgments rather than directly setting observed activity.
+This slice targets local development or one Node server with persistent disk. There is no authentication. Dashboard and detail views poll in the background. Metadata and latest telemetry are separate tables; Telemetry ingestion and a separate simulator are implemented; history remains future work. The simulator runs through its own command, outside HTTP request lifetimes. Controls store latest intent and a revision; the simulator acknowledges through telemetry without a command-progress interface.
 
 Build a focused fleet operations interface for robots deployed across sites. The operator should be able to answer:
 
@@ -38,7 +38,7 @@ These are the starting fields, not a final data schema.
 | Robot      | Recognizable name, with manufacturer as secondary information                        | Rarely                                                                       |
 | Type       | Cleaning robot, Security robot, Delivery robot, or Inspection robot                  | Rarely                                                                       |
 | Location   | Assigned site, plus observed floor or area when available                            | Site changes rarely; observed area changes when the robot crosses a boundary |
-| Activity   | Working, idle, charging, blocked, or unknown                                         | On a state transition                                                        |
+| Activity   | Working, idle, returning, charging, needs attention, or unknown                      | On a state transition                                                        |
 | Battery    | Whole percentage and charging indication                                             | Reports may arrive every second; the displayed percentage changes less often |
 | Connection | Connected, delayed, or no contact; last-seen information when relevant               | When freshness crosses a threshold or contact resumes                        |
 | Attention  | A concrete reason such as path blocked, low battery, or contact lost; otherwise none | When an issue appears, changes, or resolves                                  |
@@ -155,10 +155,18 @@ Public competitor screenshots illustrate product patterns. They do not establish
 
 ## Implemented simulation and polling
 
-The separate TypeScript simulator discovers the fleet through a single registry snapshot and sends transactional batches of up to 100 reports. Default behaviour is working/charging with gradual battery and area changes; named scenarios and faults are deferred. No history or command infrastructure is added.
+The separate TypeScript simulator discovers the fleet through a single registry snapshot and sends transactional batches of up to 100 reports. Behaviour is automatic Idle → Working → Returning → Charging, with manual Start/Stop/Return overrides. Roughly 20% of robots encounter a retryable path blockage after 2–40 working minutes. No history, command queue, or administrative availability is added. See README for timing and restart rules.
 
 Receipt time determines Online (≤10 seconds), Delayed (>10–15 seconds), Offline (>15 seconds), or Unknown (no report). Observation time determines whether an update is newer; ignored reports do not refresh receipt time. Missing data stays unknown. Connection labels are unverified after interrupted requests or while awaiting refresh after a hidden tab. Intentional interaction pauses freeze the display clock and do not relabel robots. After a dashboard outage, connection states remain last verified rather than implying that individual robots lost contact.
 
 Polling preserves rows, IDs, focus, and scroll during background refresh. Mutations invalidate older requests and refetch the current page and total; page membership may shift. Row menus and dialogs pause polling without inserting a layout-shifting message. Hidden tabs pause, then refresh on return. Background failure preserves last-known values and shows one warning. Live membership for future operational filters remains undecided.
 
 Report age is hidden for Online robots and retained for Delayed/Offline robots. The 10-second Online window tolerates the five-second polling cadence.
+
+## Simple robot controls and simulation
+
+Activity and Connection remain separate. Activity labels are Idle, Working, Returning, Charging, Needs attention, and Unknown. Needs attention has a concrete problem code; Path blocked is the first simulated problem. Charging remains an activity without a duplicate charging flag. Base is a location, not an activity.
+
+New simulated robots start Idle at Base with a deterministic 50–100% battery, then automatically work after seven seconds. Low battery returns them to Base before charging. Manual Stop and Return hold until Start work; they take precedence over automatic rules. Operational notifications confirm requests, not completion. Disabled menu actions retain keyboard-accessible explanations.
+
+Only the latest control target/revision and latest telemetry acknowledgment persist. The existing standalone simulator discovers changed controls each loop, retains local acknowledgments across failed reports, and restores observed phase/problem/manual intent on restart. Countdown and fault timers restart without downtime catch-up. Automatic problem eligibility covers about 20% of robots so an unattended fleet stays active. Full missions, administrative availability, further fault scenarios, and command-progress UI are deferred.

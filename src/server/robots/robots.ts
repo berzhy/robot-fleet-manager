@@ -16,6 +16,10 @@ import {
 import type { FleetDatabase } from "../db/database";
 import { latestTelemetry, robots } from "../db/schema";
 const selection = {
+  controlTarget: robots.controlTarget,
+  controlRevision: robots.controlRevision,
+  appliedControlRevision: sql<number>`coalesce(${latestTelemetry.appliedControlRevision}, 0)`,
+  problemCode: latestTelemetry.problemCode,
   id: robots.id,
   name: robots.name,
   createdAt: robots.createdAt,
@@ -50,7 +54,10 @@ export function listRobots(
     pageSize,
   }));
 }
-export function getRobot(db: FleetDatabase, id: string): Robot | undefined {
+export function getRobot(
+  db: Pick<FleetDatabase, "select">,
+  id: string,
+): Robot | undefined {
   return db
     .select(selection)
     .from(robots)
@@ -77,6 +84,10 @@ export function createRobots(
     return rows.map((row): Robot => ({
       ...row,
       activity: "unknown",
+      controlTarget: "work",
+      controlRevision: 0,
+      appliedControlRevision: 0,
+      problemCode: null,
       area: null,
       batteryPercent: null,
       lastTelemetryAt: null,

@@ -1,30 +1,66 @@
 import type { Robot } from "@/modules/robots/robot";
 import type { TelemetryReport } from "@/modules/telemetry/telemetry";
+
+type Target = Robot["controlTarget"];
 export type SimulatedRobot = {
   battery: number;
-  charging: boolean;
-  elapsed: number;
-  offset: number;
+  activity: Robot["activity"];
+  area: string;
+  target: Target;
+  appliedRevision: number;
+  remaining: number;
+  workingSeconds: number;
+  faultAfter: number;
+  faultCount: number;
+  hash: number;
 };
+const departureDelay = 7;
+const returnDuration = 10;
+const lowBattery = 20;
+const chargedBattery = 90;
+const dischargeRate = 0.1;
+const chargeRate = 0.5;
 const areas = ["Lobby", "Floor 1", "Warehouse"];
-export function initializeRobot(robot: Robot): SimulatedRobot {
-  const hash = Array.from(robot.id).reduce(
-    (value, char) => (value * 31 + char.charCodeAt(0)) >>> 0,
+function hashId(id: string) {
+  return Array.from(id).reduce(
+    (value, char) => (Math.imul(value, 31) + char.charCodeAt(0)) >>> 0,
     0,
   );
-  const battery =
-    robot.lastTelemetryAt && robot.batteryPercent !== null
-      ? robot.batteryPercent
-      : 30 + (hash % 66);
+}
+function faultInterval(hash: number, count: number) {
+  return 120 + (hashId(`${hash}:${count}`) % 2281);
+}
+export function initializeRobot(robot: Robot): SimulatedRobot {
+  const hash = hashId(robot.id);
   return {
-    battery,
-    charging: battery <= 20 || (robot.activity === "charging" && battery < 90),
-    elapsed: 0,
-    offset:
-      robot.area && areas.includes(robot.area)
-        ? areas.indexOf(robot.area)
-        : hash % areas.length,
+    battery: robot.batteryPercent ?? 50 + (hash % 51),
+    activity: robot.activity === "unknown" ? "idle" : robot.activity,
+    area: robot.area ?? "Base",
+    target: robot.controlTarget,
+    appliedRevision: robot.appliedControlRevision,
+    remaining: robot.activity === "returning" ? returnDuration : departureDelay,
+    workingSeconds: 0,
+    faultAfter: faultInterval(hash, 0),
+    faultCount: 0,
+    hash,
   };
+}
+export function applyControl(state: SimulatedRobot, robot: Robot) {
+  if (robot.controlRevision <= state.appliedRevision) return;
+  state.appliedRevision = robot.controlRevision;
+  state.target = robot.controlTarget;
+  if (state.target === "stop") state.activity = "idle";
+  else if (state.target === "base") {
+    state.activity = "returning";
+    state.remaining = returnDuration;
+  } else {
+    if (state.activity === "needs-attention") {
+      state.workingSeconds = 0;
+      state.faultAfter = faultInterval(state.hash, ++state.faultCount);
+    }
+    state.activity = "working";
+    if (state.area === "Base") state.area = areas[state.hash % areas.length];
+  }
 }
 export function advanceRobot(
   id: string,
@@ -32,20 +68,61 @@ export function advanceRobot(
   seconds: number,
   now: number,
 ): TelemetryReport {
-  state.elapsed += seconds;
-  state.battery = Math.max(
-    0,
-    Math.min(100, state.battery + seconds * (state.charging ? 0.5 : -0.1)),
-  );
-  if (state.battery <= 20) state.charging = true;
-  else if (state.battery >= 90) state.charging = false;
+  // Bound catch-up after slow HTTP requests; phases advance in small steps.
+  let remaining = Math.max(0, Math.min(5, seconds));
+  while (remaining > 0) {
+    const step = Math.min(1, remaining);
+    remaining -= step;
+    switch (state.activity) {
+      case "idle":
+        if (state.target === "work" && (state.remaining -= step) <= 0) {
+          state.activity = "working";
+          state.area = areas[state.hash % areas.length];
+        }
+        break;
+      case "working":
+        state.battery = Math.max(0, state.battery - step * dischargeRate);
+        state.workingSeconds += step;
+        state.area =
+          areas[
+            (state.hash + Math.floor(state.workingSeconds / 30)) % areas.length
+          ];
+        if (state.battery <= lowBattery) {
+          state.activity = "returning";
+          state.remaining = returnDuration;
+        } else if (
+          state.hash % 5 === 0 &&
+          state.workingSeconds >= state.faultAfter
+        )
+          state.activity = "needs-attention";
+        break;
+      case "returning":
+        state.battery = Math.max(0, state.battery - step * dischargeRate);
+        if ((state.remaining -= step) <= 0) {
+          state.area = "Base";
+          state.activity = state.battery < chargedBattery ? "charging" : "idle";
+          state.remaining = departureDelay;
+        }
+        break;
+      case "charging":
+        state.battery = Math.min(
+          chargedBattery,
+          state.battery + step * chargeRate,
+        );
+        if (state.battery >= chargedBattery) {
+          state.activity = "idle";
+          state.remaining = departureDelay;
+        }
+        break;
+    }
+  }
   return {
     robotId: id,
-    activity: state.charging ? "charging" : "working",
+    activity: state.activity,
     batteryPercent: state.battery,
-    area: state.charging
-      ? "Dock"
-      : areas[(state.offset + Math.floor(state.elapsed / 30)) % areas.length],
+    area: state.area,
+    problemCode: state.activity === "needs-attention" ? "path-blocked" : null,
+    appliedControlRevision: state.appliedRevision,
     observedAt: new Date(now).toISOString(),
   };
 }

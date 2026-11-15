@@ -48,7 +48,12 @@ export default function RobotDetails({
     },
     site: { label: "Site", value: robot.site },
     area: { label: "Area", value: robot.area ?? "Unknown" },
-    activity: { label: "Activity", value: formatActivity(robot.activity) },
+    activity: {
+      label: "Activity",
+      value: robot.problemCode
+        ? `${formatActivity(robot.activity)}: Path blocked`
+        : formatActivity(robot.activity),
+    },
     battery: { label: "Battery", value: formatBattery(robot.batteryPercent) },
     connection: {
       label: "Connection",

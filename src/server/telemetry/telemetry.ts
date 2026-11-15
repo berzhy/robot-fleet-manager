@@ -10,9 +10,9 @@ export function ingestTelemetry(
   receivedAt: string,
 ) {
   db.transaction((tx) => {
-    const known = new Set(
+    const known = new Map(
       tx
-        .select({ id: robots.id })
+        .select({ id: robots.id, revision: robots.controlRevision })
         .from(robots)
         .where(
           inArray(
@@ -21,10 +21,14 @@ export function ingestTelemetry(
           ),
         )
         .all()
-        .map((robot) => robot.id),
+        .map((robot) => [robot.id, robot.revision]),
     );
     const rows = reports
-      .filter((report) => known.has(report.robotId))
+      .filter(
+        (report) =>
+          known.has(report.robotId) &&
+          report.appliedControlRevision <= known.get(report.robotId)!,
+      )
       .map((report) => ({ ...report, receivedAt }));
     if (!rows.length) return;
     tx.insert(latestTelemetry)
@@ -32,13 +36,15 @@ export function ingestTelemetry(
       .onConflictDoUpdate({
         target: latestTelemetry.robotId,
         set: {
+          problemCode: sql`excluded.problem_code`,
+          appliedControlRevision: sql`excluded.applied_control_revision`,
           activity: sql`excluded.activity`,
           batteryPercent: sql`excluded.battery_percent`,
           area: sql`excluded.area`,
           observedAt: sql`excluded.observed_at`,
           receivedAt: sql`excluded.received_at`,
         },
-        setWhere: sql`excluded.observed_at > ${latestTelemetry.observedAt}`,
+        setWhere: sql`excluded.observed_at > ${latestTelemetry.observedAt} AND excluded.applied_control_revision >= ${latestTelemetry.appliedControlRevision}`,
       })
       .run();
   });

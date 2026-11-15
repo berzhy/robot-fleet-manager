@@ -1,4 +1,5 @@
 "use client";
+import type { RobotAction } from "@/modules/robots/robot-actions";
 
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import Box from "@mui/material/Box";
@@ -26,12 +27,12 @@ import {
 const columns = [
   "Robot",
   "Type",
-  "Integration",
+  "Added",
   "Location",
+  "Connection",
   "Activity",
   "Battery",
-  "Connection",
-  "Added",
+  "Integration",
   "Actions",
 ];
 const rowHeight = 70;
@@ -48,6 +49,7 @@ export default function FleetTable({
   total,
   onPageChange,
   onRetry,
+  onAction,
   onDelete,
   onAdd,
   adding,
@@ -65,6 +67,7 @@ export default function FleetTable({
   total: number;
   onPageChange: (page: number) => void;
   onRetry: () => void;
+  onAction?: (robot: Robot, action: RobotAction) => void;
   onDelete: (robot: Robot, trigger: HTMLButtonElement) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -147,6 +150,7 @@ export default function FleetTable({
                 onMenuOpenChange={onMenuOpenChange}
                 adding={adding}
                 onDelete={onDelete}
+                onAction={onAction}
                 rowHeight={rowHeight}
               />
             ))}

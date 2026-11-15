@@ -1,3 +1,4 @@
+import type { RobotAction } from "@/modules/robots/robot-actions";
 import type { CreateRobotInput } from "@/modules/robots/robot-validation";
 import {
   robotPageSize,
@@ -61,4 +62,21 @@ export async function getRobot(
   if (response.status === 404) return null;
   if (!response.ok) throw new Error("Unable to refresh robot.");
   return response.json() as Promise<Robot>;
+}
+
+export async function sendRobotAction(
+  id: string,
+  action: RobotAction,
+): Promise<void> {
+  const response = await fetch(
+    `/api/robots/${encodeURIComponent(id)}/actions`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action }),
+      signal: AbortSignal.timeout(5000),
+    },
+  );
+  if (response.status !== 202)
+    throw new Error("Unable to request robot action.");
 }

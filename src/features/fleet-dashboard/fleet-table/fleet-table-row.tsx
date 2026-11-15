@@ -1,4 +1,5 @@
 "use client";
+import type { RobotAction } from "@/modules/robots/robot-actions";
 import Link from "@mui/material/Link";
 import TableCell from "@mui/material/TableCell";
 import TableRow from "@mui/material/TableRow";
@@ -24,6 +25,7 @@ export default function FleetTableRow({
   onMenuOpenChange,
   robot,
   rowHeight,
+  onAction,
   onDelete,
   adding,
 }: {
@@ -34,6 +36,7 @@ export default function FleetTableRow({
   onMenuOpenChange?: (open: boolean) => void;
   robot: Robot;
   rowHeight: number;
+  onAction?: (robot: Robot, action: RobotAction) => void;
   onDelete: (robot: Robot, trigger: HTMLButtonElement) => void;
 }) {
   const connection = connectionStatus(
@@ -75,8 +78,10 @@ export default function FleetTableRow({
       <TableCell data-testid="robot-type">
         {formatRobotType(robot.type)}
       </TableCell>
-      <TableCell data-testid="robot-integration">
-        {formatIntegrationType(robot.integrationType)}
+      <TableCell>
+        <time data-testid="robot-added-at" dateTime={robot.createdAt}>
+          {formatAdded(robot.createdAt)}
+        </time>
       </TableCell>
       <TableCell>
         {robot.site}
@@ -89,12 +94,6 @@ export default function FleetTableRow({
             {robot.area}
           </Typography>
         )}
-      </TableCell>
-      <TableCell data-testid="robot-activity">
-        {formatActivity(robot.activity)}
-      </TableCell>
-      <TableCell data-testid="robot-battery">
-        {formatBattery(robot.batteryPercent)}
       </TableCell>
       <TableCell sx={{ fontVariantNumeric: "tabular-nums" }}>
         <Typography data-testid="robot-connection" variant="body2">
@@ -110,17 +109,28 @@ export default function FleetTableRow({
           </Typography>
         )}
       </TableCell>
-      <TableCell>
-        <time data-testid="robot-added-at" dateTime={robot.createdAt}>
-          {formatAdded(robot.createdAt)}
-        </time>
+      <TableCell data-testid="robot-activity">
+        {formatActivity(robot.activity)}
+        {robot.problemCode && (
+          <Typography variant="body2" color="textSecondary">
+            Path blocked
+          </Typography>
+        )}
+      </TableCell>
+      <TableCell data-testid="robot-battery">
+        {formatBattery(robot.batteryPercent)}
+      </TableCell>
+      <TableCell data-testid="robot-integration">
+        {formatIntegrationType(robot.integrationType)}
       </TableCell>
       <TableCell align="right" sx={{ position: "relative" }}>
         <RobotActions
           onOpenChange={onMenuOpenChange}
           disabled={adding}
           robot={robot}
+          unverified={unverified}
           onDelete={onDelete}
+          onAction={onAction}
         />
       </TableCell>
     </TableRow>

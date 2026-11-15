@@ -10,8 +10,15 @@ export const integrationTypes = ["ros2", "vda5050", "vendor-api"] as const;
 
 export const robotPageSize = 20;
 export const robotPageSizes = [10, 20, 100] as const;
-export type RobotActivity =
-  "working" | "idle" | "charging" | "blocked" | "unknown";
+export const robotActivities = [
+  "working",
+  "idle",
+  "returning",
+  "charging",
+  "needs-attention",
+  "unknown",
+] as const;
+export type RobotActivity = (typeof robotActivities)[number];
 export type Robot = {
   id: string;
   name: string;
@@ -22,6 +29,10 @@ export type Robot = {
   site: string;
   area: string | null;
   activity: RobotActivity;
+  problemCode: "path-blocked" | null;
+  controlTarget: "work" | "stop" | "base";
+  controlRevision: number;
+  appliedControlRevision: number;
   batteryPercent: number | null;
   lastTelemetryAt: string | null;
   lastReceivedAt: string | null;
