@@ -4,6 +4,7 @@ import {
   render,
   renderHook,
   screen,
+  within,
 } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import type { Robot } from "@/modules/robots/robot";
@@ -11,6 +12,10 @@ import FleetDashboard from "./fleet-dashboard";
 import RobotDetails from "./robot-details/robot-details";
 import useRobots from "./hooks/use-robots";
 const robot: Robot = {
+  problemCode: null,
+  controlTarget: "work",
+  controlRevision: 0,
+  appliedControlRevision: 0,
   id: "live",
   name: "Live robot",
   manufacturer: "Maker",
@@ -53,26 +58,26 @@ test("quiet polling preserves DOM and focus, retains failed data, and recovers",
   vi.stubGlobal("fetch", fetcher);
   render(<FleetDashboard />);
   await tick();
-  expect(screen.queryByText(/Last report/)).not.toBeInTheDocument();
-  const link = screen.getByRole("link", { name: robot.name });
+  const row = within(screen.getByTestId("robot-row-live"));
+  expect(row.queryByTestId("robot-report-age")).not.toBeInTheDocument();
+  const link = row.getByTestId("robot-link");
   link.focus();
   await tick(4000);
   expect(fetcher).toHaveBeenCalledTimes(1);
   await tick(1000);
-  expect(screen.getByText("49%")).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: robot.name })).toBe(link);
+  expect(row.getByTestId("robot-battery")).toHaveTextContent("49%");
+  expect(row.getByTestId("robot-link")).toBe(link);
   expect(link).toHaveFocus();
-  expect(
-    screen.getByRole("status", { name: "Fleet loading status" }),
-  ).toBeEmptyDOMElement();
+  expect(screen.getByTestId("fleet-loading")).toBeEmptyDOMElement();
   await tick(5000);
-  expect(screen.getByRole("alert")).toHaveTextContent(
+  expect(screen.getByTestId("fleet-refresh-warning")).toHaveRole("alert");
+  expect(screen.getByTestId("fleet-refresh-warning")).toHaveTextContent(
     "Live updates interrupted",
   );
-  expect(screen.getByText("49%")).toBeInTheDocument();
+  expect(row.getByTestId("robot-battery")).toHaveTextContent("49%");
   await tick(5000);
-  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-  expect(screen.getByText("48%")).toBeInTheDocument();
+  expect(screen.queryByTestId("fleet-refresh-warning")).not.toBeInTheDocument();
+  expect(row.getByTestId("robot-battery")).toHaveTextContent("48%");
 });
 test("visibility and open action menus suspend polling and resume immediately", async () => {
   vi.useFakeTimers();
@@ -83,24 +88,19 @@ test("visibility and open action menus suspend polling and resume immediately", 
   );
   render(<FleetDashboard />);
   await tick();
-  const trigger = screen.getByRole("button", {
-    name: "Actions for Live robot",
-  });
+  const row = within(screen.getByTestId("robot-row-live"));
+  const trigger = row.getByTestId("robot-actions");
   vi.spyOn(trigger, "getBoundingClientRect").mockReturnValue(
     new DOMRect(0, 0, 40, 40),
   );
-  const connection = screen.getByText("Online", { exact: true });
+  const connection = row.getByTestId("robot-connection");
   fireEvent.click(trigger);
   expect(connection).toHaveTextContent(/^Online$/);
-  expect(screen.queryByText(/unverified/)).not.toBeInTheDocument();
+  expect(connection).not.toHaveTextContent(/unverified/);
   await tick(20000);
   expect(connection).toHaveTextContent(/^Online$/);
-  expect(
-    screen.queryByText("Delayed", { exact: true }),
-  ).not.toBeInTheDocument();
-  expect(
-    screen.queryByText("Offline", { exact: true }),
-  ).not.toBeInTheDocument();
+  expect(connection).not.toHaveTextContent("Delayed");
+  expect(connection).not.toHaveTextContent("Offline");
   expect(fetch).toHaveBeenCalledTimes(1);
   expect(screen.queryByText("Updates paused")).not.toBeInTheDocument();
   fireEvent.keyDown(screen.getByRole("menu"), { key: "Escape" });
@@ -159,9 +159,13 @@ test("detail refreshes quietly and stops when its robot is deleted", async () =>
   );
   render(<RobotDetails robot={robot} />);
   await tick();
-  expect(screen.getByText("45%")).toBeInTheDocument();
+  expect(
+    within(screen.getByTestId("robot-details")).getByTestId("robot-battery"),
+  ).toHaveTextContent("45%");
   await tick(5000);
-  expect(screen.getByText(/Robot is no longer available/)).toBeInTheDocument();
+  expect(screen.getByTestId("robot-unavailable")).toHaveTextContent(
+    "Robot is no longer available.",
+  );
   await tick(5000);
   expect(fetch).toHaveBeenCalledTimes(2);
 });
@@ -175,11 +179,14 @@ test("report age appears for delayed robots while online labels stay calm", asyn
   );
   render(<FleetDashboard />);
   await tick();
-  expect(screen.getByText("Online", { exact: true })).toBeInTheDocument();
-  expect(screen.queryByText(/Last report/)).not.toBeInTheDocument();
+  const row = within(screen.getByTestId("robot-row-live"));
+  expect(row.getByTestId("robot-connection")).toHaveTextContent(/^Online$/);
+  expect(row.queryByTestId("robot-report-age")).not.toBeInTheDocument();
   await tick(1000);
-  expect(screen.getByText("Delayed", { exact: true })).toBeInTheDocument();
-  expect(screen.getByText("Last report 11s ago")).toBeInTheDocument();
+  expect(row.getByTestId("robot-connection")).toHaveTextContent(/^Delayed$/);
+  expect(row.getByTestId("robot-report-age")).toHaveTextContent(
+    "Last report 11s ago",
+  );
 });
 
 test("a confirmed detail deletion clears an earlier refresh warning", async () => {
@@ -193,12 +200,14 @@ test("a confirmed detail deletion clears an earlier refresh warning", async () =
   );
   render(<RobotDetails robot={robot} />);
   await tick();
-  expect(screen.getByRole("alert")).toHaveTextContent(
+  expect(screen.getByTestId("robot-refresh-warning")).toHaveTextContent(
     "Live updates interrupted",
   );
   await tick(5000);
-  expect(screen.getByText(/Robot is no longer available/)).toBeInTheDocument();
-  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  expect(screen.getByTestId("robot-unavailable")).toHaveTextContent(
+    "Robot is no longer available.",
+  );
+  expect(screen.queryByTestId("robot-refresh-warning")).not.toBeInTheDocument();
 });
 
 test("failed initial detail refresh keeps server-verified connection information", async () => {
@@ -208,7 +217,7 @@ test("failed initial detail refresh keeps server-verified connection information
   render(<RobotDetails robot={robot} verifiedAt={Date.now()} />);
   await tick();
   expect(
-    screen.getByText("Offline (unverified)", { exact: true }),
-  ).toBeInTheDocument();
+    within(screen.getByTestId("robot-details")).getByTestId("robot-connection"),
+  ).toHaveTextContent(/^Offline \(unverified\)$/);
   expect(screen.queryByText("Checking")).not.toBeInTheDocument();
 });

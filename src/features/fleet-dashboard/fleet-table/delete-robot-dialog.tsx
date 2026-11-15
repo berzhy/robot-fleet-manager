@@ -39,20 +39,30 @@ export default function DeleteRobotDialog({
         if (!pending) onCancel();
       }}
       slotProps={{
+        paper: () => ({ "data-testid": "delete-robot-dialog" }),
         transition: { onExited, onEntered: () => cancelRef.current?.focus() },
       }}
     >
       <DialogTitle id={`${id}-title`}>Delete robot?</DialogTitle>
       <DialogContent>
-        <DialogContentText id={`${id}-description`}>
+        <DialogContentText
+          data-testid="delete-robot-description"
+          id={`${id}-description`}
+        >
           Delete “{robot.name}”? This cannot be undone.
         </DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button ref={cancelRef} disabled={pending} onClick={onCancel}>
+        <Button
+          data-testid="delete-robot-cancel"
+          ref={cancelRef}
+          disabled={pending}
+          onClick={onCancel}
+        >
           Cancel
         </Button>
         <Button
+          data-testid="delete-robot-confirm"
           variant="contained"
           color="error"
           loading={pending}

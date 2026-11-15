@@ -152,8 +152,12 @@ export default function FleetDashboard() {
       }}
     >
       <Alert
+        data-testid="fleet-notification"
         severity={notification.severity}
         role={notification.severity === "success" ? "status" : "alert"}
+        slotProps={{
+          closeButton: () => ({ "data-testid": "fleet-notification-close" }),
+        }}
         onClose={() => setNotification(null)}
       >
         <Typography component="span" variant="body1">
@@ -177,6 +181,7 @@ export default function FleetDashboard() {
         }}
       >
         <Typography
+          data-testid="fleet-heading"
           ref={headingRef}
           tabIndex={-1}
           component="h1"
@@ -193,6 +198,7 @@ export default function FleetDashboard() {
         />
       </Stack>
       <Box
+        data-testid="fleet-loading"
         role="status"
         aria-label="Fleet loading status"
         aria-atomic="true"
@@ -210,7 +216,7 @@ export default function FleetDashboard() {
         {state.status === "loading" ? "Loading robots" : ""}
       </Box>
       {interrupted && state.status === "success" && (
-        <Alert severity="warning">
+        <Alert data-testid="fleet-refresh-warning" severity="warning">
           Live updates interrupted. Showing last-known data and connection
           states.
         </Alert>

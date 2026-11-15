@@ -29,6 +29,8 @@ afterEach(() => {
 const report = () => ({
   robotId: id,
   activity: "working" as const,
+  problemCode: null,
+  appliedControlRevision: 0,
   batteryPercent: 50,
   area: "Lobby",
   observedAt,
@@ -119,4 +121,52 @@ test("a database error rolls back the complete batch", async () => {
       .status,
   ).toBe(500);
   expect(getRobot(db, id)?.lastReceivedAt).toBeNull();
+});
+
+test("telemetry preserves problems and rejects impossible or regressing acknowledgments", async () => {
+  db.$client
+    .prepare("UPDATE robots SET control_revision = 2 WHERE id = ?")
+    .run(id);
+  ingestTelemetry(
+    db,
+    [
+      {
+        ...report(),
+        activity: "needs-attention",
+        problemCode: "path-blocked",
+        appliedControlRevision: 2,
+      },
+    ],
+    observedAt,
+  );
+  expect(getRobot(db, id)).toMatchObject({
+    problemCode: "path-blocked",
+    appliedControlRevision: 2,
+  });
+  for (const revision of [1, 3])
+    ingestTelemetry(
+      db,
+      [
+        {
+          ...report(),
+          appliedControlRevision: revision,
+          observedAt: "2026-01-02T00:00:00.000Z",
+        },
+      ],
+      "2026-01-02T00:00:00.000Z",
+    );
+  expect(getRobot(db, id)).toMatchObject({
+    activity: "needs-attention",
+    appliedControlRevision: 2,
+    lastReceivedAt: observedAt,
+  });
+  for (const invalid of [
+    { activity: "needs-attention", problemCode: null },
+    { activity: "working", problemCode: "path-blocked" },
+    { activity: "blocked" },
+    { appliedControlRevision: -1 },
+  ])
+    expect(
+      (await post({ reports: [{ ...report(), ...invalid }] })).status,
+    ).toBe(400);
 });

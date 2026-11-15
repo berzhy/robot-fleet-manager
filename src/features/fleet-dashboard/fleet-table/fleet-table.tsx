@@ -2,6 +2,7 @@
 
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import Box from "@mui/material/Box";
+import type { IconButtonProps } from "@mui/material/IconButton";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Table from "@mui/material/Table";
@@ -11,7 +12,7 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TablePagination from "@mui/material/TablePagination";
 import TableRow from "@mui/material/TableRow";
-import { useRef } from "react";
+import { useRef, type HTMLAttributes } from "react";
 
 import { robotPageSizes, type Robot } from "@/modules/robots/robot";
 import type { RobotQueryState } from "../types/robot-query-state";
@@ -93,6 +94,7 @@ export default function FleetTable({
         }}
       >
         <Table
+          data-testid="fleet-table"
           stickyHeader
           aria-label="Robot fleet"
           sx={{
@@ -158,6 +160,7 @@ export default function FleetTable({
       <Box sx={{ minHeight: 52, flexShrink: 0, bgcolor: "background.default" }}>
         {total > 0 && (
           <TablePagination
+            data-testid="fleet-pagination"
             component="div"
             count={total}
             page={page}
@@ -168,6 +171,20 @@ export default function FleetTable({
             }
             disabled={adding || state.status !== "success"}
             slotProps={{
+              actions: {
+                previousButton: {
+                  "data-testid": "fleet-previous-page",
+                } as IconButtonProps,
+                nextButton: {
+                  "data-testid": "fleet-next-page",
+                } as IconButtonProps,
+              },
+              select: {
+                SelectDisplayProps: {
+                  "data-testid": "fleet-page-size",
+                } as HTMLAttributes<HTMLDivElement>,
+              },
+              displayedRows: () => ({ "data-testid": "fleet-page-summary" }),
               spacer: { sx: { display: "none" } },
               toolbar: {
                 disableGutters: true,

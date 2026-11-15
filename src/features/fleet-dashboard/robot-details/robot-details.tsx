@@ -39,34 +39,45 @@ export default function RobotDetails({
   );
   const showReportAge = connection === "Delayed" || connection === "Offline";
   const fields = {
-    ID: robot.id,
-    Manufacturer: robot.manufacturer,
-    Type: formatRobotType(robot.type),
-    Integration: formatIntegrationType(robot.integrationType),
-    Site: robot.site,
-    Area: robot.area ?? "Unknown",
-    Activity: formatActivity(robot.activity),
-    Battery: formatBattery(robot.batteryPercent),
-    Connection: (
-      <ConnectionStatus
-        status={
-          robot.lastReceivedAt === null
-            ? "Unknown"
-            : verifiedAt
-              ? connection
-              : "Checking"
-        }
-        unverified={
-          robot.lastReceivedAt !== null && Boolean(verifiedAt) && unverified
-        }
-      />
-    ),
+    id: { label: "ID", value: robot.id },
+    manufacturer: { label: "Manufacturer", value: robot.manufacturer },
+    type: { label: "Type", value: formatRobotType(robot.type) },
+    integration: {
+      label: "Integration",
+      value: formatIntegrationType(robot.integrationType),
+    },
+    site: { label: "Site", value: robot.site },
+    area: { label: "Area", value: robot.area ?? "Unknown" },
+    activity: { label: "Activity", value: formatActivity(robot.activity) },
+    battery: { label: "Battery", value: formatBattery(robot.batteryPercent) },
+    connection: {
+      label: "Connection",
+      value: (
+        <ConnectionStatus
+          status={
+            robot.lastReceivedAt === null
+              ? "Unknown"
+              : verifiedAt
+                ? connection
+                : "Checking"
+          }
+          unverified={
+            robot.lastReceivedAt !== null && Boolean(verifiedAt) && unverified
+          }
+        />
+      ),
+    },
     ...(showReportAge
-      ? { "Last report": reportAge(robot.lastReceivedAt, now || verifiedAt) }
+      ? {
+          "report-age": {
+            label: "Last report",
+            value: reportAge(robot.lastReceivedAt, now || verifiedAt),
+          },
+        }
       : {}),
   };
   return (
-    <Stack spacing={3}>
+    <Stack data-testid="robot-details" spacing={3}>
       <Breadcrumbs aria-label="Breadcrumb">
         <Link component={NextLink} href="/">
           Fleet dashboard
@@ -77,13 +88,13 @@ export default function RobotDetails({
         {robot.name}
       </Typography>
       {interrupted && (
-        <Alert severity="warning">
+        <Alert data-testid="robot-refresh-warning" severity="warning">
           Live updates interrupted. Showing last-known data and connection
           states.
         </Alert>
       )}
       {missing ? (
-        <Typography>
+        <Typography data-testid="robot-unavailable">
           Robot is no longer available.{" "}
           <Link component={NextLink} href="/">
             Fleet dashboard
@@ -91,12 +102,16 @@ export default function RobotDetails({
         </Typography>
       ) : (
         <Box component="dl" sx={{ m: 0 }}>
-          {Object.entries(fields).map(([label, value]) => (
-            <Box key={label} sx={{ mb: 2 }}>
+          {Object.entries(fields).map(([field, { label, value }]) => (
+            <Box key={field} sx={{ mb: 2 }}>
               <Typography component="dt" variant="body2" color="textSecondary">
                 {label}
               </Typography>
-              <Typography component="dd" sx={{ m: 0 }}>
+              <Typography
+                data-testid={`robot-${field}`}
+                component="dd"
+                sx={{ m: 0 }}
+              >
                 {value}
               </Typography>
             </Box>

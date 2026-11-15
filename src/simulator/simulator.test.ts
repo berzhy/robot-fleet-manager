@@ -2,6 +2,10 @@ import { afterEach, expect, test, vi } from "vitest";
 import { runSimulator } from "./simulator";
 import type { Robot } from "@/modules/robots/robot";
 const robot: Robot = {
+  problemCode: null,
+  controlTarget: "work",
+  controlRevision: 0,
+  appliedControlRevision: 0,
   id: "one",
   name: "Test",
   manufacturer: "Maker",
@@ -82,4 +86,46 @@ test("failed discovery retains known robots and failed delivery retries without 
   await vi.waitFor(() => expect(deliveries).toBe(3), { timeout: 4000 });
   controller.abort();
   await running;
+});
+
+test("existing robots receive controls and failed telemetry does not replay older registry intent", async () => {
+  const controller = new AbortController();
+  let discoveries = 0;
+  const reports: { activity: string; appliedControlRevision: number }[] = [];
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  vi.spyOn(console, "info").mockImplementation(() => {});
+  vi.stubGlobal(
+    "fetch",
+    vi.fn((url: URL, init?: RequestInit) => {
+      if (url.pathname.endsWith("registry")) {
+        discoveries++;
+        return Promise.resolve(
+          Response.json({
+            items: [
+              {
+                ...robot,
+                ...(discoveries === 2
+                  ? { controlTarget: "stop", controlRevision: 1 }
+                  : {}),
+              },
+            ],
+          }),
+        );
+      }
+      const body = JSON.parse(init!.body as string) as {
+        reports: typeof reports;
+      };
+      reports.push(body.reports[0]);
+      if (reports.length === 3) controller.abort();
+      return Promise.resolve(
+        new Response(null, { status: reports.length === 2 ? 500 : 204 }),
+      );
+    }),
+  );
+  await runSimulator("http://local", controller.signal);
+  expect(reports).toHaveLength(3);
+  expect(reports.slice(1)).toEqual([
+    expect.objectContaining({ activity: "idle", appliedControlRevision: 1 }),
+    expect.objectContaining({ activity: "idle", appliedControlRevision: 1 }),
+  ]);
 });

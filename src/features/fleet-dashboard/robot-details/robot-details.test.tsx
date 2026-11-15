@@ -5,6 +5,10 @@ import type { Robot } from "@/modules/robots/robot";
 import RobotDetails from "@/features/fleet-dashboard/robot-details/robot-details";
 
 const robot: Robot = {
+  problemCode: null,
+  controlTarget: "work",
+  controlRevision: 0,
+  appliedControlRevision: 0,
   id: "test",
   name: "Test robot",
   manufacturer: "Test manufacturer",
@@ -21,6 +25,7 @@ const robot: Robot = {
 
 test("details show fields, missing values, and breadcrumbs", () => {
   render(<RobotDetails robot={robot} />);
+  const details = within(screen.getByTestId("robot-details"));
   expect(
     screen.getByRole("heading", { level: 1, name: robot.name }),
   ).toBeInTheDocument();
@@ -43,8 +48,16 @@ test("details show fields, missing values, and breadcrumbs", () => {
     "Battery",
     "Connection",
   ]);
-  expect(screen.getByText("Vendor API")).toBeInTheDocument();
-  expect(screen.getByText("Inspection robot")).toBeInTheDocument();
-  expect(screen.getByText("Charging")).toBeInTheDocument();
-  expect(screen.getAllByText("Unknown")).toHaveLength(3);
+  expect(details.getByTestId("robot-integration")).toHaveTextContent(
+    /^Vendor API$/,
+  );
+  expect(details.getByTestId("robot-type")).toHaveTextContent(
+    /^Inspection robot$/,
+  );
+  expect(details.getByTestId("robot-activity")).toHaveTextContent(/^Charging$/);
+  expect(details.getByTestId("robot-area")).toHaveTextContent(/^Unknown$/);
+  expect(details.getByTestId("robot-battery")).toHaveTextContent(/^Unknown$/);
+  expect(details.getByTestId("robot-connection")).toHaveTextContent(
+    /^Unknown$/,
+  );
 });

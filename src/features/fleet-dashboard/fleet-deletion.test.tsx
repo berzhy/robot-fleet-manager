@@ -13,6 +13,10 @@ import type { Robot } from "@/modules/robots/robot";
 import FleetDashboard from "./fleet-dashboard";
 
 const robot: Robot = {
+  problemCode: null,
+  controlTarget: "work",
+  controlRevision: 0,
+  appliedControlRevision: 0,
   id: "one",
   name: "Atlas",
   manufacturer: "Maker",
@@ -36,15 +40,14 @@ afterEach(() => {
 });
 
 async function openDelete() {
-  const trigger = await screen.findByRole("button", {
-    name: "Actions for Atlas",
-  });
+  const row = await screen.findByTestId("robot-row-one");
+  const trigger = within(row).getByTestId("robot-actions");
   vi.spyOn(trigger, "getBoundingClientRect").mockReturnValue(
     new DOMRect(0, 0, 40, 40),
   );
   fireEvent.click(trigger);
-  fireEvent.click(await screen.findByRole("menuitem", { name: "Delete" }));
-  return screen.findByRole("dialog", { name: "Delete robot?" });
+  fireEvent.click(await screen.findByTestId("robot-delete"));
+  return screen.findByTestId("delete-robot-dialog");
 }
 
 test("menu targets the robot, cancellation sends no DELETE and restores focus", async () => {
@@ -53,19 +56,31 @@ test("menu targets the robot, cancellation sends no DELETE and restores focus", 
   render(<FleetDashboard />);
   const dialog = await openDelete();
   expect(
-    within(dialog).getByText("Delete “Atlas”? This cannot be undone."),
-  ).toBeInTheDocument();
-  await waitFor(() =>
-    expect(
-      within(dialog).getByRole("button", { name: "Cancel" }),
-    ).toHaveFocus(),
-  );
-  fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
-  await waitFor(() =>
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    within(dialog).getByTestId("delete-robot-description"),
+  ).toHaveTextContent("Delete “Atlas”? This cannot be undone.");
+  expect(dialog).toHaveRole("dialog");
+  expect(dialog).toHaveAccessibleName("Delete robot?");
+  expect(within(dialog).getByTestId("delete-robot-cancel")).toHaveRole(
+    "button",
   );
   expect(
-    screen.getByRole("button", { name: "Actions for Atlas" }),
+    within(dialog).getByTestId("delete-robot-cancel"),
+  ).toHaveAccessibleName("Cancel");
+  expect(within(dialog).getByTestId("delete-robot-confirm")).toHaveRole(
+    "button",
+  );
+  expect(
+    within(dialog).getByTestId("delete-robot-confirm"),
+  ).toHaveAccessibleName("Delete");
+  await waitFor(() =>
+    expect(within(dialog).getByTestId("delete-robot-cancel")).toHaveFocus(),
+  );
+  fireEvent.click(within(dialog).getByTestId("delete-robot-cancel"));
+  await waitFor(() =>
+    expect(screen.queryByTestId("delete-robot-dialog")).not.toBeInTheDocument(),
+  );
+  expect(
+    within(screen.getByTestId("robot-row-one")).getByTestId("robot-actions"),
   ).toHaveFocus();
   expect(
     fetcher.mock.calls.filter(
@@ -89,16 +104,18 @@ test("pending deletion blocks duplicate submission and dismissal; failure permit
   vi.stubGlobal("fetch", fetcher);
   render(<FleetDashboard />);
   const dialog = await openDelete();
-  const confirm = within(dialog).getByRole("button", { name: "Delete" });
+  const confirm = within(dialog).getByTestId("delete-robot-confirm");
   fireEvent.click(confirm);
   fireEvent.click(confirm);
   expect(confirm).toBeDisabled();
-  expect(within(dialog).getByRole("button", { name: "Cancel" })).toBeDisabled();
+  expect(within(dialog).getByTestId("delete-robot-cancel")).toBeDisabled();
   fireEvent.keyDown(dialog, { key: "Escape" });
   expect(dialog).toBeInTheDocument();
   expect(fetcher).toHaveBeenCalledTimes(2);
   act(() => resolve(new Response(null, { status: 404 })));
-  expect(await screen.findByRole("alert")).toHaveTextContent(
+  const error = await screen.findByTestId("fleet-notification");
+  expect(error).toHaveRole("alert");
+  expect(error).toHaveTextContent(
     "Unable to delete “Atlas”. Please try again.",
   );
   expect(dialog).toBeInTheDocument();
@@ -107,37 +124,41 @@ test("pending deletion blocks duplicate submission and dismissal; failure permit
   await act(async () => {
     await vi.advanceTimersByTimeAsync(60000);
   });
-  expect(screen.getByRole("alert")).toHaveTextContent("Unable to delete");
+  expect(screen.getByTestId("fleet-notification")).toHaveTextContent(
+    "Unable to delete",
+  );
   vi.useRealTimers();
   fireEvent.click(
-    within(screen.getByRole("alert")).getByRole("button", { name: "Close" }),
+    within(screen.getByTestId("fleet-notification")).getByTestId(
+      "fleet-notification-close",
+    ),
   );
-  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  expect(screen.queryByTestId("fleet-notification")).not.toBeInTheDocument();
   fireEvent.click(confirm);
-  await screen.findByText("No robots available.");
-  expect(await screen.findByText("“Atlas” deleted.")).toBeInTheDocument();
+  await screen.findByTestId("fleet-empty");
+  await waitFor(() =>
+    expect(screen.getByTestId("fleet-notification")).toHaveTextContent(
+      "“Atlas” deleted.",
+    ),
+  );
   fireEvent.click(confirm);
   expect(fetcher).toHaveBeenCalledTimes(4);
   await waitFor(() =>
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    expect(screen.queryByTestId("delete-robot-dialog")).not.toBeInTheDocument(),
   );
-  expect(
-    screen.getByRole("heading", { name: "Fleet dashboard" }),
-  ).toHaveFocus();
+  expect(screen.getByTestId("fleet-heading")).toHaveFocus();
   expect(fetcher).toHaveBeenNthCalledWith(2, "/api/robots/one", {
     method: "DELETE",
   });
   expect(fetcher).toHaveBeenNthCalledWith(3, "/api/robots/one", {
     method: "DELETE",
   });
-  const notice = screen
-    .getByText("“Atlas” deleted.")
-    .closest('[role="status"]')!;
-  fireEvent.click(
-    within(notice as HTMLElement).getByRole("button", { name: "Close" }),
-  );
+  const notice = screen.getByTestId("fleet-notification");
+  const close = within(notice).getByTestId("fleet-notification-close");
+  expect(close).toHaveAccessibleName("Close");
+  fireEvent.click(close);
   await waitFor(() =>
-    expect(screen.queryByText("“Atlas” deleted.")).not.toBeInTheDocument(),
+    expect(screen.queryByTestId("fleet-notification")).not.toBeInTheDocument(),
   );
 });
 
@@ -152,13 +173,17 @@ test("successful deletion stays successful when the table refresh fails", async 
   );
   render(<FleetDashboard />);
   const dialog = await openDelete();
-  fireEvent.click(within(dialog).getByRole("button", { name: "Delete" }));
-  expect(await screen.findByText("“Atlas” deleted.")).toBeInTheDocument();
-  expect(await screen.findByRole("alert")).toHaveTextContent(
+  fireEvent.click(within(dialog).getByTestId("delete-robot-confirm"));
+  await waitFor(() =>
+    expect(screen.getByTestId("fleet-notification")).toHaveTextContent(
+      "“Atlas” deleted.",
+    ),
+  );
+  expect(await screen.findByTestId("fleet-refresh-warning")).toHaveTextContent(
     "Live updates interrupted",
   );
   await waitFor(() =>
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    expect(screen.queryByTestId("delete-robot-dialog")).not.toBeInTheDocument(),
   );
 });
 
@@ -173,11 +198,11 @@ test("deleting the last robot on a page requests the previous page", async () =>
     .mockResolvedValueOnce(response([previous], 20));
   vi.stubGlobal("fetch", fetcher);
   render(<FleetDashboard />);
-  await screen.findByRole("link", { name: "Bishop" });
-  fireEvent.click(screen.getByRole("button", { name: "Go to next page" }));
+  await screen.findByTestId("robot-row-previous");
+  fireEvent.click(screen.getByTestId("fleet-next-page"));
   const dialog = await openDelete();
-  fireEvent.click(within(dialog).getByRole("button", { name: "Delete" }));
-  await screen.findByRole("link", { name: "Bishop" });
+  fireEvent.click(within(dialog).getByTestId("delete-robot-confirm"));
+  await screen.findByTestId("robot-row-previous");
   expect(fetcher).toHaveBeenNthCalledWith(
     4,
     "/api/robots?page=1&pageSize=20",
@@ -203,12 +228,14 @@ test("success notification closes automatically after six seconds", async () => 
   const dialog = await openDelete();
   vi.useFakeTimers();
   await act(async () => {
-    fireEvent.click(within(dialog).getByRole("button", { name: "Delete" }));
+    fireEvent.click(within(dialog).getByTestId("delete-robot-confirm"));
     await Promise.resolve();
   });
-  expect(screen.getByText("“Atlas” deleted.")).toBeInTheDocument();
+  expect(screen.getByTestId("fleet-notification")).toHaveTextContent(
+    "“Atlas” deleted.",
+  );
   await act(async () => {
     await vi.advanceTimersByTimeAsync(6000);
   });
-  expect(screen.queryByText("“Atlas” deleted.")).not.toBeInTheDocument();
+  expect(screen.queryByTestId("fleet-notification")).not.toBeInTheDocument();
 });

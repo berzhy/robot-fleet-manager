@@ -332,3 +332,117 @@ test("fresh schema rejects missing and unsupported integrations outside the API"
     expect(() => insert.run(integrationType)).toThrow();
   expect(listRobots(db, 0).total).toBe(0);
 });
+
+test("actions validate current state, persist latest intent, and leave observations untouched", async () => {
+  const { requestRobotAction } = await import("./robot-actions");
+  const robot = createRobot(db, input);
+  const action = (value: unknown, id = robot.id) =>
+    requestRobotAction(
+      db,
+      id,
+      new Request("http://local", {
+        method: "POST",
+        body: JSON.stringify(value),
+      }),
+    );
+  expect((await action({ action: "start" })).status).toBe(409);
+  expect((await action({ action: "invalid" })).status).toBe(400);
+  expect((await action({ action: "stop" }, "missing")).status).toBe(404);
+  db.insert(latestTelemetry)
+    .values({
+      robotId: robot.id,
+      activity: "working",
+      batteryPercent: 50,
+      area: "Lobby",
+      observedAt: new Date().toISOString(),
+      receivedAt: new Date().toISOString(),
+    })
+    .run();
+  expect((await action({ action: "start" })).status).toBe(409);
+  expect((await action({ action: "stop" })).status).toBe(202);
+  expect(getRobot(db, robot.id)).toMatchObject({
+    activity: "working",
+    controlTarget: "stop",
+    controlRevision: 1,
+    appliedControlRevision: 0,
+  });
+  expect((await action({ action: "return-to-base" })).status).toBe(202);
+  expect(getRobot(db, robot.id)).toMatchObject({
+    controlTarget: "base",
+    controlRevision: 2,
+  });
+  db.$client
+    .prepare("UPDATE latest_telemetry SET received_at = ? WHERE robot_id = ?")
+    .run(new Date(Date.now() - 11000).toISOString(), robot.id);
+  expect((await action({ action: "stop" })).status).toBe(409);
+  expect(getRobot(db, robot.id)?.controlRevision).toBe(2);
+});
+
+test("Retry requires a reported blockage and reissues work with a new revision", async () => {
+  const { requestRobotAction } = await import("./robot-actions");
+  const robot = createRobot(db, input);
+  db.insert(latestTelemetry)
+    .values({
+      robotId: robot.id,
+      activity: "needs-attention",
+      problemCode: "path-blocked",
+      batteryPercent: 50,
+      area: "Lobby",
+      observedAt: new Date().toISOString(),
+      receivedAt: new Date().toISOString(),
+    })
+    .run();
+  const response = await requestRobotAction(
+    db,
+    robot.id,
+    new Request("http://local", {
+      method: "POST",
+      body: JSON.stringify({ action: "retry" }),
+    }),
+  );
+  expect(response.status).toBe(202);
+  expect(getRobot(db, robot.id)).toMatchObject({
+    controlTarget: "work",
+    controlRevision: 1,
+    activity: "needs-attention",
+    problemCode: "path-blocked",
+  });
+});
+
+test("action persistence failures roll back the target and return a generic error", async () => {
+  const { requestRobotAction } = await import("./robot-actions");
+  const robot = createRobot(db, input);
+  db.insert(latestTelemetry)
+    .values({
+      robotId: robot.id,
+      activity: "working",
+      batteryPercent: 50,
+      area: "Lobby",
+      observedAt: new Date().toISOString(),
+      receivedAt: new Date().toISOString(),
+    })
+    .run();
+  db.$client.exec(
+    "CREATE TRIGGER fail_control BEFORE UPDATE ON robots BEGIN SELECT RAISE(ABORT, 'private failure'); END;",
+  );
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const response = await requestRobotAction(
+    db,
+    robot.id,
+    new Request("http://local", {
+      method: "POST",
+      body: JSON.stringify({ action: "stop" }),
+    }),
+  );
+  expect(response.status).toBe(500);
+  expect(await response.json()).toEqual({
+    error: {
+      code: "INTERNAL_ERROR",
+      message: "Unable to request robot action.",
+    },
+  });
+  expect(getRobot(db, robot.id)).toMatchObject({
+    controlTarget: "work",
+    controlRevision: 0,
+  });
+});

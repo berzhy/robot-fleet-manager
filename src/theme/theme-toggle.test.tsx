@@ -35,23 +35,27 @@ test("theme switch toggles the light and dark class on the document", () => {
   );
 
   const root = document.documentElement;
-  const toDark = screen.getByRole("button", { name: "Switch to dark theme" });
+  const toDark = screen.getByTestId("theme-toggle");
+  expect(toDark).toHaveRole("button");
   expect(toDark).toBeEnabled();
+  expect(toDark).toHaveAccessibleName("Switch to dark theme");
   expect(root).toHaveClass("light");
   expect(root).not.toHaveClass("dark");
 
   fireEvent.click(toDark);
 
-  const toLight = screen.getByRole("button", { name: "Switch to light theme" });
+  const toLight = screen.getByTestId("theme-toggle");
   expect(toLight).toBeEnabled();
+  expect(toLight).toHaveAccessibleName("Switch to light theme");
   expect(root).toHaveClass("dark");
   expect(root).not.toHaveClass("light");
 
   fireEvent.click(toLight);
 
-  expect(
-    screen.getByRole("button", { name: "Switch to dark theme" }),
-  ).toBeEnabled();
+  expect(screen.getByTestId("theme-toggle")).toBeEnabled();
+  expect(screen.getByTestId("theme-toggle")).toHaveAccessibleName(
+    "Switch to dark theme",
+  );
   expect(root).toHaveClass("light");
   expect(root).not.toHaveClass("dark");
 });

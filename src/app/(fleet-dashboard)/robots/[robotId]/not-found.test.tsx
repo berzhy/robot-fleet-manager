@@ -5,10 +5,11 @@ import RobotNotFound from "./not-found";
 
 test("unknown robot state offers dashboard navigation", () => {
   render(<RobotNotFound />);
-  expect(
-    screen.getByRole("heading", { name: "Robot not found" }),
-  ).toBeInTheDocument();
-  expect(
-    screen.getByRole("link", { name: "Back to fleet dashboard" }),
-  ).toHaveAttribute("href", "/");
+  const heading = screen.getByTestId("robot-not-found");
+  expect(heading).toHaveRole("heading");
+  expect(heading).toHaveAccessibleName("Robot not found");
+  const back = screen.getByTestId("robot-not-found-back");
+  expect(back).toHaveRole("link");
+  expect(back).toHaveAccessibleName("Back to fleet dashboard");
+  expect(back).toHaveAttribute("href", "/");
 });

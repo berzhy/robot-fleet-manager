@@ -16,6 +16,7 @@ export default function ThemeToggle() {
     <Tooltip title={label}>
       <span>
         <IconButton
+          data-testid="theme-toggle"
           size="large"
           disabled={!currentMode}
           aria-label={label}

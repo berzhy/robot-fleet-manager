@@ -27,6 +27,7 @@ export default function RobotActions({
   return (
     <>
       <IconButton
+        data-testid="robot-actions"
         disabled={disabled}
         aria-label={`Actions for ${robot.name}`}
         aria-haspopup="menu"
@@ -49,6 +50,7 @@ export default function RobotActions({
         }}
       >
         <MenuItem
+          data-testid="robot-delete"
           onClick={() => {
             if (anchor) onDelete(robot, anchor);
             setAnchor(null);

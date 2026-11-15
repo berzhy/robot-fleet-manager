@@ -5,6 +5,10 @@ import type { Robot } from "@/modules/robots/robot";
 import FleetTable from "@/features/fleet-dashboard/fleet-table/fleet-table";
 
 const robot: Robot = {
+  problemCode: null,
+  controlTarget: "work",
+  controlRevision: 0,
+  appliedControlRevision: 0,
   id: "test",
   name: "Test robot",
   manufacturer: "Test manufacturer",
@@ -36,10 +40,14 @@ test("table renders the supplied server page without slicing or sorting", () => 
     />,
   );
   expect(screen.getByRole("link", { name: robot.name })).toBeInTheDocument();
-  expect(screen.getByText("21–21 of 21")).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "Go to previous page" }));
+  expect(screen.getByTestId("fleet-page-summary")).toHaveTextContent(
+    "21–21 of 21",
+  );
+  fireEvent.click(screen.getByTestId("fleet-previous-page"));
   expect(onPageChange).toHaveBeenCalledWith(0);
-  expect(screen.getAllByRole("cell", { name: "Unknown" })).toHaveLength(2);
+  const row = within(screen.getByTestId("robot-row-test"));
+  expect(row.getByTestId("robot-battery")).toHaveTextContent(/^Unknown$/);
+  expect(row.getByTestId("robot-connection")).toHaveTextContent(/^Unknown$/);
 });
 
 test("robot names are plain text with one accessible navigation link per row", () => {
@@ -78,5 +86,34 @@ test("robot names are plain text with one accessible navigation link per row", (
   expect(screen.getByRole("link", { name: robot.name })).toHaveAttribute(
     "href",
     `/robots/${robot.id}`,
+  );
+});
+
+test("blocked activity shows Needs attention and its concrete reason", () => {
+  render(
+    <FleetTable
+      state={{
+        status: "success",
+        robots: [
+          {
+            ...robot,
+            activity: "needs-attention",
+            problemCode: "path-blocked",
+          },
+        ],
+      }}
+      page={0}
+      pageSize={20}
+      total={1}
+      onPageSizeChange={() => {}}
+      onPageChange={() => {}}
+      onRetry={() => {}}
+      onDelete={() => {}}
+      onAdd={() => {}}
+      adding={false}
+    />,
+  );
+  expect(screen.getByTestId("robot-activity")).toHaveTextContent(
+    "Needs attentionPath blocked",
   );
 });

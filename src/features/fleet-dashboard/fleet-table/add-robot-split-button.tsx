@@ -25,6 +25,7 @@ export default function AddRobotSplitButton({
     <>
       <ButtonGroup variant="outlined" aria-label="Add robots">
         <Button
+          data-testid="fleet-add-robot"
           ref={buttonRef}
           startIcon={<AddIcon />}
           loading={loading}
@@ -34,6 +35,7 @@ export default function AddRobotSplitButton({
           Add robot
         </Button>
         <Button
+          data-testid="fleet-add-options"
           size="small"
           disabled={disabled || loading}
           aria-label="More add options"
@@ -54,6 +56,7 @@ export default function AddRobotSplitButton({
         {([10, 100] as const).map((count) => (
           <MenuItem
             key={count}
+            data-testid={`fleet-add-robots-${count}`}
             onClick={() => {
               if (anchor) onAdd(anchor, count);
               setAnchor(null);

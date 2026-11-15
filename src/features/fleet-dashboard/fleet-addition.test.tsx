@@ -4,6 +4,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 
@@ -13,6 +14,10 @@ import { createRobotSchema } from "@/modules/robots/robot-validation";
 import FleetDashboard from "./fleet-dashboard";
 
 const robot: Robot = {
+  problemCode: null,
+  controlTarget: "work",
+  controlRevision: 0,
+  appliedControlRevision: 0,
   id: "new",
   name: "New robot",
   manufacturer: "Maker",
@@ -47,11 +52,17 @@ test("both add buttons share pending state; empty creation reloads and restores 
     .mockResolvedValueOnce(response([robot]));
   vi.stubGlobal("fetch", fetcher);
   render(<FleetDashboard />);
-  await screen.findByText("No robots available.");
-  const buttons = screen.getAllByRole("button", { name: "Add robot" });
-  fireEvent.click(buttons[1]);
-  fireEvent.click(buttons[0]);
-  buttons.forEach((button) => expect(button).toBeDisabled());
+  await screen.findByTestId("fleet-empty");
+  const emptyAdd = screen.getByTestId("fleet-empty-add-robot");
+  const toolbarAdd = screen.getByTestId("fleet-add-robot");
+  for (const button of [emptyAdd, toolbarAdd]) {
+    expect(button).toHaveRole("button");
+    expect(button).toHaveAccessibleName("Add robot");
+  }
+  fireEvent.click(emptyAdd);
+  fireEvent.click(toolbarAdd);
+  expect(emptyAdd).toBeDisabled();
+  expect(toolbarAdd).toBeDisabled();
   expect(fetcher).toHaveBeenCalledTimes(2);
   const options = fetcher.mock.calls[1][1] as RequestInit;
   expect(fetcher).toHaveBeenNthCalledWith(
@@ -66,22 +77,20 @@ test("both add buttons share pending state; empty creation reloads and restores 
     createRobotSchema.safeParse(JSON.parse(options.body as string)).success,
   ).toBe(true);
   act(() => complete(Response.json(robot, { status: 201 })));
-  await screen.findByRole("link", { name: "New robot" });
-  expect(screen.getByText("“New robot” added.")).toBeInTheDocument();
-  await waitFor(() =>
-    expect(
-      screen.getAllByRole("button", { name: "Add robot" })[0],
-    ).toHaveFocus(),
+  await screen.findByTestId("robot-row-new");
+  expect(screen.getByTestId("fleet-notification")).toHaveRole("status");
+  expect(screen.getByTestId("fleet-notification")).toHaveTextContent(
+    "“New robot” added.",
   );
-  expect(screen.queryByText("No robots available.")).not.toBeInTheDocument();
+  await waitFor(() =>
+    expect(screen.getByTestId("fleet-add-robot")).toHaveFocus(),
+  );
+  expect(screen.queryByTestId("fleet-empty")).not.toBeInTheDocument();
   expect(
     screen.getByRole("columnheader", { name: "Added" }),
   ).toBeInTheDocument();
   expect(
-    screen
-      .getByRole("link", { name: "New robot" })
-      .closest("tr")
-      ?.querySelector("time"),
+    within(screen.getByTestId("robot-row-new")).getByTestId("robot-added-at"),
   ).toHaveAttribute("datetime", robot.createdAt);
 });
 
@@ -98,17 +107,23 @@ test.each(["HTTP", "network"])(
       .mockResolvedValue(response([robot]));
     vi.stubGlobal("fetch", fetcher);
     render(<FleetDashboard />);
-    await screen.findByRole("link", { name: "New robot" });
-    const add = screen.getByRole("button", { name: "Add robot" });
+    await screen.findByTestId("robot-row-new");
+    const add = screen.getByTestId("fleet-add-robot");
     fireEvent.click(add);
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Unable to add robot. Please try again.",
-    );
-    expect(screen.getByRole("link", { name: "New robot" })).toBeInTheDocument();
+    const notice = await screen.findByTestId("fleet-notification");
+    expect(notice).toHaveRole("alert");
+    expect(notice).toHaveTextContent("Unable to add robot. Please try again.");
+    expect(
+      within(screen.getByTestId("robot-row-new")).getByTestId("robot-link"),
+    ).toBeInTheDocument();
     await waitFor(() => expect(add).toHaveFocus());
     expect(fetcher).toHaveBeenCalledTimes(3);
     fireEvent.click(add);
-    await screen.findByText("“New robot” added.");
+    await waitFor(() =>
+      expect(screen.getByTestId("fleet-notification")).toHaveTextContent(
+        "“New robot” added.",
+      ),
+    );
     await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(5));
   },
 );
@@ -127,30 +142,38 @@ test("creation locks pagination and deletion, then refreshes the current later p
     .mockResolvedValueOnce(response([robot], 22, 1));
   vi.stubGlobal("fetch", fetcher);
   render(<FleetDashboard />);
-  await screen.findByRole("link", { name: "New robot" });
-  fireEvent.click(screen.getByRole("button", { name: "Go to next page" }));
-  await screen.findByText("21–21 of 21");
+  await screen.findByTestId("robot-row-new");
+  fireEvent.click(screen.getByTestId("fleet-next-page"));
   await waitFor(() =>
-    expect(screen.getByRole("button", { name: "Add robot" })).toBeEnabled(),
+    expect(screen.getByTestId("fleet-page-summary")).toHaveTextContent(
+      "21–21 of 21",
+    ),
   );
-  fireEvent.click(screen.getByRole("button", { name: "Add robot" }));
+  await waitFor(() =>
+    expect(screen.getByTestId("fleet-add-robot")).toBeEnabled(),
+  );
+  fireEvent.click(screen.getByTestId("fleet-add-robot"));
+  expect(screen.getByTestId("fleet-previous-page")).toBeDisabled();
   expect(
-    screen.getByRole("button", { name: "Go to previous page" }),
-  ).toBeDisabled();
-  expect(
-    screen.getByRole("button", { name: "Actions for New robot" }),
+    within(screen.getByTestId("robot-row-new")).getByTestId("robot-actions"),
   ).toBeDisabled();
   act(() => complete(Response.json(robot, { status: 201 })));
-  await screen.findByText("“New robot” added.");
   await waitFor(() =>
-    expect(screen.getByRole("button", { name: "Add robot" })).toBeEnabled(),
+    expect(screen.getByTestId("fleet-notification")).toHaveTextContent(
+      "“New robot” added.",
+    ),
+  );
+  await waitFor(() =>
+    expect(screen.getByTestId("fleet-add-robot")).toBeEnabled(),
   );
   expect(fetcher).toHaveBeenNthCalledWith(
     4,
     "/api/robots?page=1&pageSize=20",
     expect.anything(),
   );
-  expect(screen.getByText("21–22 of 22")).toBeInTheDocument();
+  expect(screen.getByTestId("fleet-page-summary")).toHaveTextContent(
+    "21–22 of 22",
+  );
 });
 
 test("successful creation followed by failed reload keeps success and restores focus", async () => {
@@ -163,16 +186,18 @@ test("successful creation followed by failed reload keeps success and restores f
       .mockResolvedValueOnce(new Response(null, { status: 500 })),
   );
   render(<FleetDashboard />);
-  await screen.findByText("No robots available.");
-  fireEvent.click(screen.getAllByRole("button", { name: "Add robot" })[1]);
-  expect(await screen.findByText("“New robot” added.")).toBeInTheDocument();
-  expect(await screen.findByRole("alert")).toHaveTextContent(
+  await screen.findByTestId("fleet-empty");
+  fireEvent.click(screen.getByTestId("fleet-empty-add-robot"));
+  await waitFor(() =>
+    expect(screen.getByTestId("fleet-notification")).toHaveTextContent(
+      "“New robot” added.",
+    ),
+  );
+  expect(await screen.findByTestId("fleet-refresh-warning")).toHaveTextContent(
     "Live updates interrupted",
   );
   await waitFor(() =>
-    expect(
-      screen.getAllByRole("button", { name: "Add robot" })[0],
-    ).toHaveFocus(),
+    expect(screen.getByTestId("fleet-add-robot")).toHaveFocus(),
   );
 });
 
@@ -191,19 +216,19 @@ test.each([10, 100])(
       .mockResolvedValueOnce(response([robot], count + 1));
     vi.stubGlobal("fetch", fetcher);
     render(<FleetDashboard />);
-    await screen.findByRole("link", { name: "New robot" });
-    const more = screen.getByRole("button", { name: "More add options" });
+    await screen.findByTestId("robot-row-new");
+    const more = screen.getByTestId("fleet-add-options");
+    expect(more).toHaveAccessibleName("More add options");
     vi.spyOn(more, "getBoundingClientRect").mockReturnValue(
       new DOMRect(0, 0, 40, 40),
     );
     fireEvent.click(more);
-    fireEvent.click(
-      screen.getByRole("menuitem", { name: `Add ${count} robots` }),
-    );
+    const option = screen.getByTestId(`fleet-add-robots-${count}`);
+    expect(option).toHaveRole("menuitem");
+    expect(option).toHaveAccessibleName(`Add ${count} robots`);
+    fireEvent.click(option);
     expect(more).toBeDisabled();
-    expect(
-      screen.getByRole("button", { name: "Add robot", hidden: true }),
-    ).toBeDisabled();
+    expect(screen.getByTestId("fleet-add-robot")).toBeDisabled();
     expect(fetcher).toHaveBeenCalledTimes(2);
     const options = fetcher.mock.calls[1][1] as RequestInit;
     const body = JSON.parse(options.body as string) as { robots: unknown[] };
@@ -229,13 +254,13 @@ test.each([10, 100])(
         ),
       ),
     );
-    expect(
-      await screen.findByText(`${count} robots added.`),
-    ).toBeInTheDocument();
     await waitFor(() =>
-      expect(
-        screen.getAllByRole("button", { name: "Add robot" })[0],
-      ).toHaveFocus(),
+      expect(screen.getByTestId("fleet-notification")).toHaveTextContent(
+        `${count} robots added.`,
+      ),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("fleet-add-robot")).toHaveFocus(),
     );
     expect(fetcher).toHaveBeenCalledTimes(3);
   },
@@ -249,17 +274,19 @@ test("batch failure preserves rows and resumes fleet updates", async () => {
     .mockResolvedValue(response([robot]));
   vi.stubGlobal("fetch", fetcher);
   render(<FleetDashboard />);
-  await screen.findByRole("link", { name: "New robot" });
-  const more = screen.getByRole("button", { name: "More add options" });
+  await screen.findByTestId("robot-row-new");
+  const more = screen.getByTestId("fleet-add-options");
   vi.spyOn(more, "getBoundingClientRect").mockReturnValue(
     new DOMRect(0, 0, 40, 40),
   );
   fireEvent.click(more);
-  fireEvent.click(screen.getByRole("menuitem", { name: "Add 10 robots" }));
-  expect(await screen.findByRole("alert")).toHaveTextContent(
+  fireEvent.click(screen.getByTestId("fleet-add-robots-10"));
+  expect(await screen.findByTestId("fleet-notification")).toHaveTextContent(
     "Unable to add robots. Please try again.",
   );
-  expect(screen.getByRole("link", { name: "New robot" })).toBeInTheDocument();
+  expect(
+    within(screen.getByTestId("robot-row-new")).getByTestId("robot-link"),
+  ).toBeInTheDocument();
   expect(fetcher).toHaveBeenCalledTimes(3);
   await waitFor(() => expect(more).toHaveFocus());
 });

@@ -43,6 +43,7 @@ export default function FleetTableRow({
   const showReportAge = connection === "Delayed" || connection === "Offline";
   return (
     <TableRow
+      data-testid={`robot-row-${robot.id}`}
       hover
       sx={{
         position: "relative",
@@ -52,11 +53,18 @@ export default function FleetTableRow({
       }}
     >
       <TableCell component="th" scope="row">
-        <Typography variant="body2">{robot.name}</Typography>
-        <Typography variant="body2" color="textSecondary">
+        <Typography data-testid="robot-name" variant="body2">
+          {robot.name}
+        </Typography>
+        <Typography
+          data-testid="robot-manufacturer"
+          variant="body2"
+          color="textSecondary"
+        >
           {robot.manufacturer}
         </Typography>
         <Link
+          data-testid="robot-link"
           component={NextLink}
           href={`/robots/${robot.id}`}
           aria-label={robot.name}
@@ -64,30 +72,48 @@ export default function FleetTableRow({
           sx={{ position: "absolute", inset: 0 }}
         />
       </TableCell>
-      <TableCell>{formatRobotType(robot.type)}</TableCell>
-      <TableCell>{formatIntegrationType(robot.integrationType)}</TableCell>
+      <TableCell data-testid="robot-type">
+        {formatRobotType(robot.type)}
+      </TableCell>
+      <TableCell data-testid="robot-integration">
+        {formatIntegrationType(robot.integrationType)}
+      </TableCell>
       <TableCell>
         {robot.site}
         {robot.area && (
-          <Typography variant="body2" color="textSecondary">
+          <Typography
+            data-testid="robot-area"
+            variant="body2"
+            color="textSecondary"
+          >
             {robot.area}
           </Typography>
         )}
       </TableCell>
-      <TableCell>{formatActivity(robot.activity)}</TableCell>
-      <TableCell>{formatBattery(robot.batteryPercent)}</TableCell>
+      <TableCell data-testid="robot-activity">
+        {formatActivity(robot.activity)}
+      </TableCell>
+      <TableCell data-testid="robot-battery">
+        {formatBattery(robot.batteryPercent)}
+      </TableCell>
       <TableCell sx={{ fontVariantNumeric: "tabular-nums" }}>
-        <Typography variant="body2">
+        <Typography data-testid="robot-connection" variant="body2">
           <ConnectionStatus status={connection} unverified={unverified} />
         </Typography>
         {showReportAge && (
-          <Typography variant="body2" color="textSecondary">
+          <Typography
+            data-testid="robot-report-age"
+            variant="body2"
+            color="textSecondary"
+          >
             {reportAge(robot.lastReceivedAt, now || verifiedAt)}
           </Typography>
         )}
       </TableCell>
       <TableCell>
-        <time dateTime={robot.createdAt}>{formatAdded(robot.createdAt)}</time>
+        <time data-testid="robot-added-at" dateTime={robot.createdAt}>
+          {formatAdded(robot.createdAt)}
+        </time>
       </TableCell>
       <TableCell align="right" sx={{ position: "relative" }}>
         <RobotActions

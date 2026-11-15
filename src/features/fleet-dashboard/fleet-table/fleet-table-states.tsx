@@ -45,8 +45,11 @@ export function FleetTableEmptyState({
           (theme) => theme.applyStyles("dark", { filter: "brightness(1.6)" }),
         ]}
       />
-      <Typography role="status">No robots available.</Typography>
+      <Typography data-testid="fleet-empty" role="status">
+        No robots available.
+      </Typography>
       <Button
+        data-testid="fleet-empty-add-robot"
         variant="text"
         startIcon={<AddIcon />}
         loading={adding}
@@ -70,10 +73,10 @@ export function FleetTableErrorState({ onRetry }: { onRetry: () => void }) {
       }}
     >
       <ErrorOutlinedIcon color="error" fontSize="large" />
-      <Typography role="alert" color="error">
+      <Typography data-testid="fleet-load-error" role="alert" color="error">
         Unable to load robots. Please try again.
       </Typography>
-      <Button variant="text" onClick={onRetry}>
+      <Button data-testid="fleet-retry" variant="text" onClick={onRetry}>
         Retry
       </Button>
     </Stack>

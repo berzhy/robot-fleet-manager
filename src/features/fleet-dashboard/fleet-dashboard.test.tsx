@@ -1,8 +1,19 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import type { Robot, RobotPage } from "@/modules/robots/robot";
 import FleetDashboard from "./fleet-dashboard";
 const robot: Robot = {
+  problemCode: null,
+  controlTarget: "work",
+  controlRevision: 0,
+  appliedControlRevision: 0,
   id: "one",
   name: "Atlas",
   manufacturer: "Maker",
@@ -34,14 +45,13 @@ test("loads real API data with accessible loading status", async () => {
   render(<FleetDashboard />);
   const status = screen.getByRole("status", { name: "Fleet loading status" });
   expect(status).toHaveTextContent("Loading robots");
-  expect(screen.getByRole("table").closest("[aria-busy]")).not.toContainElement(
-    status,
-  );
+  expect(status.closest("[aria-busy]")).toBeNull();
   act(() => resolve(Response.json(page([robot]))));
-  expect(await screen.findByRole("link", { name: "Atlas" })).toHaveAttribute(
-    "href",
-    "/robots/one",
-  );
+  expect(
+    within(await screen.findByTestId("robot-row-one")).getByTestId(
+      "robot-link",
+    ),
+  ).toHaveAttribute("href", "/robots/one");
   expect(
     screen.queryByRole("button", { name: "Refresh" }),
   ).not.toBeInTheDocument();
@@ -56,11 +66,13 @@ test("handles HTTP failure, retry, and empty fleet without demo controls", async
       .mockResolvedValueOnce(Response.json(page([]))),
   );
   render(<FleetDashboard />);
-  expect(await screen.findByRole("alert")).toHaveTextContent(
+  expect(await screen.findByTestId("fleet-load-error")).toHaveTextContent(
     "Unable to load robots",
   );
-  fireEvent.click(screen.getByRole("button", { name: "Retry" }));
-  expect(await screen.findByText("No robots available.")).toBeInTheDocument();
+  fireEvent.click(screen.getByTestId("fleet-retry"));
+  const empty = await screen.findByTestId("fleet-empty");
+  expect(empty).toHaveRole("status");
+  expect(empty).toHaveTextContent("No robots available.");
 });
 test("requests pages and keeps the pager mounted while loading", async () => {
   const rows = Array.from({ length: 20 }, (_, i) => ({
@@ -79,15 +91,19 @@ test("requests pages and keeps the pager mounted while loading", async () => {
     );
   vi.stubGlobal("fetch", fetcher);
   render(<FleetDashboard />);
-  await screen.findByRole("link", { name: "Robot 0" });
-  const next = screen.getByRole("button", { name: "Go to next page" });
+  await screen.findByTestId("robot-row-0");
+  const next = screen.getByTestId("fleet-next-page");
   fireEvent.click(next);
   expect(next).toBeInTheDocument();
   expect(next).toBeDisabled();
   act(() =>
     resolve(Response.json(page([{ ...robot, name: "Last robot" }], 21, 1))),
   );
-  await screen.findByRole("link", { name: "Last robot" });
+  await waitFor(() =>
+    expect(
+      within(screen.getByTestId("robot-row-one")).getByTestId("robot-name"),
+    ).toHaveTextContent("Last robot"),
+  );
   expect(fetcher).toHaveBeenNthCalledWith(
     2,
     "/api/robots?page=1&pageSize=20",
@@ -105,19 +121,28 @@ test("changing rows per page resets to the first page and requests the selected 
     );
   vi.stubGlobal("fetch", fetcher);
   render(<FleetDashboard />);
-  await screen.findByRole("link", { name: "Atlas" });
-  fireEvent.click(screen.getByRole("button", { name: "Go to next page" }));
-  await screen.findByText("21–21 of 21");
-  await screen.findByRole("link", { name: "Atlas" });
-  fireEvent.mouseDown(screen.getByRole("combobox", { name: /Rows per page/ }));
+  await screen.findByTestId("robot-row-one");
+  fireEvent.click(screen.getByTestId("fleet-next-page"));
+  await waitFor(() =>
+    expect(screen.getByTestId("fleet-page-summary")).toHaveTextContent(
+      "21–21 of 21",
+    ),
+  );
+  await screen.findByTestId("robot-row-one");
+  const size = screen.getByTestId("fleet-page-size");
+  expect(size).toHaveRole("combobox");
+  expect(size).toHaveAccessibleName(/Rows per page/);
+  fireEvent.mouseDown(size);
   fireEvent.click(screen.getByRole("option", { name: "10" }));
-  await screen.findByText("1–10 of 21");
+  await waitFor(() =>
+    expect(screen.getByTestId("fleet-page-summary")).toHaveTextContent(
+      "1–10 of 21",
+    ),
+  );
   expect(fetcher).toHaveBeenNthCalledWith(
     3,
     "/api/robots?page=0&pageSize=10",
     expect.anything(),
   );
-  expect(
-    screen.getByRole("button", { name: "Go to previous page" }),
-  ).toBeDisabled();
+  expect(screen.getByTestId("fleet-previous-page")).toBeDisabled();
 });
