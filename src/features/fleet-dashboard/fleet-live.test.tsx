@@ -150,6 +150,7 @@ test("a stale in-flight poll cannot overwrite a mutation refresh", async () => {
     status: "success",
     robots: [{ batteryPercent: 40 }],
   });
+  expect(result.current.interrupted).toBe(false);
 });
 test("detail refreshes quietly and stops when its robot is deleted", async () => {
   vi.useFakeTimers();
@@ -175,7 +176,11 @@ test("detail refreshes quietly and stops when its robot is deleted", async () =>
   expect(screen.getByTestId("robot-unavailable")).toHaveTextContent(
     "Robot is no longer available.",
   );
-  await tick(5000);
+  vi.spyOn(document, "hidden", "get").mockReturnValue(true);
+  fireEvent(document, new Event("visibilitychange"));
+  vi.spyOn(document, "hidden", "get").mockReturnValue(false);
+  fireEvent(document, new Event("visibilitychange"));
+  await tick(10000);
   expect(fetch).toHaveBeenCalledTimes(2);
 });
 
@@ -212,6 +217,7 @@ test("detail action refresh cancels older polls without relabeling verified data
   expect(result.current.robot.batteryPercent).toBe(50);
   expect(result.current.refreshing).toBe(true);
   expect(result.current.unverified).toBe(false);
+  expect(result.current.interrupted).toBe(false);
   await act(async () => {
     fresh(Response.json(context(40)));
     await Promise.resolve();
@@ -312,4 +318,117 @@ test("closing a secondary select keeps polling paused while More filters is open
   fireEvent.click(screen.getByRole("button", { name: "Close more filters" }));
   await tick(300);
   expect(fetcher).toHaveBeenCalledTimes(2);
+});
+
+test("paused fleet observes visibility without fetching until resumed", async () => {
+  vi.useFakeTimers();
+  const fetcher = vi.fn().mockImplementation(() => Promise.resolve(page()));
+  vi.stubGlobal("fetch", fetcher);
+  const { result, rerender } = renderHook(({ paused }) => useRobots(paused), {
+    initialProps: { paused: false },
+  });
+  await tick();
+  rerender({ paused: true });
+  vi.spyOn(document, "hidden", "get").mockReturnValue(true);
+  fireEvent(document, new Event("visibilitychange"));
+  expect(result.current.unverified).toBe(true);
+  vi.spyOn(document, "hidden", "get").mockReturnValue(false);
+  fireEvent(document, new Event("visibilitychange"));
+  await tick(10000);
+  expect(fetcher).toHaveBeenCalledTimes(1);
+  expect(result.current.unverified).toBe(true);
+  rerender({ paused: false });
+  await tick();
+  expect(fetcher).toHaveBeenCalledTimes(2);
+  expect(result.current.unverified).toBe(false);
+});
+
+test("paused detail retains verification across visibility changes and refreshes on resume", async () => {
+  vi.useFakeTimers();
+  const initial = { robot, siteRobots: [], verifiedAt: Date.now() };
+  const fetcher = vi
+    .fn()
+    .mockImplementation(() => Promise.resolve(Response.json(initial)));
+  vi.stubGlobal("fetch", fetcher);
+  const { result, rerender } = renderHook(
+    ({ paused }) => useLiveRobot(initial, paused),
+    {
+      initialProps: { paused: false },
+    },
+  );
+  await tick();
+  rerender({ paused: true });
+  vi.spyOn(document, "hidden", "get").mockReturnValue(true);
+  fireEvent(document, new Event("visibilitychange"));
+  expect(result.current.unverified).toBe(false);
+  vi.spyOn(document, "hidden", "get").mockReturnValue(false);
+  fireEvent(document, new Event("visibilitychange"));
+  await tick(10000);
+  expect(fetcher).toHaveBeenCalledTimes(1);
+  expect(result.current.unverified).toBe(false);
+  rerender({ paused: false });
+  await tick();
+  expect(fetcher).toHaveBeenCalledTimes(2);
+});
+
+test("fleet and detail retain snapshots after a request timeout and recover on the next poll", async () => {
+  vi.useFakeTimers();
+  let timeout = new AbortController();
+  vi.spyOn(AbortSignal, "timeout").mockImplementation(() => timeout.signal);
+  let stalled = false;
+  const fetcher = vi.fn((url: string, init?: RequestInit) => {
+    if (stalled)
+      return new Promise<Response>((_resolve, reject) => {
+        const signal = init!.signal!;
+        signal.addEventListener(
+          "abort",
+          () =>
+            reject(
+              signal.reason instanceof Error
+                ? signal.reason
+                : new Error("Request aborted"),
+            ),
+          {
+            once: true,
+          },
+        );
+      });
+    return Promise.resolve(
+      url.includes("/context")
+        ? Response.json({
+            robot: { ...robot, batteryPercent: 45 },
+            siteRobots: [],
+            verifiedAt: Date.now(),
+          })
+        : page(45),
+    );
+  });
+  vi.stubGlobal("fetch", fetcher);
+  const { result } = renderHook(() => ({
+    fleet: useRobots(),
+    detail: useLiveRobot({ robot, siteRobots: [], verifiedAt: Date.now() }),
+  }));
+  await tick();
+  stalled = true;
+  await tick(5000);
+  expect(fetcher).toHaveBeenCalledTimes(4);
+  await act(async () => {
+    timeout.abort(new DOMException("Request timed out", "TimeoutError"));
+    await Promise.resolve();
+  });
+  expect(result.current.fleet.interrupted).toBe(true);
+  expect(result.current.detail.interrupted).toBe(true);
+  expect(result.current.fleet.state).toMatchObject({
+    status: "success",
+    robots: [{ batteryPercent: 45 }],
+  });
+  expect(result.current.detail.robot.batteryPercent).toBe(45);
+  await tick(4999);
+  expect(fetcher).toHaveBeenCalledTimes(4);
+  stalled = false;
+  timeout = new AbortController();
+  await tick(1);
+  expect(fetcher).toHaveBeenCalledTimes(6);
+  expect(result.current.fleet.interrupted).toBe(false);
+  expect(result.current.detail.interrupted).toBe(false);
 });
