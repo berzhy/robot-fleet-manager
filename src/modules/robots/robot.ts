@@ -9,8 +9,8 @@ type RobotType = (typeof robotTypes)[number];
 
 export const integrationTypes = ["ros2", "vda5050", "vendor-api"] as const;
 
-export const robotPageSize = 20;
-export const robotPageSizes = [10, 20, 100] as const;
+export const robotPageSize = 10;
+export const robotPageSizes = [10, 20, 50] as const;
 export const robotActivities = [
   "working",
   "idle",

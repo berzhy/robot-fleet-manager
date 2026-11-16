@@ -12,7 +12,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000). SQLite persists the fleet in `data/fleet.sqlite`; set `DATABASE_PATH` to use another file. Run commands from the project root. Migrations are explicit and never run during requests or builds.
 
-A new database starts empty. Newly added robots have unknown telemetry until their first report arrives. Use the outlined **Add robot** split button to add one robot, or its dropdown to add 10 or 100. The empty-state button adds one. Bulk additions use one transaction and succeed or roll back together. Metadata is generated without a form, including one of four required types: Cleaning robot, Security robot, Delivery robot, or Inspection robot. Generated manufacturer/type pairs use Samsung and iRobot for cleaning, LG for delivery, Ascento for security, and Boston Dynamics for inspection. The table groups manufacturer beneath the robot name and shows Type in its own column. Integration metadata is required: `ros2` (ROS 2), `vda5050` (VDA5050), or `vendor-api` (Vendor API), shown in the Integration column and details. Generated integrations are illustrative demo metadata, assigned independently of manufacturer; these labels do not claim vendor compatibility or implemented connectors. All telemetry still arrives through the simulator HTTP API. The Added column shows registration time, with newest robots first. Addition preserves the current page, so the new robot may be on another page. The table reloads automatically after creation or deletion; Retry is available if loading fails. Pagination defaults to 20 rows, with 10, 20, and 100 available in the native Rows per page selector. Changing the size returns to the first page. Rows open details with breadcrumbs. The trailing Actions menu supports deletion with confirmation, a pending state, and success/error notifications.
+A new database starts empty. Newly added robots have unknown telemetry until their first report arrives. Use the outlined **Add robot** split button to add one robot, or its dropdown to add 10 or 100. The empty-state button adds one. Bulk additions use one transaction and succeed or roll back together. Metadata is generated without a form, including one of four required types: Cleaning robot, Security robot, Delivery robot, or Inspection robot. Generated manufacturer/type pairs use Samsung and iRobot for cleaning, LG for delivery, Ascento for security, and Boston Dynamics for inspection. The table groups manufacturer beneath the robot name and shows Type in its own column. Integration metadata is required: `ros2` (ROS 2), `vda5050` (VDA5050), or `vendor-api` (Vendor API), shown in the Integration column and details. Generated integrations are illustrative demo metadata, assigned independently of manufacturer; these labels do not claim vendor compatibility or implemented connectors. All telemetry still arrives through the simulator HTTP API. The Added column shows registration time, with newest robots first. Addition preserves the current page, so the new robot may be on another page. The table reloads automatically after creation or deletion; Retry is available if loading fails. Pagination defaults to 10 rows, with 10, 20, and 50 available in the native Rows per page selector. Changing the size returns to the first page. Rows open details with breadcrumbs. The trailing Actions menu supports deletion with confirmation, a pending state, and success/error notifications.
 
 ```bash
 npm run db:generate  # Generate a migration after changing the schema
@@ -23,7 +23,7 @@ During this POC, schema changes may replace migration history and discard develo
 
 ## Robot API
 
-- `GET /api/robots?page=0&pageSize=20`: `{ items, total, page, pageSize, summary, fleetTotal, filterOptions, evaluatedAt }`, ordered by creation time descending, then ID descending.
+- `GET /api/robots?page=0&pageSize=10`: `{ items, total, page, pageSize, summary, fleetTotal, filterOptions, evaluatedAt }`, ordered by creation time descending, then ID descending.
 - `GET /api/robots/:id`: one robot, or 404.
 - `POST /api/robots/batch`: accept `{ robots: [...] }` with 1–100 metadata records; return 201 with `{ items: [...] }`. All records are created in one transaction.
 - `POST /api/robots`: create metadata from `name`, `manufacturer`, `site`, `type`, and `integrationType`; returns 201 with unknown telemetry.
@@ -83,7 +83,7 @@ The dashboard route is `src/app/(fleet-dashboard)/page.tsx`; its screen implemen
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-Material UI is configured with the Next.js App Router style cache and a shared theme in `src/theme/theme.ts`. It uses Geist and defaults to the system light/dark preference. The top-right theme button switches modes and saves the selection locally. See [decisions.md](./decisions.md) for the current product direction and open questions.
+Material UI is configured with the Next.js App Router style cache and a shared theme in `src/theme/theme.ts`. It uses Geist and defaults to light mode. The top-right theme button switches modes and saves the selection locally. See [decisions.md](./decisions.md) for the current product direction and open questions.
 
 ## Learn More
 

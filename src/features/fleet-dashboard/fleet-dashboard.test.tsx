@@ -32,7 +32,7 @@ const page = (items: Robot[], total = items.length, index = 0): RobotPage => ({
   items,
   total,
   page: index,
-  pageSize: 20,
+  pageSize: 10,
   ...pageMetadata(total),
 });
 afterEach(() => vi.unstubAllGlobals());
@@ -77,7 +77,7 @@ test("handles HTTP failure, retry, and empty fleet without demo controls", async
   expect(empty).toHaveTextContent("No robots available.");
 });
 test("requests pages and keeps the pager mounted while loading", async () => {
-  const rows = Array.from({ length: 20 }, (_, i) => ({
+  const rows = Array.from({ length: 10 }, (_, i) => ({
     ...robot,
     id: String(i),
     name: `Robot ${i}`,
@@ -108,7 +108,7 @@ test("requests pages and keeps the pager mounted while loading", async () => {
   );
   expect(fetcher).toHaveBeenNthCalledWith(
     2,
-    "/api/robots?page=1&pageSize=20",
+    "/api/robots?page=1&pageSize=10",
     expect.objectContaining({ cache: "no-store" }),
   );
 });
@@ -123,7 +123,7 @@ test("changing rows per page resets to the first page and requests the selected 
         items: [robot],
         total: 21,
         page: 0,
-        pageSize: 10,
+        pageSize: 50,
         ...pageMetadata(21),
       }),
     );
@@ -133,7 +133,7 @@ test("changing rows per page resets to the first page and requests the selected 
   fireEvent.click(screen.getByTestId("fleet-next-page"));
   await waitFor(() =>
     expect(screen.getByTestId("fleet-page-summary")).toHaveTextContent(
-      "21–21 of 21",
+      "11–20 of 21",
     ),
   );
   await screen.findByTestId("robot-row-one");
@@ -141,15 +141,18 @@ test("changing rows per page resets to the first page and requests the selected 
   expect(size).toHaveRole("combobox");
   expect(size).toHaveAccessibleName(/Rows per page/);
   fireEvent.mouseDown(size);
-  fireEvent.click(screen.getByRole("option", { name: "10" }));
+  expect(
+    screen.getAllByRole("option").map((option) => option.textContent),
+  ).toEqual(["10", "20", "50"]);
+  fireEvent.click(screen.getByRole("option", { name: "50" }));
   await waitFor(() =>
     expect(screen.getByTestId("fleet-page-summary")).toHaveTextContent(
-      "1–10 of 21",
+      "1–21 of 21",
     ),
   );
   expect(fetcher).toHaveBeenNthCalledWith(
     3,
-    "/api/robots?page=0&pageSize=10",
+    "/api/robots?page=0&pageSize=50",
     expect.anything(),
   );
   expect(screen.getByTestId("fleet-previous-page")).toBeDisabled();

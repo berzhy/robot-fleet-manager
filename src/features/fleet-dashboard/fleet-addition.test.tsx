@@ -37,7 +37,7 @@ function response(items: Robot[], total = items.length, page = 0) {
     items,
     total,
     page,
-    pageSize: 20,
+    pageSize: 10,
     ...pageMetadata(total),
   });
 }
@@ -139,21 +139,21 @@ test("creation locks pagination and deletion, then refreshes the current later p
   let complete!: (response: Response) => void;
   const fetcher = vi
     .fn()
-    .mockResolvedValueOnce(response([robot], 21))
-    .mockResolvedValueOnce(response([robot], 21, 1))
+    .mockResolvedValueOnce(response([robot], 11))
+    .mockResolvedValueOnce(response([robot], 11, 1))
     .mockReturnValueOnce(
       new Promise((resolve) => {
         complete = resolve;
       }),
     )
-    .mockResolvedValueOnce(response([robot], 22, 1));
+    .mockResolvedValueOnce(response([robot], 12, 1));
   vi.stubGlobal("fetch", fetcher);
   render(<FleetDashboard />);
   await screen.findByTestId("robot-row-new");
   fireEvent.click(screen.getByTestId("fleet-next-page"));
   await waitFor(() =>
     expect(screen.getByTestId("fleet-page-summary")).toHaveTextContent(
-      "21–21 of 21",
+      "11–11 of 11",
     ),
   );
   await waitFor(() =>
@@ -175,11 +175,11 @@ test("creation locks pagination and deletion, then refreshes the current later p
   );
   expect(fetcher).toHaveBeenNthCalledWith(
     4,
-    "/api/robots?page=1&pageSize=20",
+    "/api/robots?page=1&pageSize=10",
     expect.anything(),
   );
   expect(screen.getByTestId("fleet-page-summary")).toHaveTextContent(
-    "21–22 of 22",
+    "11–12 of 12",
   );
 });
 
@@ -304,7 +304,7 @@ test("addition outside the selected view retains filters and reports success wit
       items: [],
       total: 0,
       page: 0,
-      pageSize: 20,
+      pageSize: 10,
       ...pageMetadata(1),
     });
   const fetcher = vi

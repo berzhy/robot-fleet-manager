@@ -6,7 +6,7 @@ import ThemeToggle from "./theme-toggle";
 
 function matchMedia(query: string): MediaQueryList {
   return {
-    matches: false,
+    matches: query === "(prefers-color-scheme: dark)",
     media: query,
     onchange: null,
     addListener: () => {},
@@ -18,7 +18,6 @@ function matchMedia(query: string): MediaQueryList {
 }
 
 beforeEach(() => {
-  // The app starts on the system theme. Pin that preference so the first class is light.
   vi.stubGlobal("matchMedia", matchMedia);
 });
 
@@ -27,7 +26,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-test("theme switch toggles the light and dark class on the document", () => {
+test("defaults to light despite dark system preference and toggles both themes", () => {
   render(
     <AppThemeProvider>
       <ThemeToggle />

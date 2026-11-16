@@ -36,7 +36,7 @@ function response(items: Robot[], total = items.length, page = 0) {
     items,
     total,
     page,
-    pageSize: 20,
+    pageSize: 10,
     ...pageMetadata(total),
   });
 }
@@ -198,11 +198,11 @@ test("deleting the last robot on a page requests the previous page", async () =>
   const previous = { ...robot, id: "previous", name: "Bishop" };
   const fetcher = vi
     .fn()
-    .mockResolvedValueOnce(response([previous], 21))
-    .mockResolvedValueOnce(response([robot], 21, 1))
+    .mockResolvedValueOnce(response([previous], 11))
+    .mockResolvedValueOnce(response([robot], 11, 1))
     .mockResolvedValueOnce(new Response(null, { status: 204 }))
-    .mockResolvedValueOnce(response([], 20, 1))
-    .mockResolvedValueOnce(response([previous], 20));
+    .mockResolvedValueOnce(response([], 10, 1))
+    .mockResolvedValueOnce(response([previous], 10));
   vi.stubGlobal("fetch", fetcher);
   render(<FleetDashboard />);
   await screen.findByTestId("robot-row-previous");
@@ -212,12 +212,12 @@ test("deleting the last robot on a page requests the previous page", async () =>
   await screen.findByTestId("robot-row-previous");
   expect(fetcher).toHaveBeenNthCalledWith(
     4,
-    "/api/robots?page=1&pageSize=20",
+    "/api/robots?page=1&pageSize=10",
     expect.anything(),
   );
   expect(fetcher).toHaveBeenNthCalledWith(
     5,
-    "/api/robots?page=0&pageSize=20",
+    "/api/robots?page=0&pageSize=10",
     expect.anything(),
   );
 });

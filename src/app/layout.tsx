@@ -29,7 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <body>
-        <InitColorSchemeScript attribute="class" defaultMode="system" />
+        <InitColorSchemeScript attribute="class" defaultMode="light" />
         <AppRouterCacheProvider options={{ enableCssLayer: true }}>
           <AppThemeProvider>
             <AppShell>{children}</AppShell>

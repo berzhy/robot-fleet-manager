@@ -10,7 +10,7 @@ export default function AppThemeProvider({
   children,
 }: Readonly<{ children: ReactNode }>) {
   return (
-    <ThemeProvider theme={theme} defaultMode="system" disableTransitionOnChange>
+    <ThemeProvider theme={theme} defaultMode="light" disableTransitionOnChange>
       <CssBaseline enableColorScheme />
       {children}
     </ThemeProvider>

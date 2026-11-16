@@ -307,18 +307,18 @@ test("deleting the last filtered page corrects pagination and retains filters", 
   page,
   request,
 }) => {
-  await seedFleet(request, 21);
+  await seedFleet(request, 11);
   await page.goto("/");
   await chooseFilter(page, "Location", "Munich");
   await page.getByTestId("fleet-next-page").click();
   await expect(page.getByTestId("fleet-page-summary")).toHaveText(
-    "21–21 of 21",
+    "11–11 of 11",
   );
   const row = page.getByTestId("fleet-table").locator("tbody tr");
   await row.getByTestId("robot-actions").click();
   await page.getByTestId("robot-delete").click();
   await page.getByTestId("delete-robot-confirm").click();
-  await expect(page.getByTestId("fleet-page-summary")).toHaveText("1–20 of 20");
+  await expect(page.getByTestId("fleet-page-summary")).toHaveText("1–10 of 10");
   await expect(
     page.getByText("Location: Munich", { exact: true }),
   ).toBeVisible();

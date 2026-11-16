@@ -18,7 +18,7 @@ test("aborts old requests and ignores their late responses", async () => {
       items: [],
       total: 0,
       page: 1,
-      pageSize: 20,
+      pageSize: 10,
       ...pageMetadata(),
     });
   const { result } = renderHook(() => useRobots());
@@ -31,7 +31,7 @@ test("aborts old requests and ignores their late responses", async () => {
       items: [],
       total: 100,
       page: 0,
-      pageSize: 20,
+      pageSize: 10,
       ...pageMetadata(),
     });
     await Promise.resolve();
@@ -45,19 +45,19 @@ test("page size changes cancel old requests and reload preserves the selection",
     items: [],
     total: 0,
     page: 0,
-    pageSize: 10,
+    pageSize: 20,
     ...pageMetadata(),
   });
   const { result } = renderHook(() => useRobots());
   await waitFor(() => expect(result.current.state.status).toBe("success"));
   const oldSignal = vi.mocked(getRobots).mock.calls[0][2];
-  act(() => result.current.setPageSize(10));
+  act(() => result.current.setPageSize(20));
   await waitFor(() => expect(result.current.state.status).toBe("success"));
   expect(oldSignal?.aborted).toBe(true);
-  expect(result.current.pageSize).toBe(10);
+  expect(result.current.pageSize).toBe(20);
   act(() => result.current.reload());
   await waitFor(() => expect(result.current.state.status).toBe("success"));
-  expect(getRobots).toHaveBeenLastCalledWith(0, 10, expect.any(AbortSignal), {
+  expect(getRobots).toHaveBeenLastCalledWith(0, 20, expect.any(AbortSignal), {
     view: "all",
   });
 });
@@ -66,23 +66,23 @@ test("failed page correction never presents previous-page rows under the new pag
   vi.mocked(getRobots)
     .mockResolvedValueOnce({
       items: [],
-      total: 21,
+      total: 11,
       page: 0,
-      pageSize: 20,
+      pageSize: 10,
       ...pageMetadata(),
     })
     .mockResolvedValueOnce({
       items: [],
-      total: 21,
+      total: 11,
       page: 1,
-      pageSize: 20,
+      pageSize: 10,
       ...pageMetadata(),
     })
     .mockResolvedValueOnce({
       items: [],
-      total: 20,
+      total: 10,
       page: 1,
-      pageSize: 20,
+      pageSize: 10,
       ...pageMetadata(),
     })
     .mockRejectedValueOnce(new Error("correction failed"));
@@ -93,7 +93,7 @@ test("failed page correction never presents previous-page rows under the new pag
   act(() => result.current.reload());
   await waitFor(() => expect(result.current.state.status).toBe("error"));
   expect(result.current.page).toBe(0);
-  expect(getRobots).toHaveBeenLastCalledWith(0, 20, expect.any(AbortSignal), {
+  expect(getRobots).toHaveBeenLastCalledWith(0, 10, expect.any(AbortSignal), {
     view: "all",
   });
 });
@@ -144,9 +144,9 @@ test("filter changes cancel old scope requests and reset page while retaining pa
 test("zero matching results correct a later page and preserve filters", async () => {
   const response = {
     items: [],
-    total: 21,
+    total: 11,
     page: 0,
-    pageSize: 20,
+    pageSize: 10,
     ...pageMetadata(21),
   };
   vi.mocked(getRobots).mockResolvedValue(response);
@@ -162,7 +162,7 @@ test("zero matching results correct a later page and preserve filters", async ()
   await waitFor(() => expect(result.current.page).toBe(0));
   await waitFor(() => expect(result.current.state.status).toBe("success"));
   expect(result.current.filters.view).toBe("low-battery");
-  expect(getRobots).toHaveBeenLastCalledWith(0, 20, expect.any(AbortSignal), {
+  expect(getRobots).toHaveBeenLastCalledWith(0, 10, expect.any(AbortSignal), {
     view: "low-battery",
   });
 });
@@ -172,7 +172,7 @@ test("announces explicit search results but keeps background refreshes quiet", a
     items: [],
     total: 2,
     page: 0,
-    pageSize: 20,
+    pageSize: 10,
     ...pageMetadata(2),
   };
   vi.mocked(getRobots).mockResolvedValue(response);

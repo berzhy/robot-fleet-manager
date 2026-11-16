@@ -78,10 +78,10 @@ test("pagination orders newest first with descending id tie-breaking", () => {
         ).toISOString(),
       })
       .run();
-  expect(listRobots(db, 0).items.map((r) => r.id)).toEqual(
+  expect(listRobots(db, 0, 20).items.map((r) => r.id)).toEqual(
     Array.from({ length: 20 }, (_, i) => String(20 - i).padStart(2, "0")),
   );
-  expect(listRobots(db, 1)).toMatchObject({
+  expect(listRobots(db, 1, 20)).toMatchObject({
     total: 21,
     page: 1,
     pageSize: 20,
@@ -173,10 +173,10 @@ test("HTTP contracts create/read/list/delete and reject invalid requests", async
   expect(await api.get(robot.id).json()).toEqual(robot);
   expect(
     await api.list(new Request("http://local/api/robots")).json(),
-  ).toMatchObject({ items: [robot] });
+  ).toMatchObject({ items: [robot], pageSize: 10 });
   expect(
     await api.list(new Request("http://local/api/robots?page=9")).json(),
-  ).toMatchObject({ items: [], total: 1, page: 9, pageSize: 20 });
+  ).toMatchObject({ items: [], total: 1, page: 9, pageSize: 10 });
   for (const page of ["-1", "abc", "1.5", "Infinity"])
     expect(
       api.list(new Request(`http://local/api/robots?page=${page}`)).status,
@@ -218,11 +218,11 @@ test("HTTP page size controls database pagination and unsupported sizes are reje
   expect(result.pageSize).toBe(10);
   expect(result.items).toHaveLength(10);
   expect(result.items[0].id).toBe("10");
-  for (const size of ["-1", "0", "11", "50", "101", "abc", "20.5"])
+  for (const size of ["-1", "0", "11", "100", "101", "abc", "20.5"])
     expect(
       api.list(new Request(`http://local/api/robots?pageSize=${size}`)).status,
     ).toBe(400);
-  for (const size of [10, 20, 100])
+  for (const size of [10, 20, 50])
     expect(
       await api
         .list(new Request(`http://local/api/robots?pageSize=${size}`))

@@ -46,7 +46,7 @@ export function robotHandlers(database: () => FleetDatabase) {
         return errorResponse(
           400,
           "INVALID_INPUT",
-          "Page size must be 10, 20 or 100.",
+          "Page size must be 10, 20 or 50.",
         );
       if (!page.success)
         return errorResponse(
