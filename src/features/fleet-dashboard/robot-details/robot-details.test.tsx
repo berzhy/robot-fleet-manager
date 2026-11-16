@@ -375,6 +375,90 @@ test("activity requests are guarded while pending and telemetry confirms the cha
   ).not.toBeInTheDocument();
 });
 
+test("activity controls stay disabled until the command refresh lands", async () => {
+  const online: Robot = {
+    ...robot,
+    activity: "working" as const,
+    batteryPercent: 80,
+    lastReceivedAt: new Date().toISOString(),
+  };
+
+  let resolveAction!: (value: Response) => void;
+  let resolveRefresh: ((value: Response) => void) | undefined;
+  let refreshes = 0;
+
+  const fetcher = vi.fn((_url: string, init?: RequestInit) => {
+    if (init?.method === "POST")
+      return new Promise<Response>((resolve) => {
+        resolveAction = resolve;
+      });
+
+    refreshes += 1;
+
+    if (refreshes > 1)
+      return new Promise<Response>((resolve) => {
+        resolveRefresh = resolve;
+      });
+
+    return Promise.resolve(
+      Response.json({ robot: online, siteRobots: [], verifiedAt: Date.now() }),
+    );
+  });
+  vi.stubGlobal("fetch", fetcher);
+  render(
+    <RobotDetails robot={online} siteRobots={[]} verifiedAt={Date.now()} />,
+  );
+
+  const stop = screen.getByRole("button", { name: "Stop activity" });
+  await waitFor(() => expect(stop).toHaveAttribute("aria-disabled", "false"));
+
+  await act(async () => {
+    fireEvent.click(stop);
+    await Promise.resolve();
+  });
+
+  resolveAction(new Response(null, { status: 202 }));
+
+  // The action has settled and reported success, but the refresh it
+  // triggered is still in flight: commands must stay disabled against
+  // the pre-command activity until that refresh lands.
+  await waitFor(() =>
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Stop activity requested.",
+    ),
+  );
+  await waitFor(() => expect(resolveRefresh).toBeDefined());
+  expect(stop).toHaveAttribute("aria-disabled", "true");
+
+  await act(async () => {
+    fireEvent.click(stop);
+    await Promise.resolve();
+  });
+  expect(
+    fetcher.mock.calls.filter(
+      (call) => (call[1] as RequestInit)?.method === "POST",
+    ),
+  ).toHaveLength(1);
+
+  await act(async () => {
+    resolveRefresh!(
+      Response.json({
+        robot: { ...online, activity: "idle" },
+        siteRobots: [],
+        verifiedAt: Date.now(),
+      }),
+    );
+    await Promise.resolve();
+  });
+
+  await waitFor(() =>
+    expect(screen.getByTestId("robot-activity")).toHaveTextContent("Idle"),
+  );
+  expect(
+    screen.getByRole("button", { name: "Start activity" }),
+  ).toHaveAttribute("aria-disabled", "false");
+});
+
 test("failed action keeps reported activity and explains the failure", async () => {
   const online: Robot = {
     ...robot,

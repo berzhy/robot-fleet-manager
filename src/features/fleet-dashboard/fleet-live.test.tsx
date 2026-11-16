@@ -57,6 +57,54 @@ function setPageVisibility(hidden: boolean) {
   fireEvent(document, new Event("visibilitychange", { bubbles: true }));
 }
 
+// Fleet/detail fetcher whose polls can be held in flight, then released
+// late, to prove cancellation by the pause effect.
+function liveResponses() {
+  let battery = 50;
+  let deferred = false;
+
+  const stale: {
+    detail: boolean;
+    signal: AbortSignal;
+    resolve: (response: Response) => void;
+  }[] = [];
+
+  const respond = (detail: boolean, value: number) =>
+    detail
+      ? Response.json({
+          robot: { ...robot, batteryPercent: value },
+          siteRobots: [],
+          verifiedAt: Date.now(),
+        })
+      : page(value);
+
+  const fetcher = vi.fn((url: string, init?: RequestInit) => {
+    const detail = url.includes("/context");
+
+    if (deferred)
+      return new Promise<Response>((resolve) => {
+        stale.push({ detail, signal: init!.signal!, resolve });
+      });
+
+    return Promise.resolve(respond(detail, battery));
+  });
+
+  return {
+    fetcher,
+    stale,
+    setBattery(value: number) {
+      battery = value;
+    },
+    setDeferred(value: boolean) {
+      deferred = value;
+    },
+    resolveStale(value: number) {
+      for (const pending of stale)
+        pending.resolve(respond(pending.detail, value));
+    },
+  };
+}
+
 test("quiet polling preserves DOM and focus, retains failed data, and recovers", async () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date(robot.lastReceivedAt!));
@@ -137,7 +185,7 @@ test("visibility and open action menus suspend polling and resume immediately", 
   expect(fetch).toHaveBeenCalledTimes(3);
 });
 
-test("a stale in-flight poll cannot overwrite a mutation refresh", async () => {
+test("a stale in-flight poll cannot overwrite an explicit refresh", async () => {
   vi.useFakeTimers();
   let stale!: (response: Response) => void;
   vi.stubGlobal(
@@ -159,7 +207,6 @@ test("a stale in-flight poll cannot overwrite a mutation refresh", async () => {
   await tick(5000);
 
   act(() => {
-    result.current.cancelRefresh();
     result.current.refresh();
   });
   await tick();
@@ -234,10 +281,7 @@ test("detail action refresh cancels older polls without relabeling verified data
     { initialProps: { paused: false } },
   );
 
-  act(() => {
-    result.current.cancelRefresh();
-    rerender({ paused: true });
-  });
+  rerender({ paused: true });
 
   rerender({ paused: false });
   await act(async () => {
@@ -260,6 +304,57 @@ test("detail action refresh cancels older polls without relabeling verified data
   expect(result.current.interrupted).toBe(true);
   expect(result.current.unverified).toBe(true);
   expect(result.current.robot.batteryPercent).toBe(40);
+});
+
+test("pausing aborts in-flight fleet and detail polls and ignores their late responses", async () => {
+  vi.useFakeTimers();
+  const live = liveResponses();
+  vi.stubGlobal("fetch", live.fetcher);
+
+  const initial = { robot, siteRobots: [], verifiedAt: Date.now() };
+  const { result, rerender } = renderHook(
+    ({ paused }) => ({
+      fleet: useRobots(paused),
+      detail: useLiveRobot(initial, paused),
+    }),
+    { initialProps: { paused: false } },
+  );
+  await tick();
+
+  live.setDeferred(true);
+  await tick(5000);
+  expect(live.stale).toHaveLength(2);
+  expect(live.stale.every((pending) => !pending.signal.aborted)).toBe(true);
+
+  rerender({ paused: true });
+  await tick();
+  expect(live.stale.every((pending) => pending.signal.aborted)).toBe(true);
+
+  await act(async () => {
+    live.resolveStale(99);
+    await Promise.resolve();
+  });
+  expect(result.current.fleet.state).toMatchObject({
+    status: "success",
+    robots: [{ batteryPercent: 50 }],
+  });
+  expect(result.current.detail.robot.batteryPercent).toBe(50);
+  expect(result.current.fleet.interrupted).toBe(false);
+  expect(result.current.detail.interrupted).toBe(false);
+
+  await tick(10000);
+  expect(live.fetcher).toHaveBeenCalledTimes(4);
+
+  live.setDeferred(false);
+  live.setBattery(40);
+  rerender({ paused: false });
+  await tick();
+  expect(live.fetcher).toHaveBeenCalledTimes(6);
+  expect(result.current.fleet.state).toMatchObject({
+    status: "success",
+    robots: [{ batteryPercent: 40 }],
+  });
+  expect(result.current.detail.robot.batteryPercent).toBe(40);
 });
 
 test("connection classification stays on the last fleet snapshot between refreshes", async () => {
