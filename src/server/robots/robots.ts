@@ -26,6 +26,11 @@ import {
   type CreateRobotInput,
 } from "@/modules/robots/robot-validation";
 
+import {
+  onlineReportMaxAgeMs,
+  delayedReportMaxAgeMs,
+} from "@/modules/telemetry/freshness";
+
 import type { FleetDatabase } from "../db/database";
 import { latestTelemetry, robots } from "../db/schema";
 
@@ -56,7 +61,13 @@ export function listRobots(
   filters: RobotFilters = { view: "all" },
 ): RobotPage {
   const evaluatedAt = Date.now();
-  const offline = sql<boolean>`${latestTelemetry.receivedAt} < ${new Date(evaluatedAt - 15000).toISOString()}`;
+  const onlineCutoff = new Date(
+    evaluatedAt - onlineReportMaxAgeMs,
+  ).toISOString();
+  const delayedCutoff = new Date(
+    evaluatedAt - delayedReportMaxAgeMs,
+  ).toISOString();
+  const offline = sql<boolean>`${latestTelemetry.receivedAt} < ${delayedCutoff}`;
   const lowBattery = sql<boolean>`${latestTelemetry.batteryPercent} <= 15 and ${latestTelemetry.activity} != 'charging'`;
   const criticalBattery = sql<boolean>`${latestTelemetry.batteryPercent} <= 10 and ${latestTelemetry.activity} != 'charging'`;
   const attention = or(
@@ -81,15 +92,12 @@ export function listRobots(
       : undefined;
   const connectionSearches = (
     [
-      [
-        "Online",
-        sql`${latestTelemetry.receivedAt} >= ${new Date(evaluatedAt - 10000).toISOString()}`,
-      ],
+      ["Online", sql`${latestTelemetry.receivedAt} >= ${onlineCutoff}`],
       [
         "Delayed",
         and(
-          sql`${latestTelemetry.receivedAt} < ${new Date(evaluatedAt - 10000).toISOString()}`,
-          sql`${latestTelemetry.receivedAt} >= ${new Date(evaluatedAt - 15000).toISOString()}`,
+          sql`${latestTelemetry.receivedAt} < ${onlineCutoff}`,
+          sql`${latestTelemetry.receivedAt} >= ${delayedCutoff}`,
         ),
       ],
       ["Offline", offline],

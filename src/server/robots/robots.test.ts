@@ -772,3 +772,28 @@ test.each([10, 10.1, null])(
     expect(getRobot(db, robot.id)?.controlRevision).toBe(allowed ? 1 : 0);
   },
 );
+
+test.each([
+  [10000, "Online"],
+  [10001, "Delayed"],
+  [15000, "Delayed"],
+  [15001, "Offline"],
+] as const)("connection search at report age %s matches %s", (age, status) => {
+  const now = Date.parse("2026-11-15T12:00:00Z");
+  vi.spyOn(Date, "now").mockReturnValue(now);
+  const robot = createRobot(db, input);
+  db.insert(latestTelemetry)
+    .values({
+      robotId: robot.id,
+      activity: "idle",
+      batteryPercent: 80,
+      observedAt: new Date(now - age).toISOString(),
+      receivedAt: new Date(now - age).toISOString(),
+    })
+    .run();
+  for (const search of ["Online", "Delayed", "Offline"]) {
+    expect(listRobots(db, 0, 10, { view: "all", search }).total).toBe(
+      search === status ? 1 : 0,
+    );
+  }
+});
