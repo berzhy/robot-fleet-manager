@@ -6,7 +6,6 @@ import { useEffect, useMemo, useState } from "react";
 import type { RobotContext } from "@/modules/robots/robot";
 
 import { robotContextOptions } from "../api/robot-queries";
-import usePageVisibility from "./use-page-visibility";
 
 export default function useLiveRobot(initial: RobotContext, paused = false) {
   const client = useQueryClient();
@@ -18,30 +17,21 @@ export default function useLiveRobot(initial: RobotContext, paused = false) {
   const count = () =>
     client.getQueryState(options.queryKey)?.dataUpdateCount ?? 0;
 
-  // Server-rendered context starts verified; hidden mounts must first revalidate.
-  const [verificationAfter, setVerificationAfter] = useState(() =>
-    typeof document !== "undefined" && document.hidden ? Infinity : -1,
-  );
   const [refreshAfter, setRefreshAfter] = useState<number | null>(null);
-
-  const hidden = usePageVisibility(() => {
-    if (!paused) setVerificationAfter(count());
-    void client.cancelQueries({ queryKey: options.queryKey, exact: true });
-  });
 
   const query = useQuery({
     ...options,
     initialData: initial,
-    enabled: (q) => !paused && !hidden && q.state.data !== null,
+    enabled: (q) => !paused && q.state.data !== null,
     refetchInterval: 5000,
-    refetchIntervalInBackground: true,
+    refetchIntervalInBackground: false,
     notifyOnChangeProps: "all",
   });
 
   useEffect(() => {
-    if (paused || hidden)
+    if (paused)
       void client.cancelQueries({ queryKey: options.queryKey, exact: true });
-  }, [client, options.queryKey, paused, hidden]);
+  }, [client, options.queryKey, paused]);
 
   const missing = query.data === null;
 
@@ -59,7 +49,7 @@ export default function useLiveRobot(initial: RobotContext, paused = false) {
       count() <= refreshAfter &&
       !query.isError &&
       !missing,
-    unverified: query.isError || count() <= verificationAfter,
+    unverified: query.isError,
     cancelRefresh,
   };
 }

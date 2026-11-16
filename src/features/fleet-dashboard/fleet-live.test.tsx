@@ -49,6 +49,14 @@ async function tick(ms = 0) {
   });
 }
 
+function setPageVisibility(hidden: boolean) {
+  vi.spyOn(document, "hidden", "get").mockReturnValue(hidden);
+  vi.spyOn(document, "visibilityState", "get").mockReturnValue(
+    hidden ? "hidden" : "visible",
+  );
+  fireEvent(document, new Event("visibilitychange", { bubbles: true }));
+}
+
 test("quiet polling preserves DOM and focus, retains failed data, and recovers", async () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date(robot.lastReceivedAt!));
@@ -120,13 +128,11 @@ test("visibility and open action menus suspend polling and resume immediately", 
   await tick(300);
   expect(fetch).toHaveBeenCalledTimes(2);
 
-  vi.spyOn(document, "hidden", "get").mockReturnValue(true);
-  fireEvent(document, new Event("visibilitychange"));
+  setPageVisibility(true);
   await tick(5000);
   expect(fetch).toHaveBeenCalledTimes(2);
 
-  vi.spyOn(document, "hidden", "get").mockReturnValue(false);
-  fireEvent(document, new Event("visibilitychange"));
+  setPageVisibility(false);
   await tick();
   expect(fetch).toHaveBeenCalledTimes(3);
 });
@@ -196,10 +202,8 @@ test("detail refreshes quietly and stops when its robot is deleted", async () =>
     "Robot is no longer available.",
   );
 
-  vi.spyOn(document, "hidden", "get").mockReturnValue(true);
-  fireEvent(document, new Event("visibilitychange"));
-  vi.spyOn(document, "hidden", "get").mockReturnValue(false);
-  fireEvent(document, new Event("visibilitychange"));
+  setPageVisibility(true);
+  setPageVisibility(false);
   await tick(10000);
   expect(fetch).toHaveBeenCalledTimes(2);
 });
@@ -358,7 +362,7 @@ test("closing a secondary select keeps polling paused while More filters is open
   expect(fetcher).toHaveBeenCalledTimes(2);
 });
 
-test("paused fleet observes visibility without fetching until resumed", async () => {
+test("paused fleet retains cached data across visibility changes and refreshes on resume", async () => {
   vi.useFakeTimers();
   const fetcher = vi.fn().mockImplementation(() => Promise.resolve(page()));
   vi.stubGlobal("fetch", fetcher);
@@ -368,15 +372,13 @@ test("paused fleet observes visibility without fetching until resumed", async ()
   await tick();
 
   rerender({ paused: true });
-  vi.spyOn(document, "hidden", "get").mockReturnValue(true);
-  fireEvent(document, new Event("visibilitychange"));
-  expect(result.current.unverified).toBe(true);
+  setPageVisibility(true);
+  expect(result.current.unverified).toBe(false);
 
-  vi.spyOn(document, "hidden", "get").mockReturnValue(false);
-  fireEvent(document, new Event("visibilitychange"));
+  setPageVisibility(false);
   await tick(10000);
   expect(fetcher).toHaveBeenCalledTimes(1);
-  expect(result.current.unverified).toBe(true);
+  expect(result.current.unverified).toBe(false);
 
   rerender({ paused: false });
   await tick();
@@ -400,12 +402,10 @@ test("paused detail retains verification across visibility changes and refreshes
   await tick();
 
   rerender({ paused: true });
-  vi.spyOn(document, "hidden", "get").mockReturnValue(true);
-  fireEvent(document, new Event("visibilitychange"));
+  setPageVisibility(true);
   expect(result.current.unverified).toBe(false);
 
-  vi.spyOn(document, "hidden", "get").mockReturnValue(false);
-  fireEvent(document, new Event("visibilitychange"));
+  setPageVisibility(false);
   await tick(10000);
   expect(fetcher).toHaveBeenCalledTimes(1);
   expect(result.current.unverified).toBe(false);
@@ -568,4 +568,213 @@ test("cached fleet remount waits for verification and does not expose cached row
   fireEvent.click(screen.getByTestId("fleet-retry"));
   await tick();
   expect(screen.getByTestId("robot-row-live")).toHaveTextContent("40%");
+});
+
+test.each(["fleet", "detail"] as const)(
+  "%s stops background polling and preserves cached data through focus refresh, failure, and recovery",
+  async (screenName) => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(robot.lastReceivedAt!));
+
+    function response(batteryPercent: number) {
+      return screenName === "fleet"
+        ? page(batteryPercent)
+        : Response.json({
+            robot: { ...robot, batteryPercent },
+            siteRobots: [],
+            verifiedAt: Date.now(),
+          });
+    }
+
+    let completeRefresh!: (value: Response) => void;
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(response(45))
+      .mockImplementationOnce(
+        () =>
+          new Promise<Response>((resolve) => {
+            completeRefresh = resolve;
+          }),
+      )
+      .mockResolvedValueOnce(new Response(null, { status: 500 }))
+      .mockImplementation(() => Promise.resolve(response(40)));
+
+    vi.stubGlobal("fetch", fetcher);
+
+    render(
+      screenName === "fleet" ? (
+        <FleetDashboard />
+      ) : (
+        <RobotDetails robot={robot} siteRobots={[]} verifiedAt={Date.now()} />
+      ),
+    );
+    await tick();
+
+    const container = screen.getByTestId(
+      screenName === "fleet" ? "robot-row-live" : "robot-details",
+    );
+    const battery = within(container).getByTestId("robot-battery");
+    const warningId =
+      screenName === "fleet"
+        ? "fleet-refresh-warning"
+        : "robot-refresh-warning";
+
+    expect(battery).toHaveTextContent("45%");
+    expect(fetcher).toHaveBeenCalledTimes(1);
+
+    setPageVisibility(true);
+    await tick(15000);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+
+    setPageVisibility(false);
+    await tick();
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(battery).toBeInTheDocument();
+    expect(battery).toHaveTextContent("45%");
+
+    if (screenName === "fleet") {
+      expect(screen.getByTestId("fleet-loading")).not.toHaveTextContent(
+        "Loading robots",
+      );
+    }
+
+    await act(async () => {
+      completeRefresh(response(44));
+      await Promise.resolve();
+    });
+    expect(battery).toHaveTextContent("44%");
+
+    setPageVisibility(true);
+    await tick();
+    setPageVisibility(false);
+    await tick();
+
+    expect(fetcher).toHaveBeenCalledTimes(3);
+    expect(battery).toBeInTheDocument();
+    expect(battery).toHaveTextContent("44%");
+    expect(screen.getByTestId(warningId)).toHaveTextContent(
+      "Live updates interrupted",
+    );
+
+    setPageVisibility(true);
+    await tick();
+    setPageVisibility(false);
+    await tick();
+
+    expect(fetcher).toHaveBeenCalledTimes(4);
+    expect(battery).toHaveTextContent("40%");
+    expect(screen.queryByTestId(warningId)).not.toBeInTheDocument();
+  },
+);
+
+test.each(["fleet", "detail"] as const)(
+  "%s accepts an in-flight response while hidden and refreshes again on return",
+  async (screenName) => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(robot.lastReceivedAt!));
+
+    function response(batteryPercent: number) {
+      return screenName === "fleet"
+        ? page(batteryPercent)
+        : Response.json({
+            robot: { ...robot, batteryPercent },
+            siteRobots: [],
+            verifiedAt: Date.now(),
+          });
+    }
+
+    let complete!: (response: Response) => void;
+    let signal!: AbortSignal;
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(response(45))
+      .mockImplementationOnce((_url: string, options: RequestInit) => {
+        signal = options.signal!;
+        return new Promise<Response>((resolve) => {
+          complete = resolve;
+        });
+      })
+      .mockImplementation(() => Promise.resolve(response(40)));
+
+    vi.stubGlobal("fetch", fetcher);
+    render(
+      screenName === "fleet" ? (
+        <FleetDashboard />
+      ) : (
+        <RobotDetails robot={robot} siteRobots={[]} verifiedAt={Date.now()} />
+      ),
+    );
+    await tick();
+    await tick(5000);
+
+    const container = screen.getByTestId(
+      screenName === "fleet" ? "robot-row-live" : "robot-details",
+    );
+    const battery = within(container).getByTestId("robot-battery");
+
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    setPageVisibility(true);
+    await tick();
+    expect(signal.aborted).toBe(false);
+
+    await act(async () => {
+      complete(response(44));
+      await Promise.resolve();
+    });
+    expect(battery).toHaveTextContent("44%");
+
+    await tick(10000);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+
+    setPageVisibility(false);
+    await tick();
+    expect(fetcher).toHaveBeenCalledTimes(3);
+    expect(battery).toHaveTextContent("40%");
+  },
+);
+
+test("page correction after a hidden fleet shrinks immediately verifies the destination data", async () => {
+  vi.useFakeTimers();
+  let total = 21;
+  const fetcher = vi.fn((url: string) => {
+    const requestedPage = Number(
+      new URL(url, "http://localhost").searchParams.get("page"),
+    );
+    return Promise.resolve(
+      Response.json({
+        items: [robot],
+        total,
+        page: requestedPage,
+        pageSize: 10,
+        ...pageMetadata(total),
+      }),
+    );
+  });
+  vi.stubGlobal("fetch", fetcher);
+
+  const { result } = renderHook(() => useRobots());
+  await tick();
+  act(() => result.current.setPage(2));
+  await tick();
+  await tick(20000);
+  expect(result.current.page).toBe(2);
+
+  setPageVisibility(true);
+  await tick();
+  total = 1;
+  setPageVisibility(false);
+  await tick();
+
+  expect(result.current.page).toBe(0);
+  expect(result.current.state).toMatchObject({
+    status: "success",
+    robots: [{ id: robot.id }],
+  });
+  expect(result.current.unverified).toBe(false);
+  expect(result.current.interrupted).toBe(false);
+  expect(
+    new URL(fetcher.mock.lastCall![0], "http://localhost").searchParams.get(
+      "page",
+    ),
+  ).toBe("0");
 });

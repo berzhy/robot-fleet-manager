@@ -13,7 +13,6 @@ import { robotPageSize, type RobotPage } from "@/modules/robots/robot";
 
 import { robotListOptions } from "../api/robot-queries";
 import type { RobotQueryState } from "../types/robot-query-state";
-import usePageVisibility from "./use-page-visibility";
 
 function lastRobotPage(total: number, size: number) {
   return Math.max(0, Math.ceil(total / size) - 1);
@@ -40,22 +39,16 @@ export default function useRobots(paused = false) {
   // Cancellation restores cached success, so only a new response verifies a selection.
   const count = () =>
     client.getQueryState(options.queryKey)?.dataUpdateCount ?? 0;
-  const [verificationAfter, setVerificationAfter] = useState(count);
   const [selectionAfter, setSelectionAfter] = useState(count);
   const [lastKey, setLastKey] = useState<QueryKey>(options.queryKey);
   const [announcement, setAnnouncement] = useState("");
   const [announce, setAnnounce] = useState(false);
 
-  const hidden = usePageVisibility(() => {
-    setVerificationAfter(count());
-    void client.cancelQueries({ queryKey: options.queryKey, exact: true });
-  });
-
   const query = useQuery({
     ...options,
-    enabled: !paused && !hidden,
+    enabled: !paused,
     refetchInterval: 5000,
-    refetchIntervalInBackground: true,
+    refetchIntervalInBackground: false,
     notifyOnChangeProps: "all",
   });
 
@@ -71,9 +64,9 @@ export default function useRobots(paused = false) {
   );
 
   useEffect(() => {
-    if (paused || hidden)
+    if (paused)
       void client.cancelQueries({ queryKey: options.queryKey, exact: true });
-  }, [client, options.queryKey, paused, hidden]);
+  }, [client, options.queryKey, paused]);
 
   if (outOfRange) {
     setSelectionAfter(
@@ -107,10 +100,9 @@ export default function useRobots(paused = false) {
     ).queryKey;
 
     setSelectionAfter(client.getQueryState(nextKey)?.dataUpdateCount ?? 0);
-    setVerificationAfter(client.getQueryState(nextKey)?.dataUpdateCount ?? 0);
     setRequest(next);
 
-    if (hashKey(nextKey) === hashKey(options.queryKey) && !paused && !hidden)
+    if (hashKey(nextKey) === hashKey(options.queryKey) && !paused)
       void query.refetch();
 
     void client.invalidateQueries({
@@ -124,7 +116,6 @@ export default function useRobots(paused = false) {
     void client.invalidateQueries({
       queryKey: options.queryKey,
       exact: true,
-      refetchType: document.hidden ? "none" : "active",
     });
   }
 
@@ -153,7 +144,7 @@ export default function useRobots(paused = false) {
     refresh,
     cancelRefresh,
     interrupted: query.isError,
-    unverified: query.isError || hidden || currentCount <= verificationAfter,
+    unverified: query.isError,
     verifiedAt: snapshot?.evaluatedAt ?? 0,
     snapshot,
     filters: request.filters,

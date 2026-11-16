@@ -8,7 +8,7 @@ export function createQueryClient() {
         staleTime: 0,
         networkMode: "always",
         refetchOnReconnect: true,
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: true,
       },
       mutations: { retry: false, networkMode: "always" },
     },
