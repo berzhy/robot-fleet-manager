@@ -12,6 +12,7 @@ export default defineConfig({
     baseURL: origin,
     channel: process.env.CI ? undefined : "chrome",
     headless: !!process.env.CI,
+    trace: { mode: "retain-on-failure", screenshots: false },
   },
   webServer: {
     command: `export DATABASE_PATH="$(mktemp -d)/fleet.sqlite" && export E2E_DIST_DIR=".next/e2e" && npm run db:setup && exec npm run dev -- --hostname 127.0.0.1 --port ${port}`,

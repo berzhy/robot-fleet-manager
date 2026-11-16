@@ -63,7 +63,7 @@ test("disabled actions explain their reason on keyboard focus and cannot execute
   expect(onAction).not.toHaveBeenCalled();
 });
 test.each([202, 409, 500])(
-  "Stop request response %s notifies and preserves the current page",
+  "Stop request response %s notifies without changing reported activity",
   async (status) => {
     const fetcher = vi.fn((url: string, init?: RequestInit) => {
       if (init?.method === "POST")

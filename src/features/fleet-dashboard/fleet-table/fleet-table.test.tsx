@@ -27,9 +27,26 @@ test("table renders the supplied server page without slicing or sorting", () => 
   const onPageChange = vi.fn();
   render(
     <FleetTable
-      resultCount="21 robots · Newest first"
-      state={{ status: "success", robots: [robot] }}
-      total={21}
+      resultCount="23 robots · Newest first"
+      state={{
+        status: "success",
+        robots: [
+          {
+            ...robot,
+            id: "zulu",
+            name: "Zulu robot",
+            createdAt: "2026-01-03T00:00:00.000Z",
+          },
+          {
+            ...robot,
+            id: "alpha",
+            name: "Alpha robot",
+            createdAt: "2026-01-01T00:00:00.000Z",
+          },
+          robot,
+        ],
+      }}
+      total={23}
       pageSize={20}
       onPageSizeChange={() => {}}
       page={1}
@@ -42,11 +59,14 @@ test("table renders the supplied server page without slicing or sorting", () => 
   );
   expect(screen.getByRole("link", { name: robot.name })).toBeInTheDocument();
   expect(screen.getByTestId("fleet-page-summary")).toHaveTextContent(
-    "21–21 of 21",
+    "21–23 of 23",
   );
   expect(screen.getByTestId("fleet-result-count")).toHaveTextContent(
-    "21 robots · Newest first",
+    "23 robots · Newest first",
   );
+  expect(
+    screen.getAllByTestId("robot-name").map((name) => name.textContent),
+  ).toEqual(["Zulu robot", "Alpha robot", robot.name]);
   fireEvent.click(screen.getByTestId("fleet-previous-page"));
   expect(onPageChange).toHaveBeenCalledWith(0);
   const row = within(screen.getByTestId("robot-row-test"));

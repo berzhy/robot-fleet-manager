@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { test } from "./fixtures";
 import type { Robot } from "@/modules/robots/robot";
 
 test.use({ locale: "de-DE", timezoneId: "America/New_York" });
@@ -6,11 +7,10 @@ test.use({ locale: "de-DE", timezoneId: "America/New_York" });
 test("detail context and controls follow reported telemetry", async ({
   page,
   request,
-}, testInfo) => {
+}) => {
   const browserErrors: string[] = [];
   page.on("pageerror", (error) => browserErrors.push(error.message));
-  const suffix = Date.now();
-  const site = `Detail demo ${suffix}`;
+  const site = "Detail demo";
   const records: Robot[] = [];
   for (const [index, type] of [
     "cleaning",
@@ -21,8 +21,8 @@ test("detail context and controls follow reported telemetry", async ({
     const response = await request.post("/api/robots", {
       data: {
         name:
-          index === 3
-            ? `Detail ${index} inspection robot assigned to the northern warehouse service corridor`
+          index === 0
+            ? "Service robot assigned to the northern warehouse service corridor"
             : `Detail ${index}`,
         site,
         manufacturer: "Demo manufacturer",
@@ -55,6 +55,11 @@ test("detail context and controls follow reported telemetry", async ({
   await expect(
     page.getByRole("heading", { level: 1, name: selected.name }),
   ).toBeVisible();
+  await expect(
+    page
+      .getByRole("navigation", { name: "Main navigation" })
+      .getByRole("link", { name: "Fleet", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
   await expect(page.getByRole("region", { name: "Location" })).toContainText(
     "Lobby: 3 other robots",
   );
@@ -121,60 +126,17 @@ test("detail context and controls follow reported telemetry", async ({
     page.getByRole("group", { name: "Activity controls" }),
   ).toBeVisible();
   await expect(location).toBeHidden();
-  await page.screenshot({
-    path: testInfo.outputPath("robot-logs-light.png"),
-    fullPage: true,
-    animations: "disabled",
-  });
+  await logsTab.focus();
   await page.keyboard.press("ArrowLeft");
   await page.keyboard.press("Enter");
   await expect(location).toBeVisible();
-  await page.mouse.move(0, 0);
-  await page.evaluate(() => {
-    const main = document.querySelector("main")!;
-    main.style.overflow = "visible";
-    main.parentElement!.style.height = "auto";
-  });
-  await page.screenshot({
-    path: testInfo.outputPath("robot-details-desktop.png"),
-    fullPage: true,
-  });
-  for (const robot of records) {
-    await page.goto(`/robots/${robot.id}`);
-    await expect(
-      page.getByRole("heading", { level: 1, name: robot.name }),
-    ).toBeVisible();
-    await page.evaluate(() => {
-      const main = document.querySelector("main")!;
-      main.style.overflow = "visible";
-      main.parentElement!.style.height = "auto";
-    });
-    await page
-      .locator("main img")
-      .evaluateAll((images) =>
-        Promise.all(
-          images.map((image) => (image as HTMLImageElement).decode()),
-        ),
-      );
-    await page.screenshot({
-      path: testInfo.outputPath(`robot-details-${robot.type}.png`),
-      fullPage: true,
-    });
-    await expect(
-      page.getByRole("region", { name: "Robot information" }).locator("img"),
-    ).toBeVisible();
-  }
-  await page.getByRole("button", { name: "Switch to dark theme" }).click();
-  await expect(page.locator("html")).toHaveClass(/dark/);
-  await page.screenshot({
-    path: testInfo.outputPath("robot-details-dark.png"),
-    fullPage: true,
-  });
+  const illustration = page
+    .getByRole("region", { name: "Robot information" })
+    .locator("img");
+  await expect(illustration).toBeVisible();
+  await expect(illustration).toHaveJSProperty("complete", true);
+  await expect(illustration).not.toHaveJSProperty("naturalWidth", 0);
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.screenshot({
-    path: testInfo.outputPath("robot-details-mobile.png"),
-    fullPage: true,
-  });
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -187,11 +149,10 @@ test("detail context and controls follow reported telemetry", async ({
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
-  await page.screenshot({
-    path: testInfo.outputPath("robot-logs-mobile.png"),
-    fullPage: true,
-    animations: "disabled",
-  });
+  await page
+    .getByRole("navigation", { name: "Breadcrumb" })
+    .getByRole("link", { name: "Fleet dashboard" })
+    .click();
+  await expect(page.getByTestId(`robot-row-${selected.id}`)).toBeVisible();
   expect(browserErrors).toEqual([]);
-  for (const robot of records) await request.delete(`/api/robots/${robot.id}`);
 });

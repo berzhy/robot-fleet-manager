@@ -36,7 +36,7 @@ const page = (items: Robot[], total = items.length, index = 0): RobotPage => ({
   ...pageMetadata(total),
 });
 afterEach(() => vi.unstubAllGlobals());
-test("loads real API data with accessible loading status", async () => {
+test("renders the API response with accessible loading status", async () => {
   let resolve!: (response: Response) => void;
   const fetcher = vi.fn().mockReturnValueOnce(
     new Promise((r) => {

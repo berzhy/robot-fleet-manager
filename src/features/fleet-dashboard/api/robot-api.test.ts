@@ -101,27 +101,7 @@ test("detail requests encode IDs, support cancellation, and distinguish deletion
   );
 });
 
-test("encodes combined filter values in the list request", async () => {
-  const fetcher = vi.fn().mockResolvedValue(Response.json({}));
-  vi.stubGlobal("fetch", fetcher);
-  await getRobots(0, 20, undefined, {
-    view: "offline",
-    site: "Munich & Berlin",
-    manufacturer: "A/B",
-    integrationType: "ros2",
-  });
-  const url = new URL(fetcher.mock.calls[0][0] as string, "http://localhost");
-  expect(Object.fromEntries(url.searchParams)).toEqual({
-    page: "0",
-    pageSize: "20",
-    view: "offline",
-    site: "Munich & Berlin",
-    manufacturer: "A/B",
-    integrationType: "ros2",
-  });
-});
-
-test("encodes literal search text together with other filters", async () => {
+test("encodes literal search text and combined filters in the list request", async () => {
   const fetcher = vi.fn().mockResolvedValue(
     Response.json({
       items: [],
@@ -135,10 +115,20 @@ test("encodes literal search text together with other filters", async () => {
   await getRobots(0, 20, undefined, {
     view: "offline",
     search: "Robot %_&",
-    site: "Munich",
+    site: "Munich & Berlin",
+    manufacturer: "A/B",
+    integrationType: "ros2",
+    type: "inspection",
   });
   const url = new URL(fetcher.mock.calls[0][0] as string, "http://localhost");
-  expect(url.searchParams.get("search")).toBe("Robot %_&");
-  expect(url.searchParams.get("site")).toBe("Munich");
-  expect(url.searchParams.get("view")).toBe("offline");
+  expect(Object.fromEntries(url.searchParams)).toEqual({
+    page: "0",
+    pageSize: "20",
+    view: "offline",
+    search: "Robot %_&",
+    site: "Munich & Berlin",
+    manufacturer: "A/B",
+    integrationType: "ros2",
+    type: "inspection",
+  });
 });

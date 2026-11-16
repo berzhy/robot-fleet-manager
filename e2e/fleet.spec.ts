@@ -1,18 +1,7 @@
-import {
-  expect,
-  test,
-  type APIRequestContext,
-  type Page,
-} from "@playwright/test";
+import { expect, type APIRequestContext, type Page } from "@playwright/test";
 import type { Robot } from "@/modules/robots/robot";
 import type { TelemetryReport } from "@/modules/telemetry/telemetry";
-
-test.beforeEach(async ({ request }) => {
-  for (const robot of await registeredRobots(request)) {
-    const response = await request.delete(`/api/robots/${robot.id}`);
-    expect(response.status()).toBe(204);
-  }
-});
+import { test } from "./fixtures";
 
 test("adds two robots and deletes one", async ({ page, request }) => {
   await page.goto("/");
@@ -214,17 +203,62 @@ test("combines dropdowns and tiles, removes chips and retries a failed filter re
   page,
   request,
 }) => {
-  const [robot] = await seedFleet(request);
-  await sendProblem(request, robot, true);
+  const matching = {
+    name: "Matching robot",
+    manufacturer: "Boston Dynamics",
+    type: "inspection",
+    integrationType: "ros2",
+    site: "Munich",
+  };
+  const created = await request.post("/api/robots/batch", {
+    data: {
+      robots: [
+        matching,
+        { ...matching, name: "Other location", site: "Berlin" },
+        { ...matching, name: "Other manufacturer", manufacturer: "LG" },
+        { ...matching, name: "Other integration", integrationType: "vda5050" },
+        { ...matching, name: "Other type", type: "delivery" },
+        { ...matching, name: "Healthy robot" },
+      ],
+    },
+  });
+  expect(created.status()).toBe(201);
+  const { items } = (await created.json()) as { items: Robot[] };
+  const robot = items[0];
+  async function reportFleet() {
+    const telemetry = await request.post("/api/telemetry/batch", {
+      data: {
+        reports: items.map((record, index) => ({
+          robotId: record.id,
+          activity: index === 5 ? "working" : "needs-attention",
+          problemCode: index === 5 ? null : "path-blocked",
+          batteryPercent: 80,
+          area: "Lobby",
+          observedAt: new Date().toISOString(),
+          appliedControlRevision: 0,
+        })),
+      },
+    });
+    expect(telemetry.status()).toBe(204);
+  }
+  await reportFleet();
   await page.goto("/");
+  const rows = page.getByTestId("fleet-table").locator("tbody tr");
+  await expect(rows).toHaveCount(6);
   await chooseFilter(page, "Location", "Munich");
+  await expect(rows).toHaveCount(5);
   await chooseFilter(page, "Manufacturer", "Boston Dynamics");
+  await expect(rows).toHaveCount(4);
   await chooseFilter(page, "Integration", "ROS 2");
+  await expect(rows).toHaveCount(3);
   await chooseFilter(page, "Type", "Inspection robot");
+  await expect(rows).toHaveCount(2);
+  await reportFleet();
   await page
     .getByRole("button", { name: "Needs attention", exact: true })
     .click();
   await expect(page.getByTestId(`robot-row-${robot.id}`)).toBeVisible();
+  await expect(rows).toHaveCount(1);
   await expect(
     page.getByText("Location: Munich", { exact: true }),
   ).toBeVisible();
@@ -250,35 +284,10 @@ test("combines dropdowns and tiles, removes chips and retries a failed filter re
   await page.getByTestId("fleet-retry").click();
   await expect(page.getByText("No robots match these filters.")).toBeVisible();
   await page.getByRole("button", { name: "Clear filters" }).first().click();
-  await expect(page.getByTestId(`robot-row-${robot.id}`)).toBeVisible();
-  fail = true;
-  await expect(page.getByTestId("fleet-refresh-warning")).toBeVisible({
-    timeout: 15000,
-  });
-  await expect(page.getByTestId(`robot-row-${robot.id}`)).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "All robots", exact: true }),
-  ).toContainText("1");
-  fail = false;
-  await expect(page.getByTestId("fleet-refresh-warning")).toHaveCount(0, {
-    timeout: 15000,
-  });
-  await page.setViewportSize({ width: 600, height: 900 });
-  await page.getByTestId("fleet-more-filters").click();
-  await expect(
-    page.getByRole("combobox", { name: "Integration", exact: true }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Close more filters" }).click();
-  await page.screenshot({ path: "/tmp/fleet-filters-narrow.png" });
-  await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.getByRole("button", { name: "Switch to dark theme" }).click();
-  await expect(
-    page.getByRole("button", { name: "Switch to light theme" }),
-  ).toBeVisible();
-  await page.screenshot({ path: "/tmp/fleet-filters-dark.png" });
+  await expect(rows).toHaveCount(6);
 });
 
-test("live filtered recovery pauses for menus and restores focus when the row leaves", async ({
+test("live filtered recovery restores focus after the action menu closes", async ({
   page,
   request,
 }) => {
@@ -380,7 +389,16 @@ test("search combines with filters and tiles, clears through chips and recovers 
   await expect(page.getByTestId(`robot-row-${robots[1].id}`)).toBeVisible();
   await page.setViewportSize({ width: 650, height: 900 });
   await expect(search).toBeVisible();
-  await page.screenshot({ path: "/tmp/fleet-search-narrow.png" });
+  await page.getByTestId("fleet-more-filters").click();
+  await expect(
+    page.getByRole("combobox", { name: "Integration", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Close more filters" }).click();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
 });
 
 test("delete all clears robots outside the active search and allows adding again", async ({

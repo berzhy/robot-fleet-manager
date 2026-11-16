@@ -1,5 +1,5 @@
 import { initializeRobot } from "./simulation";
-import { afterEach, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { runSimulator } from "./simulator";
 import type { Robot } from "@/modules/robots/robot";
 const robot: Robot = {
@@ -20,13 +20,23 @@ const robot: Robot = {
   batteryPercent: null,
   activity: "unknown",
 };
-afterEach(() => {
-  vi.useRealTimers();
-  vi.unstubAllGlobals();
-  vi.restoreAllMocks();
+let controller: AbortController;
+let running: Promise<void> | undefined;
+beforeEach(() => {
+  controller = new AbortController();
+  running = undefined;
+});
+afterEach(async () => {
+  controller.abort();
+  try {
+    await running;
+  } finally {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  }
 });
 test("registry discovery reconciles additions/deletions and reports chunks of at most 100", async () => {
-  const controller = new AbortController();
   const batches: string[][] = [];
   let discovery = 0;
   vi.stubGlobal(
@@ -53,7 +63,7 @@ test("registry discovery reconciles additions/deletions and reports chunks of at
       return Promise.resolve(new Response(null, { status: 204 }));
     }),
   );
-  const running = runSimulator("http://local", controller.signal);
+  running = runSimulator("http://local", controller.signal);
   await vi.waitFor(() => expect(batches).toHaveLength(2));
   expect(batches.map((batch) => batch.length)).toEqual([100, 1]);
   await vi.waitFor(() => expect(batches[2]).toEqual(["new"]), {
@@ -64,33 +74,35 @@ test("registry discovery reconciles additions/deletions and reports chunks of at
 
   expect(batches).toHaveLength(3);
 });
-test("failed discovery retains known robots and failed delivery retries without overlapping", async () => {
+test("failed discovery retains known robots and failed telemetry is retried", async () => {
   vi.spyOn(console, "error").mockImplementation(() => {});
   vi.spyOn(console, "info").mockImplementation(() => {});
-  const controller = new AbortController();
   let discoveries = 0;
-  let deliveries = 0;
+  const deliveries: string[][] = [];
   vi.stubGlobal(
     "fetch",
-    vi.fn((url: URL) => {
+    vi.fn((url: URL, init?: RequestInit) => {
       if (url.pathname.endsWith("registry")) {
         if (++discoveries === 2) throw new Error("network");
         return Promise.resolve(Response.json({ items: [robot] }));
       }
-      deliveries++;
+      const { reports } = JSON.parse(init!.body as string) as {
+        reports: { robotId: string }[];
+      };
+      deliveries.push(reports.map((report) => report.robotId));
       return Promise.resolve(
-        new Response(null, { status: deliveries === 1 ? 500 : 204 }),
+        new Response(null, { status: deliveries.length === 1 ? 500 : 204 }),
       );
     }),
   );
-  const running = runSimulator("http://local", controller.signal);
-  await vi.waitFor(() => expect(deliveries).toBe(3), { timeout: 4000 });
+  running = runSimulator("http://local", controller.signal);
+  await vi.waitFor(() => expect(deliveries).toHaveLength(3), { timeout: 4000 });
   controller.abort();
   await running;
+  expect(deliveries).toEqual([[robot.id], [robot.id], [robot.id]]);
 });
 
 test("existing robots receive controls and failed telemetry does not replay older registry intent", async () => {
-  const controller = new AbortController();
   let discoveries = 0;
   const reports: { activity: string; appliedControlRevision: number }[] = [];
   vi.spyOn(console, "error").mockImplementation(() => {});
@@ -123,7 +135,8 @@ test("existing robots receive controls and failed telemetry does not replay olde
       );
     }),
   );
-  await runSimulator("http://local", controller.signal);
+  running = runSimulator("http://local", controller.signal);
+  await running;
   expect(reports).toHaveLength(3);
   expect(reports.slice(1)).toEqual([
     expect.objectContaining({ activity: "idle", appliedControlRevision: 1 }),
@@ -140,7 +153,6 @@ test("outages omit telemetry but preserve discovery and local activity until rep
   const start =
     ((180 - (Math.floor(state.connectionHash / 5) % 180)) % 180) * 1000;
   const clock = vi.spyOn(Date, "now").mockReturnValue(start);
-  const controller = new AbortController();
   let discoveries = 0;
   const delivered: { activity: string; observedAt: string }[] = [];
   vi.stubGlobal(
@@ -158,7 +170,8 @@ test("outages omit telemetry but preserve discovery and local activity until rep
       return Promise.resolve(new Response(null, { status: 204 }));
     }),
   );
-  await runSimulator("http://local", controller.signal);
+  running = runSimulator("http://local", controller.signal);
+  await running;
   expect(discoveries).toBe(3);
   expect(delivered).toEqual([
     expect.objectContaining({

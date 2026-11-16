@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { test } from "./fixtures";
 
 test("desktop sections support navigation, history, direct loads and themes", async ({
   page,
@@ -33,9 +34,10 @@ test("desktop sections support navigation, history, direct loads and themes", as
   ).toHaveAttribute("aria-current", "page");
   await page.getByRole("button", { name: "Switch to dark theme" }).click();
   await expect(page.locator("html")).toHaveClass(/dark/);
-  await page.screenshot({ path: "/tmp/sidebar-desktop-dark.png" });
+  await page.reload();
+  await expect(page.locator("html")).toHaveClass(/dark/);
   await page.getByRole("button", { name: "Switch to light theme" }).click();
-  await page.screenshot({ path: "/tmp/sidebar-desktop-light.png" });
+  await expect(page.locator("html")).toHaveClass(/light/);
   await page.goto("/integrations");
   await expect(
     page.getByRole("heading", { level: 1, name: "Integrations" }),
@@ -44,7 +46,6 @@ test("desktop sections support navigation, history, direct loads and themes", as
   await expect(
     page.getByRole("heading", { name: "Fleet dashboard" }),
   ).toBeVisible();
-  await page.screenshot({ path: "/tmp/sidebar-fleet-desktop.png" });
 });
 
 test("mobile drawer closes with Escape, backdrop and navigation and restores focus", async ({
@@ -72,7 +73,6 @@ test("mobile drawer closes with Escape, backdrop and navigation and restores foc
   await expect(
     page.getByRole("heading", { level: 1, name: "Integrations" }),
   ).toBeVisible();
-  await page.screenshot({ path: "/tmp/sidebar-mobile.png" });
   await page.getByRole("button", { name: "Switch to dark theme" }).click();
   await expect(page.locator("html")).toHaveClass(/dark/);
   expect(
@@ -89,34 +89,4 @@ test("keyboard skip link targets main content", async ({ page }) => {
   await expect(skip).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("main")).toBeFocused();
-});
-
-test("robot details remain within Fleet navigation", async ({
-  page,
-  request,
-}) => {
-  const response = await request.post("/api/robots", {
-    data: {
-      name: "Navigation demo",
-      site: "Munich",
-      manufacturer: "Demo",
-      type: "inspection",
-      integrationType: "ros2",
-    },
-  });
-  expect(response.status()).toBe(201);
-  const robot = (await response.json()) as { id: string };
-  try {
-    await page.goto(`/robots/${robot.id}`);
-    await expect(
-      page.getByRole("heading", { level: 1, name: "Navigation demo" }),
-    ).toBeVisible();
-    await expect(
-      page
-        .getByRole("navigation", { name: "Main navigation" })
-        .getByRole("link", { name: "Fleet", exact: true }),
-    ).toHaveAttribute("aria-current", "page");
-  } finally {
-    await request.delete(`/api/robots/${robot.id}`);
-  }
 });

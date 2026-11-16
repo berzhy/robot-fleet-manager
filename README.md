@@ -1,10 +1,8 @@
 # README
 
 ```
-> Claude make a robot orchestaration dashboard, make it nice, and make it look not like an AI slop.
+> Claude make a robot orchestaration dashboard, make it nice, and make it look NOT like an AI slop.  :)
 ```
-
-(nah, not really)
 
 ## Intro
 
@@ -59,7 +57,7 @@ The simulator is a separate process. It does not open the database. About once a
 
 ## Checks
 
-- `npm test` runs the Vitest unit tests: interface components in jsdom, and the server and simulator in Node.
-- `npm run test:e2e` runs the Playwright browser journey against its own temporary database.
+- `npm test` runs the Vitest unit and integration tests: component interactions, polling and error cases in jsdom, plus database contracts and simulation rules in Node.
+- `npm run test:e2e` runs Playwright user journeys against its own temporary database, starting each test with an empty fleet. Local runs use visible Chrome; CI runs headless. Failure traces are saved in `test-results/`.
 - `npm run lint` runs ESLint with the Next.js config, type-checked TypeScript, and the recommended accessibility rules.
 - `npm run knip` flags unused files, exports, and dependencies.

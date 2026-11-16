@@ -120,12 +120,57 @@ test.each([
 );
 
 test.each([
+  [
+    "path-blocked",
+    "Path blocked",
+    "Clear the obstruction before retrying activity.",
+  ],
+  [
+    "position-lost",
+    "Position lost",
+    "Check the robot’s position before retrying activity.",
+  ],
+  [
+    "sensor-obstructed",
+    "Sensor obstructed",
+    "Clear the sensor obstruction before retrying activity.",
+  ],
+] as const)(
+  "%s explains the problem and recovery guidance",
+  async (problemCode, label, guidance) => {
+    const online: Robot = {
+      ...robot,
+      activity: "needs-attention",
+      problemCode,
+      batteryPercent: 80,
+      lastReceivedAt: new Date().toISOString(),
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        Response.json({
+          robot: online,
+          siteRobots: [],
+          verifiedAt: Date.now(),
+        }),
+      ),
+    );
+    render(
+      <RobotDetails robot={online} siteRobots={[]} verifiedAt={Date.now()} />,
+    );
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(`${label}. ${guidance}`);
+    expect(
+      screen.getByRole("button", { name: "Retry activity" }),
+    ).toHaveAttribute("aria-disabled", "false");
+  },
+);
+
+test.each([
   ["Start activity", "idle", null],
   ["Stop activity", "working", null],
   ["Return to base", "working", null],
   ["Retry activity", "needs-attention", "path-blocked"],
-  ["Retry activity", "needs-attention", "position-lost"],
-  ["Retry activity", "needs-attention", "sensor-obstructed"],
 ] as const)(
   "%s preserves reported status while requesting and refreshing, then dismisses success",
   async (action, activity, problemCode) => {
