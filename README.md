@@ -37,17 +37,13 @@ Use Node.js 26 and npm. From this directory:
 npm ci
 npm run db:setup
 npm run dev
+# second terminal
+npm run simulator
 ```
 
 Open http://localhost:3000. The fleet is stored in `data/fleet.sqlite`. Set `DATABASE_PATH` if you want a different file. A new database is empty. Nothing is seeded on startup, and the schema is created only when you run that command.
 
-Rows stay on unknown telemetry until a report arrives. In a second terminal:
-
-```bash
-npm run simulator
-```
-
-Leave it running while you use the dashboard, and stop it with Ctrl+C. Run one simulator. If the app is not at http://localhost:3000, set `SIMULATOR_API_URL`.
+`npm run dev` and `npm run simulator` each need their own terminal. Rows stay on unknown telemetry until a report arrives. Leave the simulator running while you use the dashboard. If the app is not at http://localhost:3000, set `SIMULATOR_API_URL`.
 
 ## Simulator
 
