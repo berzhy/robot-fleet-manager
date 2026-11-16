@@ -4,8 +4,11 @@ import { afterEach, expect, test, vi } from "vitest";
 import type { RobotPage } from "@/modules/robots/robot";
 import { getRobots } from "../api/robot-api";
 import useRobots from "./use-robots";
+
 vi.mock("../api/robot-api");
+
 afterEach(() => vi.resetAllMocks());
+
 test("aborts old requests and ignores their late responses", async () => {
   let resolveOld!: (page: RobotPage) => void;
   vi.mocked(getRobots)
@@ -23,9 +26,11 @@ test("aborts old requests and ignores their late responses", async () => {
     });
   const { result } = renderHook(() => useRobots());
   const signal = vi.mocked(getRobots).mock.calls[0][2];
+
   act(() => result.current.setPage(1));
   expect(signal?.aborted).toBe(true);
   await waitFor(() => expect(result.current.state.status).toBe("success"));
+
   await act(async () => {
     resolveOld({
       items: [],
@@ -50,11 +55,13 @@ test("page size changes cancel old requests and reload preserves the selection",
   });
   const { result } = renderHook(() => useRobots());
   await waitFor(() => expect(result.current.state.status).toBe("success"));
+
   const oldSignal = vi.mocked(getRobots).mock.calls[0][2];
   act(() => result.current.setPageSize(20));
   await waitFor(() => expect(result.current.state.status).toBe("success"));
   expect(oldSignal?.aborted).toBe(true);
   expect(result.current.pageSize).toBe(20);
+
   act(() => result.current.reload());
   await waitFor(() => expect(result.current.state.status).toBe("success"));
   expect(getRobots).toHaveBeenLastCalledWith(0, 20, expect.any(AbortSignal), {
@@ -88,8 +95,10 @@ test("failed page correction never presents previous-page rows under the new pag
     .mockRejectedValueOnce(new Error("correction failed"));
   const { result } = renderHook(() => useRobots());
   await waitFor(() => expect(result.current.state.status).toBe("success"));
+
   act(() => result.current.setPage(1));
   await waitFor(() => expect(result.current.state.status).toBe("success"));
+
   act(() => result.current.reload());
   await waitFor(() => expect(result.current.state.status).toBe("error"));
   expect(result.current.page).toBe(0);
@@ -110,8 +119,10 @@ test("filter changes cancel old scope requests and reset page while retaining pa
   vi.mocked(getRobots).mockResolvedValue(response);
   const { result } = renderHook(() => useRobots());
   await waitFor(() => expect(result.current.state.status).toBe("success"));
+
   act(() => result.current.setPageSize(10));
   await waitFor(() => expect(result.current.state.status).toBe("success"));
+
   vi.mocked(getRobots).mockReturnValueOnce(
     new Promise((resolve) => {
       stale = resolve;
@@ -133,6 +144,7 @@ test("filter changes cancel old scope requests and reset page while retaining pa
     site: "Berlin",
     search: "Boston",
   });
+
   await act(async () => {
     stale({ ...response, total: 999 });
     await Promise.resolve();
@@ -152,10 +164,13 @@ test("zero matching results correct a later page and preserve filters", async ()
   vi.mocked(getRobots).mockResolvedValue(response);
   const { result } = renderHook(() => useRobots());
   await waitFor(() => expect(result.current.state.status).toBe("success"));
+
   act(() => result.current.setFilters({ view: "low-battery" }));
   await waitFor(() => expect(result.current.state.status).toBe("success"));
+
   act(() => result.current.setPage(1));
   await waitFor(() => expect(result.current.state.status).toBe("success"));
+
   vi.mocked(getRobots).mockResolvedValue({ ...response, items: [], total: 0 });
   act(() => result.current.reload());
   await waitFor(() => expect(result.current.state.status).toBe("success"));
@@ -179,10 +194,12 @@ test("announces explicit search results but keeps background refreshes quiet", a
   const { result } = renderHook(() => useRobots());
   await waitFor(() => expect(result.current.state.status).toBe("success"));
   expect(result.current.announcement).toBe("");
+
   act(() => result.current.setFilters({ view: "all", search: "Boston" }));
   await waitFor(() =>
     expect(result.current.announcement).toBe("2 robots found."),
   );
+
   vi.mocked(getRobots).mockResolvedValue({ ...response, total: 1 });
   act(() => result.current.reload());
   await waitFor(() => expect(result.current.total).toBe(1));

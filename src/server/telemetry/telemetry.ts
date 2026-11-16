@@ -23,6 +23,7 @@ export function ingestTelemetry(
         .all()
         .map((robot) => [robot.id, robot.revision]),
     );
+
     const rows = reports
       .filter(
         (report) =>
@@ -30,7 +31,9 @@ export function ingestTelemetry(
           report.appliedControlRevision <= known.get(report.robotId)!,
       )
       .map((report) => ({ ...report, receivedAt }));
+
     if (!rows.length) return;
+
     tx.insert(latestTelemetry)
       .values(rows)
       .onConflictDoUpdate({

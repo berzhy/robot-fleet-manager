@@ -41,13 +41,16 @@ export default function FleetDashboard() {
   const adding = mutation === "add";
   const acting = mutation === "action";
   const deleting = mutation === "delete";
+
   const headingRef = useRef<HTMLHeadingElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const inFlightRef = useRef(false);
+
   const [deleteTarget, setDeleteTarget] = useState<{
     robot: Robot | null;
     open: boolean;
   } | null>(null);
+
   const paused =
     acting ||
     adding ||
@@ -73,6 +76,7 @@ export default function FleetDashboard() {
     filters,
     setFilters,
   } = useRobots(paused);
+
   const [notification, setNotification] = useState<{
     severity: "success" | "error";
     message: string;
@@ -94,11 +98,13 @@ export default function FleetDashboard() {
   async function addRobot(trigger: HTMLButtonElement, count: 1 | 10 | 100 = 1) {
     if (inFlightRef.current || deleteTarget || state.status === "loading")
       return;
+
     invalidate();
     inFlightRef.current = true;
     setMutation("add");
     setNotification(null);
     addFocusRef.current = trigger;
+
     try {
       const robots =
         count === 1
@@ -106,6 +112,7 @@ export default function FleetDashboard() {
           : await createRobots(
               Array.from({ length: count }, () => generateRobotInput()),
             );
+
       setNotification({
         severity: "success",
         message:
@@ -131,12 +138,15 @@ export default function FleetDashboard() {
 
   async function actOnRobot(robot: Robot, action: RobotAction) {
     if (inFlightRef.current) return;
+
     inFlightRef.current = true;
     invalidate();
     setMutation("action");
     setNotification(null);
+
     try {
       await sendRobotAction(robot.id, action);
+
       const messages = {
         start: "Start requested",
         stop: "Stop requested",
@@ -182,13 +192,16 @@ export default function FleetDashboard() {
 
   async function confirmDelete() {
     if (!deleteTarget?.open || inFlightRef.current) return;
+
     setNotification(null);
     invalidate();
     inFlightRef.current = true;
     setMutation("delete");
+
     try {
       if (deleteTarget.robot) await deleteRobot(deleteTarget.robot.id);
       else await deleteAllRobots();
+
       setNotification({
         severity: "success",
         message: deleteTarget.robot

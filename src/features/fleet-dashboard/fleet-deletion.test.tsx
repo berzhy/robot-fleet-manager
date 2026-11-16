@@ -40,6 +40,7 @@ function response(items: Robot[], total = items.length, page = 0) {
     ...pageMetadata(total),
   });
 }
+
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
@@ -61,6 +62,7 @@ test("menu targets the robot, cancellation sends no DELETE and restores focus", 
   const fetcher = vi.fn().mockResolvedValue(response([robot]));
   vi.stubGlobal("fetch", fetcher);
   render(<FleetDashboard />);
+
   const dialog = await openDelete();
   expect(
     within(dialog).getByTestId("delete-robot-description"),
@@ -82,6 +84,7 @@ test("menu targets the robot, cancellation sends no DELETE and restores focus", 
   await waitFor(() =>
     expect(within(dialog).getByTestId("delete-robot-cancel")).toHaveFocus(),
   );
+
   fireEvent.click(within(dialog).getByTestId("delete-robot-cancel"));
   await waitFor(() =>
     expect(screen.queryByTestId("delete-robot-dialog")).not.toBeInTheDocument(),
@@ -110,6 +113,7 @@ test("pending deletion blocks duplicate submission and dismissal; failure permit
     .mockResolvedValueOnce(response([]));
   vi.stubGlobal("fetch", fetcher);
   render(<FleetDashboard />);
+
   const dialog = await openDelete();
   const confirm = within(dialog).getByTestId("delete-robot-confirm");
   fireEvent.click(confirm);
@@ -119,6 +123,7 @@ test("pending deletion blocks duplicate submission and dismissal; failure permit
   fireEvent.keyDown(dialog, { key: "Escape" });
   expect(dialog).toBeInTheDocument();
   expect(fetcher).toHaveBeenCalledTimes(2);
+
   act(() => resolve(new Response(null, { status: 404 })));
   const error = await screen.findByTestId("fleet-notification");
   expect(error).toHaveRole("alert");
@@ -135,12 +140,14 @@ test("pending deletion blocks duplicate submission and dismissal; failure permit
     "Unable to delete",
   );
   vi.useRealTimers();
+
   fireEvent.click(
     within(screen.getByTestId("fleet-notification")).getByTestId(
       "fleet-notification-close",
     ),
   );
   expect(screen.queryByTestId("fleet-notification")).not.toBeInTheDocument();
+
   fireEvent.click(confirm);
   await screen.findByTestId("fleet-empty");
   await waitFor(() =>
@@ -179,6 +186,7 @@ test("successful deletion stays successful when the table refresh fails", async 
       .mockResolvedValueOnce(new Response(null, { status: 500 })),
   );
   render(<FleetDashboard />);
+
   const dialog = await openDelete();
   fireEvent.click(within(dialog).getByTestId("delete-robot-confirm"));
   await waitFor(() =>
@@ -205,10 +213,12 @@ test("deleting the last robot on a page requests the previous page", async () =>
     .mockResolvedValueOnce(response([previous], 10));
   vi.stubGlobal("fetch", fetcher);
   render(<FleetDashboard />);
+
   await screen.findByTestId("robot-row-previous");
   fireEvent.click(screen.getByTestId("fleet-next-page"));
   const dialog = await openDelete();
   fireEvent.click(within(dialog).getByTestId("delete-robot-confirm"));
+
   await screen.findByTestId("robot-row-previous");
   expect(fetcher).toHaveBeenNthCalledWith(
     4,
@@ -232,6 +242,7 @@ test("success notification closes automatically after six seconds", async () => 
       .mockResolvedValueOnce(response([])),
   );
   render(<FleetDashboard />);
+
   const dialog = await openDelete();
   vi.useFakeTimers();
   await act(async () => {
@@ -266,6 +277,7 @@ test("bulk deletion explains fleet-wide scope and cancellation makes no DELETE r
     .mockImplementation(() => Promise.resolve(response([robot])));
   vi.stubGlobal("fetch", fetcher);
   render(<FleetDashboard />);
+
   const dialog = await openDeleteAll();
   expect(dialog).toHaveTextContent("including those hidden by filters");
   await waitFor(() =>
@@ -273,6 +285,7 @@ test("bulk deletion explains fleet-wide scope and cancellation makes no DELETE r
       within(dialog).getByRole("button", { name: "Cancel" }),
     ).toHaveFocus(),
   );
+
   fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
   await waitFor(() => expect(dialog).not.toBeInTheDocument());
   await waitFor(() =>
@@ -299,6 +312,7 @@ test("bulk deletion blocks duplicate clicks and dismissal, supports retry and re
     .mockResolvedValueOnce(response([]));
   vi.stubGlobal("fetch", fetcher);
   render(<FleetDashboard />);
+
   const dialog = await openDeleteAll();
   const confirm = within(dialog).getByRole("button", {
     name: "Delete all robots",
@@ -310,12 +324,14 @@ test("bulk deletion blocks duplicate clicks and dismissal, supports retry and re
   fireEvent.keyDown(dialog, { key: "Escape" });
   expect(dialog).toBeInTheDocument();
   expect(fetcher).toHaveBeenCalledTimes(2);
+
   act(() => resolve(new Response(null, { status: 500 })));
   expect(await screen.findByRole("alert")).toHaveTextContent(
     "Unable to delete all robots. Please try again.",
   );
   expect(screen.getByTestId("robot-row-one")).toBeInTheDocument();
   expect(confirm).toBeEnabled();
+
   fireEvent.click(confirm);
   await screen.findByTestId("fleet-empty");
   await waitFor(() => expect(dialog).not.toBeInTheDocument());

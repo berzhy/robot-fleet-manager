@@ -57,6 +57,7 @@ test("table renders the supplied server page without slicing or sorting", () => 
       onDelete={() => {}}
     />,
   );
+
   expect(screen.getByRole("link", { name: robot.name })).toBeInTheDocument();
   expect(screen.getByTestId("fleet-page-summary")).toHaveTextContent(
     "21–23 of 23",
@@ -67,8 +68,11 @@ test("table renders the supplied server page without slicing or sorting", () => 
   expect(
     screen.getAllByTestId("robot-name").map((name) => name.textContent),
   ).toEqual(["Zulu robot", "Alpha robot", robot.name]);
+
   fireEvent.click(screen.getByTestId("fleet-previous-page"));
+
   expect(onPageChange).toHaveBeenCalledWith(0);
+
   const row = within(screen.getByTestId("robot-row-test"));
   expect(row.getByTestId("robot-battery")).toHaveTextContent(/^Unknown$/);
   expect(row.getByTestId("robot-connection")).toHaveTextContent(/^Unknown$/);
@@ -89,6 +93,7 @@ test("robot names are plain text with one accessible navigation link per row", (
       onDelete={() => {}}
     />,
   );
+
   const identity = screen.getByRole("rowheader");
   expect(within(identity).getByText(robot.name)).toBeInTheDocument();
   expect(within(identity).getByText(robot.manufacturer)).toBeInTheDocument();
@@ -128,6 +133,7 @@ test("columns put identity and operational context before catalog metadata", () 
       onDelete={() => {}}
     />,
   );
+
   expect(
     screen.getAllByRole("columnheader").map((header) => header.textContent),
   ).toEqual([
@@ -171,11 +177,14 @@ test("a search with no matches names the query, lists searchable fields and offe
       onDelete={() => {}}
     />,
   );
+
   expect(screen.getByText("No robots match “no-such-robot”.")).toBeVisible();
   expect(
     screen.getByText(/Search matches name, ID, manufacturer/),
   ).toBeVisible();
+
   fireEvent.click(screen.getByRole("button", { name: "Clear search" }));
+
   expect(onClearSearch).toHaveBeenCalledOnce();
 });
 
@@ -209,6 +218,7 @@ test.each([
         adding={false}
       />,
     );
+
     expect(screen.getByTestId("robot-activity")).toHaveTextContent(
       `Needs attention${label}`,
     );

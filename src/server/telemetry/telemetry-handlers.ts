@@ -13,6 +13,7 @@ export function telemetryHandlers(database: () => FleetDatabase) {
       } catch {
         return invalid();
       }
+
       const parsed = telemetryBatchSchema.safeParse(body);
       const now = Date.now();
       if (
@@ -22,6 +23,7 @@ export function telemetryHandlers(database: () => FleetDatabase) {
         )
       )
         return invalid();
+
       try {
         ingestTelemetry(
           database(),
@@ -40,6 +42,7 @@ export function telemetryHandlers(database: () => FleetDatabase) {
     },
   };
 }
+
 function invalid() {
   return errorResponse(
     400,

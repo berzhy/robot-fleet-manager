@@ -13,14 +13,17 @@ export function createPollingLoop(
 
   async function start() {
     if (disposed) return;
+
     cancel();
     const current = new AbortController();
     controller = current;
     const cancelled = () => disposed || current.signal.aborted;
+
     const keepPolling = await poll(
       AbortSignal.any([current.signal, AbortSignal.timeout(5000)]),
       cancelled,
     );
+
     if (keepPolling && !cancelled())
       timer = setTimeout(() => void start(), 5000);
   }

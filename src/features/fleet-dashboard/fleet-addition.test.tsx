@@ -41,6 +41,7 @@ function response(items: Robot[], total = items.length, page = 0) {
     ...pageMetadata(total),
   });
 }
+
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
@@ -59,6 +60,7 @@ test("both add buttons share pending state; empty creation reloads and restores 
     .mockResolvedValueOnce(response([robot]));
   vi.stubGlobal("fetch", fetcher);
   render(<FleetDashboard />);
+
   await screen.findByTestId("fleet-empty");
   const emptyAdd = screen.getByTestId("fleet-empty-add-robot");
   const toolbarAdd = screen.getByTestId("fleet-add-robot");
@@ -66,6 +68,7 @@ test("both add buttons share pending state; empty creation reloads and restores 
     expect(button).toHaveRole("button");
     expect(button).toHaveAccessibleName("Add robot");
   }
+
   fireEvent.click(emptyAdd);
   fireEvent.click(toolbarAdd);
   expect(emptyAdd).toBeDisabled();
@@ -83,6 +86,7 @@ test("both add buttons share pending state; empty creation reloads and restores 
   expect(
     createRobotSchema.safeParse(JSON.parse(options.body as string)).success,
   ).toBe(true);
+
   act(() => complete(Response.json(robot, { status: 201 })));
   await screen.findByTestId("robot-row-new");
   expect(screen.getByTestId("fleet-notification")).toHaveRole("status");
@@ -114,9 +118,11 @@ test.each(["HTTP", "network"])(
       .mockResolvedValue(response([robot]));
     vi.stubGlobal("fetch", fetcher);
     render(<FleetDashboard />);
+
     await screen.findByTestId("robot-row-new");
     const add = screen.getByTestId("fleet-add-robot");
     fireEvent.click(add);
+
     const notice = await screen.findByTestId("fleet-notification");
     expect(notice).toHaveRole("alert");
     expect(notice).toHaveTextContent("Unable to add robot. Please try again.");
@@ -125,6 +131,7 @@ test.each(["HTTP", "network"])(
     ).toBeInTheDocument();
     await waitFor(() => expect(add).toHaveFocus());
     expect(fetcher).toHaveBeenCalledTimes(3);
+
     fireEvent.click(add);
     await waitFor(() =>
       expect(screen.getByTestId("fleet-notification")).toHaveTextContent(
@@ -149,6 +156,7 @@ test("creation locks pagination and deletion, then refreshes the current later p
     .mockResolvedValueOnce(response([robot], 12, 1));
   vi.stubGlobal("fetch", fetcher);
   render(<FleetDashboard />);
+
   await screen.findByTestId("robot-row-new");
   fireEvent.click(screen.getByTestId("fleet-next-page"));
   await waitFor(() =>
@@ -159,11 +167,13 @@ test("creation locks pagination and deletion, then refreshes the current later p
   await waitFor(() =>
     expect(screen.getByTestId("fleet-add-robot")).toBeEnabled(),
   );
+
   fireEvent.click(screen.getByTestId("fleet-add-robot"));
   expect(screen.getByTestId("fleet-previous-page")).toBeDisabled();
   expect(
     within(screen.getByTestId("robot-row-new")).getByTestId("robot-actions"),
   ).toBeDisabled();
+
   act(() => complete(Response.json(robot, { status: 201 })));
   await waitFor(() =>
     expect(screen.getByTestId("fleet-notification")).toHaveTextContent(
@@ -193,6 +203,7 @@ test("successful creation followed by failed reload keeps success and restores f
       .mockResolvedValueOnce(new Response(null, { status: 500 })),
   );
   render(<FleetDashboard />);
+
   await screen.findByTestId("fleet-empty");
   fireEvent.click(screen.getByTestId("fleet-empty-add-robot"));
   await waitFor(() =>
@@ -223,6 +234,7 @@ test.each([10, 100])(
       .mockResolvedValueOnce(response([robot], count + 1));
     vi.stubGlobal("fetch", fetcher);
     render(<FleetDashboard />);
+
     await screen.findByTestId("robot-row-new");
     const more = screen.getByTestId("fleet-add-options");
     expect(more).toHaveAccessibleName("More add options");
@@ -233,6 +245,7 @@ test.each([10, 100])(
     const option = screen.getByTestId(`fleet-add-robots-${count}`);
     expect(option).toHaveRole("menuitem");
     expect(option).toHaveAccessibleName(`Add ${count} robots`);
+
     fireEvent.click(option);
     expect(more).toBeDisabled();
     expect(screen.getByTestId("fleet-add-robot")).toBeDisabled();
@@ -248,6 +261,7 @@ test.each([10, 100])(
       "/api/robots/batch",
       expect.objectContaining({ method: "POST" }),
     );
+
     act(() =>
       complete(
         Response.json(
@@ -281,6 +295,7 @@ test("batch failure preserves rows and resumes fleet updates", async () => {
     .mockResolvedValue(response([robot]));
   vi.stubGlobal("fetch", fetcher);
   render(<FleetDashboard />);
+
   await screen.findByTestId("robot-row-new");
   const more = screen.getByTestId("fleet-add-options");
   vi.spyOn(more, "getBoundingClientRect").mockReturnValue(
@@ -288,6 +303,7 @@ test("batch failure preserves rows and resumes fleet updates", async () => {
   );
   fireEvent.click(more);
   fireEvent.click(screen.getByTestId("fleet-add-robots-10"));
+
   expect(await screen.findByTestId("fleet-notification")).toHaveTextContent(
     "Unable to add robots. Please try again.",
   );
@@ -315,9 +331,11 @@ test("addition outside the selected view retains filters and reports success wit
     .mockImplementation(() => Promise.resolve(filtered()));
   vi.stubGlobal("fetch", fetcher);
   render(<FleetDashboard />);
+
   await screen.findByTestId("robot-row-new");
   fireEvent.click(screen.getByRole("button", { name: "Offline" }));
   await screen.findByText("No robots match these filters.");
+
   fireEvent.click(screen.getByTestId("fleet-add-robot"));
   await waitFor(() =>
     expect(screen.getByTestId("fleet-notification")).toHaveTextContent("added"),

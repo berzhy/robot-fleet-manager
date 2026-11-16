@@ -12,6 +12,7 @@ export async function runSimulator(origin: string, signal: AbortSignal) {
   const states = new Map<string, SimulatedRobot>();
   let previous = Date.now();
   let failing = false;
+
   async function request(path: string, init?: RequestInit) {
     const response = await fetch(new URL(path, origin), {
       ...init,
@@ -22,9 +23,11 @@ export async function runSimulator(origin: string, signal: AbortSignal) {
       throw new Error(`Simulator request failed (${response.status})`);
     return response;
   }
+
   while (!signal.aborted) {
     let failed = false;
     const discovered = new Set<string>();
+
     try {
       const response = await request("/api/robots/registry");
       const { items } = (await response.json()) as { items: Robot[] };
@@ -40,6 +43,7 @@ export async function runSimulator(origin: string, signal: AbortSignal) {
     } catch {
       failed = true;
     }
+
     const now = Date.now();
     const seconds = Math.max(0, (now - previous) / 1000);
     previous = now;
@@ -48,6 +52,7 @@ export async function runSimulator(origin: string, signal: AbortSignal) {
       const report = advanceRobot(id, state, firstReport ? 0 : seconds, now);
       return firstReport || telemetryAvailable(state, now) ? [report] : [];
     });
+
     for (
       let start = 0;
       start < reports.length && !signal.aborted;
@@ -63,11 +68,14 @@ export async function runSimulator(origin: string, signal: AbortSignal) {
         failed = true;
       }
     }
+
     if (signal.aborted) break;
+
     if (failed && !failing)
       console.error("Simulator requests failed; retrying.");
     if (!failed && failing) console.info("Simulator connection restored.");
     failing = failed;
+
     try {
       await delay(1000, undefined, { signal });
     } catch {

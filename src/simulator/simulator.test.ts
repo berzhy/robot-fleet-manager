@@ -2,6 +2,7 @@ import { initializeRobot } from "./simulation";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { runSimulator } from "./simulator";
 import type { Robot } from "@/modules/robots/robot";
+
 const robot: Robot = {
   problemCode: null,
   controlTarget: "work",
@@ -20,12 +21,15 @@ const robot: Robot = {
   batteryPercent: null,
   activity: "unknown",
 };
+
 let controller: AbortController;
 let running: Promise<void> | undefined;
+
 beforeEach(() => {
   controller = new AbortController();
   running = undefined;
 });
+
 afterEach(async () => {
   controller.abort();
   try {
@@ -36,6 +40,7 @@ afterEach(async () => {
     vi.restoreAllMocks();
   }
 });
+
 test("registry discovery reconciles additions/deletions and reports chunks of at most 100", async () => {
   const batches: string[][] = [];
   let discovery = 0;
@@ -63,9 +68,11 @@ test("registry discovery reconciles additions/deletions and reports chunks of at
       return Promise.resolve(new Response(null, { status: 204 }));
     }),
   );
+
   running = runSimulator("http://local", controller.signal);
   await vi.waitFor(() => expect(batches).toHaveLength(2));
   expect(batches.map((batch) => batch.length)).toEqual([100, 1]);
+
   await vi.waitFor(() => expect(batches[2]).toEqual(["new"]), {
     timeout: 3000,
   });
@@ -74,6 +81,7 @@ test("registry discovery reconciles additions/deletions and reports chunks of at
 
   expect(batches).toHaveLength(3);
 });
+
 test("failed discovery retains known robots and failed telemetry is retried", async () => {
   vi.spyOn(console, "error").mockImplementation(() => {});
   vi.spyOn(console, "info").mockImplementation(() => {});
@@ -95,10 +103,12 @@ test("failed discovery retains known robots and failed telemetry is retried", as
       );
     }),
   );
+
   running = runSimulator("http://local", controller.signal);
   await vi.waitFor(() => expect(deliveries).toHaveLength(3), { timeout: 4000 });
   controller.abort();
   await running;
+
   expect(deliveries).toEqual([[robot.id], [robot.id], [robot.id]]);
 });
 
@@ -135,8 +145,10 @@ test("existing robots receive controls and failed telemetry does not replay olde
       );
     }),
   );
+
   running = runSimulator("http://local", controller.signal);
   await running;
+
   expect(reports).toHaveLength(3);
   expect(reports.slice(1)).toEqual([
     expect.objectContaining({ activity: "idle", appliedControlRevision: 1 }),
@@ -170,8 +182,10 @@ test("outages omit telemetry but preserve discovery and local activity until rep
       return Promise.resolve(new Response(null, { status: 204 }));
     }),
   );
+
   running = runSimulator("http://local", controller.signal);
   await running;
+
   expect(discoveries).toBe(3);
   expect(delivered).toEqual([
     expect.objectContaining({

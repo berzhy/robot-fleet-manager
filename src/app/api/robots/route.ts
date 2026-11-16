@@ -6,6 +6,7 @@ export async function GET(request: Request) {
   await io();
   return handlers.list(request);
 }
+
 export async function POST(request: Request) {
   await io();
   return handlers.create(request);

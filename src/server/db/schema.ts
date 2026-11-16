@@ -23,6 +23,7 @@ export const robots = sqliteTable("robots", {
     .default("work"),
   controlRevision: integer("control_revision").notNull().default(0),
 });
+
 export const latestTelemetry = sqliteTable("latest_telemetry", {
   robotId: text("robot_id")
     .primaryKey()

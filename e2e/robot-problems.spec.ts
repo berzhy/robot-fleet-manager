@@ -17,6 +17,7 @@ test("investigates a reported problem and retries it from robot details", async 
   });
   expect(created.status()).toBe(201);
   const robot = (await created.json()) as Robot;
+
   async function report(recovered: boolean) {
     const response = await request.post("/api/telemetry/batch", {
       data: {
@@ -35,14 +36,17 @@ test("investigates a reported problem and retries it from robot details", async 
     });
     expect(response.status()).toBe(204);
   }
+
   await report(false);
   await page.goto("/");
   await page
     .getByRole("button", { name: "Needs attention", exact: true })
     .click();
+
   const row = page.getByTestId(`robot-row-${robot.id}`);
   await expect(row).toContainText("Sensor obstructed");
   await row.getByRole("link", { name: robot.name, exact: true }).click();
+
   const details = page.getByTestId("robot-details");
   const alert = details.getByRole("alert");
   await expect(alert).toContainText(
@@ -53,15 +57,18 @@ test("investigates a reported problem and retries it from robot details", async 
     exact: true,
   });
   await expect(retry).toHaveAttribute("aria-disabled", "false");
+
   await retry.click();
   await expect(page.getByRole("status")).toContainText(
     "Retry activity requested.",
   );
+
   await report(true);
   await expect(details.getByTestId("robot-activity")).toHaveText("Working", {
     timeout: 15000,
   });
   await expect(alert).toHaveCount(0);
+
   await page
     .getByRole("navigation", { name: "Breadcrumb" })
     .getByRole("link", { name: "Fleet dashboard" })

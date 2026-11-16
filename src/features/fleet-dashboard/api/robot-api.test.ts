@@ -6,7 +6,9 @@ import {
   getRobotContext,
   deleteRobot as dataDeleteRobot,
 } from "./robot-api";
+
 afterEach(() => vi.unstubAllGlobals());
+
 test("requests a server page with cancellation and rejects HTTP failures", async () => {
   const fetcher = vi
     .fn()
@@ -21,6 +23,7 @@ test("requests a server page with cancellation and rejects HTTP failures", async
     )
     .mockResolvedValueOnce(new Response(null, { status: 500 }));
   vi.stubGlobal("fetch", fetcher);
+
   const controller = new AbortController();
   expect(await getRobots(2, 20, controller.signal)).toEqual({
     items: [],
@@ -34,6 +37,7 @@ test("requests a server page with cancellation and rejects HTTP failures", async
     signal: controller.signal,
     cache: "no-store",
   });
+
   await expect(getRobots(0)).rejects.toThrow("Unable to load robots.");
 });
 
@@ -43,10 +47,12 @@ test("deletes an encoded robot id, accepts an empty 204 and rejects failures", a
     .mockResolvedValueOnce(new Response(null, { status: 204 }))
     .mockResolvedValueOnce(new Response(null, { status: 404 }));
   vi.stubGlobal("fetch", fetcher);
+
   await expect(dataDeleteRobot("robot/id")).resolves.toBeUndefined();
   expect(fetcher).toHaveBeenCalledWith("/api/robots/robot%2Fid", {
     method: "DELETE",
   });
+
   await expect(dataDeleteRobot("missing")).rejects.toThrow(
     "Unable to delete robot.",
   );
@@ -75,12 +81,14 @@ test("creates metadata using POST and requires a 201 response", async () => {
     .mockResolvedValueOnce(Response.json(created, { status: 201 }))
     .mockResolvedValueOnce(new Response(null, { status: 500 }));
   vi.stubGlobal("fetch", fetcher);
+
   expect(await createRobot(input)).toEqual(created);
   expect(fetcher).toHaveBeenCalledWith("/api/robots", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   });
+
   await expect(createRobot(input)).rejects.toThrow("Unable to add robot.");
 });
 
@@ -90,12 +98,14 @@ test("detail requests encode IDs, support cancellation, and distinguish deletion
     .mockResolvedValueOnce(new Response(null, { status: 404 }))
     .mockResolvedValueOnce(new Response(null, { status: 500 }));
   vi.stubGlobal("fetch", fetcher);
+
   const controller = new AbortController();
   expect(await getRobotContext("robot/id", controller.signal)).toBeNull();
   expect(fetcher).toHaveBeenCalledWith("/api/robots/robot%2Fid/context", {
     cache: "no-store",
     signal: controller.signal,
   });
+
   await expect(getRobotContext("failure")).rejects.toThrow(
     "Unable to refresh robot context.",
   );
@@ -112,6 +122,7 @@ test("encodes literal search text and combined filters in the list request", asy
     }),
   );
   vi.stubGlobal("fetch", fetcher);
+
   await getRobots(0, 20, undefined, {
     view: "offline",
     search: "Robot %_&",

@@ -21,6 +21,7 @@ import {
   listRobots,
   robotRegistry,
 } from "./robots";
+
 export function robotHandlers(database: () => FleetDatabase) {
   function safely(operation: () => Response) {
     try {
@@ -34,16 +35,19 @@ export function robotHandlers(database: () => FleetDatabase) {
       );
     }
   }
+
   return {
     registry() {
       return safely(() => jsonResponse({ items: robotRegistry(database()) }));
     },
+
     list(request: Request) {
       const params = new URL(request.url).searchParams;
       const page = robotPageSchema.safeParse(params.get("page") ?? "0");
       const pageSize = robotPageSizeSchema.safeParse(
         params.get("pageSize") ?? String(robotPageSize),
       );
+
       if (!pageSize.success)
         return errorResponse(
           400,
@@ -56,6 +60,7 @@ export function robotHandlers(database: () => FleetDatabase) {
           "INVALID_INPUT",
           "Page must be a nonnegative integer.",
         );
+
       const filters = robotFiltersSchema.safeParse(
         Object.fromEntries(
           [
@@ -68,14 +73,17 @@ export function robotHandlers(database: () => FleetDatabase) {
           ].flatMap((key) => (params.has(key) ? [[key, params.get(key)]] : [])),
         ),
       );
+
       if (!filters.success)
         return errorResponse(400, "INVALID_INPUT", "Invalid robot filters.");
+
       return safely(() =>
         jsonResponse(
           listRobots(database(), page.data, pageSize.data, filters.data),
         ),
       );
     },
+
     async create(request: Request) {
       let body: unknown;
       try {
@@ -83,6 +91,7 @@ export function robotHandlers(database: () => FleetDatabase) {
       } catch {
         return errorResponse(400, "INVALID_INPUT", "Invalid JSON body.");
       }
+
       const input = createRobotSchema.safeParse(body);
       if (!input.success)
         return errorResponse(
@@ -90,10 +99,12 @@ export function robotHandlers(database: () => FleetDatabase) {
           "INVALID_INPUT",
           "Provide name, manufacturer and site (1–100 characters each), and valid robot and integration types.",
         );
+
       return safely(() =>
         jsonResponse(createRobot(database(), input.data), 201),
       );
     },
+
     async createBatch(request: Request) {
       let body: unknown;
       try {
@@ -101,6 +112,7 @@ export function robotHandlers(database: () => FleetDatabase) {
       } catch {
         return errorResponse(400, "INVALID_INPUT", "Invalid JSON body.");
       }
+
       const input = createRobotBatchSchema.safeParse(body);
       if (!input.success)
         return errorResponse(
@@ -108,6 +120,7 @@ export function robotHandlers(database: () => FleetDatabase) {
           "INVALID_INPUT",
           "Provide between 1 and 100 valid robots.",
         );
+
       return safely(() =>
         jsonResponse(
           { items: createRobots(database(), input.data.robots) },
@@ -115,6 +128,7 @@ export function robotHandlers(database: () => FleetDatabase) {
         ),
       );
     },
+
     get(id: string) {
       return safely(() => {
         const robot = getRobot(database(), id);
@@ -123,6 +137,7 @@ export function robotHandlers(database: () => FleetDatabase) {
           : errorResponse(404, "NOT_FOUND", "Robot not found.");
       });
     },
+
     context(id: string) {
       return safely(() => {
         const context = getRobotContext(database(), id);
@@ -131,12 +146,14 @@ export function robotHandlers(database: () => FleetDatabase) {
           : errorResponse(404, "NOT_FOUND", "Robot not found.");
       });
     },
+
     removeAll() {
       return safely(() => {
         deleteAllRobots(database());
         return new Response(null, { status: 204 });
       });
     },
+
     remove(id: string) {
       return safely(() =>
         deleteRobot(database(), id)

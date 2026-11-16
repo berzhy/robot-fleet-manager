@@ -16,6 +16,7 @@ test("adds two robots and deletes one", async ({ page, request }) => {
   await expect(firstRow).toBeVisible();
   await expect(secondRow).toBeVisible();
   expect(await registeredRobots(request)).toHaveLength(2);
+
   const reports: TelemetryReport[] = [first, second].map(({ id }) => ({
     robotId: id,
     activity: "working",
@@ -69,9 +70,11 @@ async function addRobot(page: Page): Promise<Robot> {
       response.request().method() === "POST",
   );
   await page.getByTestId("fleet-add-robot").click();
+
   const response = await created;
   expect(response.status()).toBe(201);
   const robot = (await response.json()) as Robot;
+
   const row = page.getByTestId(`robot-row-${robot.id}`);
   await expect(row).toBeVisible();
   await expect(row.getByTestId("robot-name")).toHaveText(robot.name);
@@ -88,6 +91,7 @@ test("keyboard explanations and Stop/Retry requests follow reported activity", a
   await page.goto("/");
   const robot = await addRobot(page);
   const row = page.getByTestId(`robot-row-${robot.id}`);
+
   async function report(activity: Robot["activity"], revision: number) {
     const response = await request.post("/api/telemetry/batch", {
       data: {
@@ -106,10 +110,12 @@ test("keyboard explanations and Stop/Retry requests follow reported activity", a
     });
     expect(response.status()).toBe(204);
   }
+
   await report("working", 0);
   await expect(row.getByTestId("robot-activity")).toHaveText("Working", {
     timeout: 15000,
   });
+
   await row.getByTestId("robot-actions").focus();
   await page.keyboard.press("Enter");
   await page.keyboard.press("ArrowDown");
@@ -120,6 +126,7 @@ test("keyboard explanations and Stop/Retry requests follow reported activity", a
   await expect(
     page.getByRole("menuitem", { name: "Start activity" }),
   ).toHaveAttribute("aria-disabled", "true");
+
   await page.getByRole("menuitem", { name: "Stop activity" }).click();
   await expect(page.getByTestId("fleet-notification")).toContainText(
     "Stop requested",
@@ -132,15 +139,18 @@ test("keyboard explanations and Stop/Retry requests follow reported activity", a
     controlTarget: "stop",
     controlRevision: 1,
   });
+
   await report("idle", 1);
   await expect(row.getByTestId("robot-activity")).toHaveText("Idle", {
     timeout: 15000,
   });
+
   await report("needs-attention", 1);
   await expect(row.getByTestId("robot-activity")).toContainText(
     "Path blocked",
     { timeout: 15000 },
   );
+
   await row.getByTestId("robot-actions").click();
   await page.getByRole("menuitem", { name: "Retry activity" }).click();
   await expect(page.getByTestId("fleet-notification")).toContainText(
@@ -149,6 +159,7 @@ test("keyboard explanations and Stop/Retry requests follow reported activity", a
   expect(
     await (await request.get(`/api/robots/${robot.id}`)).json(),
   ).toMatchObject({ controlTarget: "work", controlRevision: 2 });
+
   await report("working", 2);
   await expect(row.getByTestId("robot-activity")).toHaveText("Working", {
     timeout: 15000,
@@ -170,12 +181,15 @@ async function seedFleet(request: APIRequestContext, count = 1) {
   expect(response.status()).toBe(201);
   return ((await response.json()) as { items: Robot[] }).items;
 }
+
 async function chooseFilter(page: Page, label: string, value: string) {
   const secondary = label === "Manufacturer" || label === "Integration";
   if (secondary) await page.getByTestId("fleet-more-filters").click();
+
   await page.getByRole("combobox", { name: label, exact: true }).click();
   await page.getByRole("option", { name: value, exact: true }).click();
 }
+
 async function sendProblem(
   request: APIRequestContext,
   robot: Robot,
@@ -225,6 +239,7 @@ test("combines dropdowns and tiles, removes chips and retries a failed filter re
   expect(created.status()).toBe(201);
   const { items } = (await created.json()) as { items: Robot[] };
   const robot = items[0];
+
   async function reportFleet() {
     const telemetry = await request.post("/api/telemetry/batch", {
       data: {
@@ -241,10 +256,12 @@ test("combines dropdowns and tiles, removes chips and retries a failed filter re
     });
     expect(telemetry.status()).toBe(204);
   }
+
   await reportFleet();
   await page.goto("/");
   const rows = page.getByTestId("fleet-table").locator("tbody tr");
   await expect(rows).toHaveCount(6);
+
   await chooseFilter(page, "Location", "Munich");
   await expect(rows).toHaveCount(5);
   await chooseFilter(page, "Manufacturer", "Boston Dynamics");
@@ -253,6 +270,7 @@ test("combines dropdowns and tiles, removes chips and retries a failed filter re
   await expect(rows).toHaveCount(3);
   await chooseFilter(page, "Type", "Inspection robot");
   await expect(rows).toHaveCount(2);
+
   await reportFleet();
   await page
     .getByRole("button", { name: "Needs attention", exact: true })
@@ -265,6 +283,7 @@ test("combines dropdowns and tiles, removes chips and retries a failed filter re
   await expect(
     page.getByText("Type: Inspection robot", { exact: true }),
   ).toBeVisible();
+
   const removable = page.getByTestId("fleet-chip-view");
   await removable.focus();
   await page.keyboard.press("Delete");
@@ -274,15 +293,18 @@ test("combines dropdowns and tiles, removes chips and retries a failed filter re
   await expect(
     page.getByText("Integration: ROS 2", { exact: true }),
   ).toBeVisible();
+
   let fail = true;
   await page.route("**/api/robots?*", (route) =>
     fail ? route.fulfill({ status: 500, body: "error" }) : route.continue(),
   );
   await page.getByRole("button", { name: "Low battery", exact: true }).click();
   await expect(page.getByTestId("fleet-load-error")).toBeVisible();
+
   fail = false;
   await page.getByTestId("fleet-retry").click();
   await expect(page.getByText("No robots match these filters.")).toBeVisible();
+
   await page.getByRole("button", { name: "Clear filters" }).first().click();
   await expect(rows).toHaveCount(6);
 });
@@ -294,15 +316,18 @@ test("live filtered recovery restores focus after the action menu closes", async
   const [robot] = await seedFleet(request);
   await sendProblem(request, robot, true);
   await page.goto("/");
+
   await page
     .getByRole("button", { name: "Needs attention", exact: true })
     .click();
   const row = page.getByTestId(`robot-row-${robot.id}`);
   await expect(row).toBeVisible();
+
   await row.getByTestId("robot-actions").click();
   await sendProblem(request, robot, false);
   await expect(page.getByRole("menu")).toBeVisible();
   await expect(row).toBeVisible();
+
   await page.keyboard.press("Escape");
   await expect(page.getByRole("menu")).toHaveCount(0);
   await expect(row).toHaveCount(0, { timeout: 15000 });
@@ -323,14 +348,17 @@ test("deleting the last filtered page corrects pagination and retains filters", 
   await seedFleet(request, 11);
   await page.goto("/");
   await chooseFilter(page, "Location", "Munich");
+
   await page.getByTestId("fleet-next-page").click();
   await expect(page.getByTestId("fleet-page-summary")).toHaveText(
     "11–11 of 11",
   );
+
   const row = page.getByTestId("fleet-table").locator("tbody tr");
   await row.getByTestId("robot-actions").click();
   await page.getByTestId("robot-delete").click();
   await page.getByTestId("delete-robot-confirm").click();
+
   await expect(page.getByTestId("fleet-page-summary")).toHaveText("1–10 of 10");
   await expect(
     page.getByText("Location: Munich", { exact: true }),
@@ -345,10 +373,12 @@ test("search combines with filters and tiles, clears through chips and recovers 
   const robots = await seedFleet(request, 2);
   await sendProblem(request, robots[0], true);
   await page.goto("/");
+
   await chooseFilter(page, "Location", "Munich");
   await page
     .getByRole("button", { name: "Needs attention", exact: true })
     .click();
+
   const search = page.getByRole("textbox", { name: "Search robots" });
   await search.fill("ROS 2");
   await expect(page.getByTestId("fleet-chip-search")).toHaveText(
@@ -367,26 +397,31 @@ test("search combines with filters and tiles, clears through chips and recovers 
       .locator("mark"),
   ).toHaveText("ROS 2");
   await expect(search).toBeFocused();
+
   await search.fill("no-such-robot");
   await expect(
     page.getByText("No robots match “no-such-robot”."),
   ).toBeVisible();
+
   await page.getByTestId("fleet-chip-search").focus();
   await page.keyboard.press("Delete");
   await expect(search).toHaveValue("");
   await expect(page.getByTestId(`robot-row-${robots[0].id}`)).toBeVisible();
   await expect(page.getByTestId("fleet-chip-site")).toBeVisible();
   await expect(page.locator("tbody mark")).toHaveCount(0);
+
   await search.fill("no-such-robot");
   await expect(
     page.getByText("No robots match “no-such-robot”."),
   ).toBeVisible();
+
   await page
     .getByRole("button", { name: "Clear filters", exact: true })
     .last()
     .click();
   await expect(search).toHaveValue("");
   await expect(page.getByTestId(`robot-row-${robots[1].id}`)).toBeVisible();
+
   await page.setViewportSize({ width: 650, height: 900 });
   await expect(search).toBeVisible();
   await page.getByTestId("fleet-more-filters").click();
@@ -419,27 +454,33 @@ test("delete all clears robots outside the active search and allows adding again
     expect(response.status()).toBe(201);
     records.push((await response.json()) as Robot);
   }
+
   await page.goto("/");
   await expect(page.getByTestId(`robot-row-${records[1].id}`)).toBeVisible();
+
   await page
     .getByRole("textbox", { name: "Search robots" })
     .fill("Bulk visible");
   await expect(page.getByTestId(`robot-row-${records[1].id}`)).toBeHidden();
+
   await page.getByTestId("fleet-add-options").click();
   await page.getByRole("menuitem", { name: "Delete all robots" }).click();
   const dialog = page.getByRole("dialog", { name: "Delete all robots?" });
   await expect(dialog).toContainText("including those hidden by filters");
   await dialog.getByRole("button", { name: "Delete all robots" }).click();
+
   await expect(dialog).toBeHidden();
   await expect(page.getByTestId("fleet-notification")).toContainText(
     "All robots deleted.",
   );
   await expect(page.getByTestId("fleet-empty")).toBeVisible();
   expect(await registeredRobots(request)).toHaveLength(0);
+
   await page.getByRole("textbox", { name: "Search robots" }).fill("");
   await expect(
     page.getByRole("textbox", { name: "Search robots" }),
   ).toHaveValue("");
+
   await addRobot(page);
   expect(await registeredRobots(request)).toHaveLength(1);
 });

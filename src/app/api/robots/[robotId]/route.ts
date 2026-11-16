@@ -7,6 +7,7 @@ export async function GET(_request: Request, context: Context) {
   await io();
   return handlers.get((await context.params).robotId);
 }
+
 export async function DELETE(_request: Request, context: Context) {
   await io();
   return handlers.remove((await context.params).robotId);

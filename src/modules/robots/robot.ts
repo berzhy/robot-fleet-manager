@@ -1,5 +1,6 @@
 import type { RobotProblemCode } from "./robot-problems";
 import type { FleetSummary, FilterOptions } from "./robot-filters";
+
 export const robotTypes = [
   "cleaning",
   "security",
@@ -12,6 +13,7 @@ export const integrationTypes = ["ros2", "vda5050", "vendor-api"] as const;
 
 export const robotPageSize = 10;
 export const robotPageSizes = [10, 20, 50] as const;
+
 export const robotActivities = [
   "working",
   "idle",
@@ -21,6 +23,7 @@ export const robotActivities = [
   "unknown",
 ] as const;
 export type RobotActivity = (typeof robotActivities)[number];
+
 export type Robot = {
   id: string;
   name: string;
@@ -39,6 +42,7 @@ export type Robot = {
   lastTelemetryAt: string | null;
   lastReceivedAt: string | null;
 };
+
 export type RobotPage = {
   summary: FleetSummary;
   fleetTotal: number;

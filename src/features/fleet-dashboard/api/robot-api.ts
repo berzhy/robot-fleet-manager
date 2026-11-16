@@ -7,6 +7,7 @@ import {
   type RobotPage,
   type RobotContext,
 } from "@/modules/robots/robot";
+
 export async function getRobots(
   page: number,
   pageSize = robotPageSize,
@@ -21,10 +22,12 @@ export async function getRobots(
     if (value !== undefined && !(key === "view" && value === "all"))
       params.set(key, value);
   }
+
   const response = await fetch(`/api/robots?${params}`, {
     signal,
     cache: "no-store",
   });
+
   if (!response.ok) throw new Error("Unable to load robots.");
   return response.json() as Promise<RobotPage>;
 }

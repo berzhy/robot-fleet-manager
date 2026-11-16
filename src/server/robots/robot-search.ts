@@ -35,6 +35,7 @@ export function robotSearchCondition(
     batterySearch && Number(batterySearch[1]) <= 100
       ? Number(batterySearch[1])
       : undefined;
+
   const connectionSearches = (
     [
       ["Online", sql`${latestTelemetry.receivedAt} >= ${onlineCutoff}`],
@@ -51,6 +52,7 @@ export function robotSearchCondition(
   )
     .filter(([label]) => label.toLowerCase().includes(query))
     .map(([, condition]) => condition);
+
   return pattern === undefined
     ? undefined
     : or(

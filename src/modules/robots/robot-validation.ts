@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { robotPageSizes, robotTypes, integrationTypes } from "./robot";
+
 const label = z.string().trim().min(1).max(100);
 export const createRobotSchema = z.strictObject({
   name: label,
@@ -10,6 +11,7 @@ export const createRobotSchema = z.strictObject({
   site: label,
 });
 export type CreateRobotInput = z.infer<typeof createRobotSchema>;
+
 export const robotPageSchema = z
   .string()
   .regex(/^(0|[1-9]\d*)$/)

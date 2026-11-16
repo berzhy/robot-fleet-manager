@@ -3,6 +3,7 @@ import type { Robot } from "@/modules/robots/robot";
 import type { TelemetryReport } from "@/modules/telemetry/telemetry";
 
 type Target = Robot["controlTarget"];
+
 export type SimulatedRobot = {
   battery: number;
   problemCode: Robot["problemCode"];
@@ -17,6 +18,7 @@ export type SimulatedRobot = {
   hash: number;
   connectionHash: number;
 };
+
 const departureDelay = 7;
 const returnDuration = 10;
 const lowBattery = 10;
@@ -26,18 +28,21 @@ const chargeRate = 0.5;
 const minFaultInterval = 120;
 const maxFaultInterval = 600;
 const areas = ["Lobby", "Floor 1", "Warehouse"];
+
 function hashId(id: string) {
   return Array.from(id).reduce(
     (value, char) => (Math.imul(value, 31) + char.charCodeAt(0)) >>> 0,
     0,
   );
 }
+
 function faultInterval(hash: number, count: number) {
   return (
     minFaultInterval +
     (hashId(`${hash}:${count}`) % (maxFaultInterval - minFaultInterval + 1))
   );
 }
+
 export function initializeRobot(robot: Robot): SimulatedRobot {
   const hash = hashId(robot.id);
   return {
@@ -55,11 +60,14 @@ export function initializeRobot(robot: Robot): SimulatedRobot {
     connectionHash: hashId(`${robot.id}:connection`),
   };
 }
+
 export function applyControl(state: SimulatedRobot, robot: Robot) {
   if (robot.controlRevision <= state.appliedRevision) return;
+
   state.appliedRevision = robot.controlRevision;
   state.target = robot.controlTarget;
   state.problemCode = null;
+
   if (state.target === "stop") state.activity = "idle";
   else if (state.target === "base") {
     state.activity = "returning";
@@ -73,6 +81,7 @@ export function applyControl(state: SimulatedRobot, robot: Robot) {
     if (state.area === "Base") state.area = areas[state.hash % areas.length];
   }
 }
+
 export function advanceRobot(
   id: string,
   state: SimulatedRobot,
@@ -81,9 +90,11 @@ export function advanceRobot(
 ): TelemetryReport {
   // Bound catch-up after slow HTTP requests; phases advance in small steps.
   let remaining = Math.max(0, Math.min(5, seconds));
+
   while (remaining > 0) {
     const step = Math.min(1, remaining);
     remaining -= step;
+
     switch (state.activity) {
       case "idle":
         if (state.target === "work" && (state.remaining -= step) <= 0) {
@@ -98,6 +109,7 @@ export function advanceRobot(
           areas[
             (state.hash + Math.floor(state.workingSeconds / 30)) % areas.length
           ];
+
         if (state.battery <= lowBattery) {
           state.activity = "returning";
           state.remaining = returnDuration;
@@ -115,6 +127,7 @@ export function advanceRobot(
         break;
       case "returning":
         state.battery = Math.max(0, state.battery - step * dischargeRate);
+
         if ((state.remaining -= step) <= 0) {
           state.area = "Base";
           state.activity = state.battery < chargedBattery ? "charging" : "idle";
@@ -126,6 +139,7 @@ export function advanceRobot(
           chargedBattery,
           state.battery + step * chargeRate,
         );
+
         if (state.battery >= chargedBattery) {
           state.activity = "idle";
           state.remaining = departureDelay;
@@ -133,6 +147,7 @@ export function advanceRobot(
         break;
     }
   }
+
   return {
     robotId: id,
     activity: state.activity,

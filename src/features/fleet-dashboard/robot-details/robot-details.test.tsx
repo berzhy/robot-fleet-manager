@@ -33,6 +33,7 @@ const robot: Robot = {
 
 test("details show fields, missing values, and breadcrumbs", () => {
   render(<RobotDetails robot={robot} siteRobots={[]} verifiedAt={0} />);
+
   const details = within(screen.getByTestId("robot-details"));
   expect(
     screen.getByRole("heading", { level: 1, name: robot.name }),
@@ -61,7 +62,9 @@ test("details show fields, missing values, and breadcrumbs", () => {
     "true",
   );
   expect(screen.getByRole("tabpanel", { name: "Overview" })).toBeVisible();
+
   fireEvent.click(screen.getByRole("tab", { name: "Logs" }));
+
   const logs = screen.getByRole("tabpanel", { name: "Logs" });
   expect(logs).toHaveTextContent(`Initializing ${robot.name}`);
   expect(logs).toHaveTextContent("Integration initialized: Vendor API");
@@ -69,7 +72,9 @@ test("details show fields, missing values, and breadcrumbs", () => {
   expect(
     screen.queryByRole("region", { name: "Location" }),
   ).not.toBeInTheDocument();
+
   fireEvent.click(screen.getByRole("tab", { name: "Overview" }));
+
   expect(screen.getByRole("region", { name: "Location" })).toBeVisible();
 });
 
@@ -104,13 +109,16 @@ test.each([
         onAction={onAction}
       />,
     );
+
     const buttons = screen.getAllByRole("button", {
       name: /^(Start|Stop) activity$/,
     });
     expect(buttons).toHaveLength(1);
     expect(buttons[0]).toHaveAccessibleName(label);
     expect(buttons[0]).toHaveAttribute("aria-disabled", String(disabled));
+
     fireEvent.click(buttons[0]);
+
     if (disabled) expect(onAction).not.toHaveBeenCalled();
     else
       expect(onAction).toHaveBeenCalledWith(
@@ -158,6 +166,7 @@ test.each([
     render(
       <RobotDetails robot={online} siteRobots={[]} verifiedAt={Date.now()} />,
     );
+
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent(`${label}. ${guidance}`);
     expect(
@@ -201,22 +210,28 @@ test.each([
       <RobotDetails robot={online} siteRobots={[]} verifiedAt={Date.now()} />,
     );
     await act(async () => {});
+
     fireEvent.click(screen.getByRole("tab", { name: "Logs" }));
+
     const logs = screen.getByRole("tabpanel", { name: "Logs" });
     const originalLogs = logs.textContent;
     vi.useFakeTimers();
     const button = screen.getByRole("button", { name: action });
+
     fireEvent.click(button);
+
     expect(screen.getByTestId("robot-connection")).toHaveTextContent(
       /^Online$/,
     );
     expect(screen.getByText("Activity", { exact: true })).toBeVisible();
     expect(screen.getByText("Battery", { exact: true })).toBeVisible();
     expect(screen.queryByText(/Last reported/)).not.toBeInTheDocument();
+
     await act(async () => {
       resolveAction(new Response(null, { status: 202 }));
       await Promise.resolve();
     });
+
     expect(screen.getByRole("status")).toHaveTextContent(
       `${action} requested.`,
     );
@@ -224,14 +239,20 @@ test.each([
       /^Online$/,
     );
     expect(button).toHaveAttribute("aria-disabled", "true");
+
     fireEvent.click(button);
+
     expect(fetcher).toHaveBeenCalledTimes(3);
+
     await act(async () => {
       resolveRefresh(context());
       await Promise.resolve();
     });
+
     expect(button).toHaveAttribute("aria-disabled", "false");
+
     await act(async () => vi.advanceTimersByTimeAsync(6000));
+
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Logs" })).toHaveAttribute(
       "aria-selected",
@@ -269,21 +290,26 @@ test("activity requests are guarded while pending and telemetry confirms the cha
   render(
     <RobotDetails robot={online} siteRobots={[]} verifiedAt={Date.now()} />,
   );
+
   const stop = screen.getByRole("button", {
     name: "Stop activity",
   });
   await waitFor(() => expect(stop).toHaveAttribute("aria-disabled", "false"));
   stop.focus();
+
   fireEvent.click(stop);
   fireEvent.click(stop);
+
   expect(
     fetcher.mock.calls.filter(
       (call) => (call[1] as RequestInit)?.method === "POST",
     ),
   ).toHaveLength(1);
   expect(stop).toHaveAttribute("aria-disabled", "true");
+
   observed = { ...online, activity: "idle" };
   resolveAction(new Response(null, { status: 202 }));
+
   await waitFor(() =>
     expect(screen.getByTestId("robot-activity")).toHaveTextContent("Idle"),
   );
@@ -297,7 +323,9 @@ test("activity requests are guarded while pending and telemetry confirms the cha
   expect(
     screen.queryByRole("button", { name: "Stop activity" }),
   ).not.toBeInTheDocument();
+
   fireEvent.click(start);
+
   expect(fetcher).toHaveBeenLastCalledWith(
     "/api/robots/test/actions",
     expect.objectContaining({
@@ -305,8 +333,10 @@ test("activity requests are guarded while pending and telemetry confirms the cha
       body: JSON.stringify({ action: "start" }),
     }),
   );
+
   observed = online;
   resolveAction(new Response(null, { status: 202 }));
+
   await waitFor(() =>
     expect(
       screen.getByRole("button", { name: "Stop activity" }),
@@ -341,7 +371,9 @@ test("failed action keeps reported activity and explains the failure", async () 
   render(
     <RobotDetails robot={online} siteRobots={[]} verifiedAt={Date.now()} />,
   );
+
   fireEvent.click(screen.getByRole("button", { name: /^Stop activity$/ }));
+
   await waitFor(() =>
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Unable to request activity change",

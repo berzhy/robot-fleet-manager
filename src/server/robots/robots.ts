@@ -43,6 +43,7 @@ const selection = {
   lastReceivedAt: latestTelemetry.receivedAt,
   lastTelemetryAt: latestTelemetry.observedAt,
 };
+
 export function listRobots(
   db: FleetDatabase,
   page: number,
@@ -56,6 +57,7 @@ export function listRobots(
   const delayedCutoff = new Date(
     evaluatedAt - delayedReportMaxAgeMs,
   ).toISOString();
+
   const offline = sql<boolean>`${latestTelemetry.receivedAt} < ${delayedCutoff}`;
   const lowBattery = sql<boolean>`${latestTelemetry.batteryPercent} <= 15 and ${latestTelemetry.activity} != 'charging'`;
   const criticalBattery = sql<boolean>`${latestTelemetry.batteryPercent} <= 10 and ${latestTelemetry.activity} != 'charging'`;
@@ -70,6 +72,7 @@ export function listRobots(
     offline,
     "low-battery": lowBattery,
   };
+
   const searchScope = robotSearchCondition(filters.search, {
     onlineCutoff,
     delayedCutoff,
@@ -85,7 +88,9 @@ export function listRobots(
       ? undefined
       : eq(robots.integrationType, filters.integrationType),
   );
+
   const matching = and(scope, views[filters.view]);
+
   return db.transaction((tx) => {
     const summary = tx
       .select({
@@ -98,6 +103,7 @@ export function listRobots(
       .leftJoin(latestTelemetry, eq(robots.id, latestTelemetry.robotId))
       .where(scope)
       .get()!;
+
     return {
       items: tx
         .select(selection)
@@ -143,6 +149,7 @@ export function getRobot(
     .where(eq(robots.id, id))
     .get();
 }
+
 export function createRobot(db: FleetDatabase, input: CreateRobotInput): Robot {
   return createRobots(db, [input])[0];
 }
@@ -157,8 +164,10 @@ export function createRobots(
     id: randomUUID(),
     createdAt: new Date().toISOString(),
   }));
+
   return db.transaction((tx) => {
     tx.insert(robots).values(rows).run();
+
     return rows.map((row): Robot => ({
       ...row,
       activity: "unknown",
@@ -194,6 +203,7 @@ export function getRobotContext(db: FleetDatabase, id: string) {
   return db.transaction((tx) => {
     const robot = getRobot(tx, id);
     if (!robot) return undefined;
+
     const siteRobots = tx
       .select({
         id: robots.id,
@@ -207,6 +217,7 @@ export function getRobotContext(db: FleetDatabase, id: string) {
       .orderBy(robots.id)
       .all()
       .filter((peer) => peer.id !== id);
+
     return { robot, siteRobots, verifiedAt: Date.now() };
   });
 }

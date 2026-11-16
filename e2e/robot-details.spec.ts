@@ -10,6 +10,7 @@ test("detail context and controls follow reported telemetry", async ({
 }) => {
   const browserErrors: string[] = [];
   page.on("pageerror", (error) => browserErrors.push(error.message));
+
   const site = "Detail demo";
   const records: Robot[] = [];
   for (const [index, type] of [
@@ -34,6 +35,7 @@ test("detail context and controls follow reported telemetry", async ({
     records.push((await response.json()) as Robot);
   }
   const selected = records[0];
+
   async function report(activity: "working" | "idle", revision: number) {
     const response = await request.post("/api/telemetry/batch", {
       data: {
@@ -50,6 +52,7 @@ test("detail context and controls follow reported telemetry", async ({
     });
     expect(response.status()).toBe(204);
   }
+
   await report("working", 0);
   await page.goto(`/robots/${selected.id}`);
   await expect(
@@ -69,12 +72,14 @@ test("detail context and controls follow reported telemetry", async ({
   await expect(
     page.getByRole("button", { name: "Start activity", exact: true }),
   ).toHaveCount(0);
+
   let releaseAction!: () => void;
   const actionGate = new Promise<void>((resolve) => (releaseAction = resolve));
   await page.route(`**/api/robots/${selected.id}/actions`, async (route) => {
     await actionGate;
     await route.continue();
   });
+
   const location = page.getByRole("region", { name: "Location" });
   await report("working", 0);
   await page
@@ -85,6 +90,7 @@ test("detail context and controls follow reported telemetry", async ({
   ).toHaveAttribute("aria-busy", "true");
   await expect(page.getByTestId("robot-connection")).toHaveText("Online");
   await expect(location).toBeVisible();
+
   releaseAction();
   await expect(page.getByRole("status")).toContainText(
     "Stop activity requested.",
@@ -92,6 +98,7 @@ test("detail context and controls follow reported telemetry", async ({
   await expect(location).toBeVisible();
   await expect(page.getByTestId("robot-activity")).toHaveText("Working");
   await expect(page.getByTestId("robot-battery")).toHaveText("76%");
+
   await report("idle", 1);
   await expect(page.getByTestId("robot-activity")).toHaveText("Idle", {
     timeout: 15000,
@@ -102,34 +109,40 @@ test("detail context and controls follow reported telemetry", async ({
   await expect(
     page.getByRole("button", { name: "Stop activity", exact: true }),
   ).toHaveCount(0);
+
   const overviewTab = page.getByRole("tab", { name: "Overview" });
   const logsTab = page.getByRole("tab", { name: "Logs" });
   await overviewTab.focus();
   await page.keyboard.press("ArrowRight");
   await expect(logsTab).toBeFocused();
   await page.keyboard.press("Enter");
+
   const logs = page.getByRole("tabpanel", { name: "Logs" });
   await expect(logs).toContainText(`Initializing ${selected.name}`);
   await expect(
     page.getByRole("group", { name: "Activity controls" }),
   ).toBeVisible();
   await expect(location).toBeHidden();
+
   await logsTab.focus();
   await page.keyboard.press("ArrowLeft");
   await page.keyboard.press("Enter");
   await expect(location).toBeVisible();
+
   const illustration = page
     .getByRole("region", { name: "Robot information" })
     .locator("img");
   await expect(illustration).toBeVisible();
   await expect(illustration).toHaveJSProperty("complete", true);
   await expect(illustration).not.toHaveJSProperty("naturalWidth", 0);
+
   await page.setViewportSize({ width: 390, height: 844 });
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
+
   await logsTab.click();
   await expect(logs).toBeVisible();
   expect(
@@ -137,6 +150,7 @@ test("detail context and controls follow reported telemetry", async ({
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
+
   await page
     .getByRole("navigation", { name: "Breadcrumb" })
     .getByRole("link", { name: "Fleet dashboard" })
