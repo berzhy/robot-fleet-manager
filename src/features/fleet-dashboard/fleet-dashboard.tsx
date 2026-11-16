@@ -35,8 +35,12 @@ export default function FleetDashboard() {
   const [menuOpen, setMenuOpen] = useState(false);
   const addButtonRef = useRef<HTMLButtonElement>(null);
   const addFocusRef = useRef<HTMLElement | null>(null);
-  const [acting, setActing] = useState(false);
-  const [adding, setAdding] = useState(false);
+  const [mutation, setMutation] = useState<"add" | "action" | "delete" | null>(
+    null,
+  );
+  const adding = mutation === "add";
+  const acting = mutation === "action";
+  const deleting = mutation === "delete";
   const headingRef = useRef<HTMLHeadingElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const inFlightRef = useRef(false);
@@ -44,7 +48,6 @@ export default function FleetDashboard() {
     robot: Robot | null;
     open: boolean;
   } | null>(null);
-  const [deleting, setDeleting] = useState(false);
   const paused =
     acting ||
     adding ||
@@ -93,7 +96,7 @@ export default function FleetDashboard() {
       return;
     invalidate();
     inFlightRef.current = true;
-    setAdding(true);
+    setMutation("add");
     setNotification(null);
     addFocusRef.current = trigger;
     try {
@@ -122,7 +125,7 @@ export default function FleetDashboard() {
       });
     } finally {
       inFlightRef.current = false;
-      setAdding(false);
+      setMutation(null);
     }
   }
 
@@ -130,7 +133,7 @@ export default function FleetDashboard() {
     if (inFlightRef.current) return;
     inFlightRef.current = true;
     invalidate();
-    setActing(true);
+    setMutation("action");
     setNotification(null);
     try {
       await sendRobotAction(robot.id, action);
@@ -151,7 +154,7 @@ export default function FleetDashboard() {
       });
     } finally {
       inFlightRef.current = false;
-      setActing(false);
+      setMutation(null);
       reload();
     }
   }
@@ -182,7 +185,7 @@ export default function FleetDashboard() {
     setNotification(null);
     invalidate();
     inFlightRef.current = true;
-    setDeleting(true);
+    setMutation("delete");
     try {
       if (deleteTarget.robot) await deleteRobot(deleteTarget.robot.id);
       else await deleteAllRobots();
@@ -204,7 +207,7 @@ export default function FleetDashboard() {
       });
     } finally {
       inFlightRef.current = false;
-      setDeleting(false);
+      setMutation(null);
     }
   }
 
