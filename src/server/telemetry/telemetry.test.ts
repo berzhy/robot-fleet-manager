@@ -1,6 +1,14 @@
 import { robotProblemCodes } from "@/modules/robots/robot-problems";
-import { afterAll, afterEach, beforeEach, expect, test, vi } from "vitest";
-import { migrate } from "drizzle-orm/better-sqlite3/migrator";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  expect,
+  test,
+  vi,
+} from "vitest";
+import { createSchema } from "../db/create-schema";
 import { openDatabase } from "../db/database";
 import { createRobot, deleteRobot, getRobot } from "../robots/robots";
 import { robotHandlers } from "../robots/robot-handlers";
@@ -18,8 +26,8 @@ const input = {
 };
 const observedAt = "2026-01-01T00:00:00.000Z";
 let id: string;
+beforeAll(() => createSchema(db));
 beforeEach(() => {
-  migrate(db, { migrationsFolder: "drizzle" });
   db.$client.exec("DELETE FROM robots");
   id = createRobot(db, input).id;
 });

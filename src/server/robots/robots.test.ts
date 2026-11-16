@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { migrate } from "drizzle-orm/better-sqlite3/migrator";
+import { createSchema } from "../db/create-schema";
 
 import {
   robotTypes,
@@ -29,7 +29,7 @@ let db: FleetDatabase;
 beforeEach(() => {
   directory = mkdtempSync(join(tmpdir(), "fleet-"));
   db = openDatabase(join(directory, "test.sqlite"));
-  migrate(db, { migrationsFolder: "./drizzle" });
+  createSchema(db);
 });
 afterEach(() => {
   db.$client.close();

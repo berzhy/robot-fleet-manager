@@ -1,10 +1,10 @@
-import { migrate } from "drizzle-orm/better-sqlite3/migrator";
-
+import { createSchema } from "../src/server/db/create-schema";
 import { databasePath, openDatabase } from "../src/server/db/database";
+
 const db = openDatabase(databasePath());
 try {
-  migrate(db, { migrationsFolder: "./drizzle" });
-  console.log("Database migrated.");
+  createSchema(db);
+  console.log("Database schema created.");
 } finally {
   db.$client.close();
 }

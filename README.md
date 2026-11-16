@@ -17,6 +17,8 @@ Time was very short, so parts of this are AI-written, especially the simulator a
 
 Integrations are out of scope.
 
+The interface starts in the standard light theme. A button switches between light and dark. On desktop it sits at the bottom of the sidebar, and on a small screen it sits in the header. The choice is kept in the browser.
+
 The dashboard lists the robots, with summary tiles, filters, and search. Choosing a tile, a filter, or a search adds a chip above the table, so you can see what the list is showing.
 
 The table polls every 5 seconds. That was enough for this proof of concept.

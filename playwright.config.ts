@@ -14,7 +14,7 @@ export default defineConfig({
     headless: !!process.env.CI,
   },
   webServer: {
-    command: `export DATABASE_PATH="$(mktemp -d)/fleet.sqlite" && export E2E_DIST_DIR=".next/e2e" && npm run db:migrate && exec npm run dev -- --hostname 127.0.0.1 --port ${port}`,
+    command: `export DATABASE_PATH="$(mktemp -d)/fleet.sqlite" && export E2E_DIST_DIR=".next/e2e" && npm run db:setup && exec npm run dev -- --hostname 127.0.0.1 --port ${port}`,
     url: origin,
     reuseExistingServer: false,
     timeout: 120_000,
