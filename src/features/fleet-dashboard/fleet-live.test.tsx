@@ -291,3 +291,25 @@ test("filter dropdowns pause polling without hiding the current snapshot", async
   await tick(300);
   expect(fetcher).toHaveBeenCalledTimes(2);
 });
+
+test("closing a secondary select keeps polling paused while More filters is open", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date(robot.lastReceivedAt!));
+  const fetcher = vi.fn().mockImplementation(() => Promise.resolve(page()));
+  vi.stubGlobal("fetch", fetcher);
+  render(<FleetDashboard />);
+  await tick();
+  fireEvent.click(screen.getByRole("button", { name: /More filters/ }));
+  fireEvent.mouseDown(screen.getByRole("combobox", { name: "Manufacturer" }));
+  await tick(20000);
+  expect(fetcher).toHaveBeenCalledTimes(1);
+  fireEvent.keyDown(screen.getByRole("listbox"), { key: "Escape" });
+  await tick(20000);
+  expect(fetcher).toHaveBeenCalledTimes(1);
+  expect(
+    screen.getByRole("button", { name: "Close more filters" }),
+  ).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Close more filters" }));
+  await tick(300);
+  expect(fetcher).toHaveBeenCalledTimes(2);
+});

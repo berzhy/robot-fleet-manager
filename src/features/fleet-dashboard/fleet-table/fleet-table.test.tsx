@@ -27,6 +27,7 @@ test("table renders the supplied server page without slicing or sorting", () => 
   const onPageChange = vi.fn();
   render(
     <FleetTable
+      resultCount="21 robots · Newest first"
       state={{ status: "success", robots: [robot] }}
       total={21}
       pageSize={20}
@@ -42,6 +43,9 @@ test("table renders the supplied server page without slicing or sorting", () => 
   expect(screen.getByRole("link", { name: robot.name })).toBeInTheDocument();
   expect(screen.getByTestId("fleet-page-summary")).toHaveTextContent(
     "21–21 of 21",
+  );
+  expect(screen.getByTestId("fleet-result-count")).toHaveTextContent(
+    "21 robots · Newest first",
   );
   fireEvent.click(screen.getByTestId("fleet-previous-page"));
   expect(onPageChange).toHaveBeenCalledWith(0);
@@ -87,6 +91,72 @@ test("robot names are plain text with one accessible navigation link per row", (
     "href",
     `/robots/${robot.id}`,
   );
+});
+
+test("columns put identity and operational context before catalog metadata", () => {
+  render(
+    <FleetTable
+      total={1}
+      pageSize={20}
+      onPageSizeChange={() => {}}
+      page={0}
+      onPageChange={() => {}}
+      state={{ status: "success", robots: [robot] }}
+      onRetry={() => {}}
+      onAdd={() => {}}
+      adding={false}
+      onDelete={() => {}}
+    />,
+  );
+  expect(
+    screen.getAllByRole("columnheader").map((header) => header.textContent),
+  ).toEqual([
+    "Robot",
+    "Location",
+    "Connection",
+    "Activity",
+    "Battery",
+    "Type",
+    "Integration",
+    "Registered",
+    "Actions",
+  ]);
+  expect(screen.getByTestId("robot-added-at")).toHaveAttribute(
+    "dateTime",
+    robot.createdAt,
+  );
+  expect(screen.getByTestId("robot-added-at")).toHaveTextContent("14 Nov 2026");
+  expect(screen.getByTestId("robot-added-at")).toHaveTextContent(
+    "13:00:00 CET",
+  );
+});
+
+test("a search with no matches names the query, lists searchable fields and offers Clear search", () => {
+  const onClearSearch = vi.fn();
+  render(
+    <FleetTable
+      search="no-such-robot"
+      fleetTotal={5}
+      onClearFilters={() => {}}
+      onClearSearch={onClearSearch}
+      total={0}
+      pageSize={20}
+      onPageSizeChange={() => {}}
+      page={0}
+      onPageChange={() => {}}
+      state={{ status: "success", robots: [] }}
+      onRetry={() => {}}
+      onAdd={() => {}}
+      adding={false}
+      onDelete={() => {}}
+    />,
+  );
+  expect(screen.getByText("No robots match “no-such-robot”.")).toBeVisible();
+  expect(
+    screen.getByText(/Search matches name, ID, manufacturer/),
+  ).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Clear search" }));
+  expect(onClearSearch).toHaveBeenCalledOnce();
 });
 
 test.each([

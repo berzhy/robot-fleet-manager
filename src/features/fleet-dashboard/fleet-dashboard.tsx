@@ -2,6 +2,7 @@
 
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
+import Divider from "@mui/material/Divider";
 import Portal from "@mui/material/Portal";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
@@ -21,10 +22,12 @@ import ActionNotification from "./action-notification";
 import AddRobotSplitButton from "./fleet-table/add-robot-split-button";
 import DeleteRobotDialog from "./fleet-table/delete-robot-dialog";
 import FleetFilters from "./fleet-filters/fleet-filters";
+import FleetSummary from "./fleet-filters/fleet-summary";
 import FleetTable from "./fleet-table/fleet-table";
 import useReportClock from "./hooks/use-report-clock";
 import useRobots from "./hooks/use-robots";
 import { generateRobotInput } from "./utils/generate-robot-input";
+import { formatResultCount } from "./utils/robot-formatters";
 
 export default function FleetDashboard() {
   const [search, setSearch] = useState("");
@@ -223,7 +226,7 @@ export default function FleetDashboard() {
   );
 
   return (
-    <Stack spacing={3} sx={{ flex: 1, minHeight: 0 }}>
+    <Stack spacing={2} sx={{ flex: 1, minHeight: 0 }}>
       <Stack
         direction="row"
         useFlexGap
@@ -279,21 +282,41 @@ export default function FleetDashboard() {
           states.
         </Alert>
       )}
-      <FleetFilters
-        filters={filters}
-        search={search}
-        onSearchChange={setSearch}
-        onChange={setFilters}
-        onOpenChange={setFilterOpen}
-        summary={state.status === "success" ? snapshot?.summary : undefined}
-        options={snapshot?.filterOptions}
-      />
       <FleetTable
+        resultCount={
+          state.status === "success" && snapshot
+            ? formatResultCount(total, snapshot.summary.all, filters)
+            : undefined
+        }
+        toolbar={
+          <Stack spacing={2}>
+            <FleetSummary
+              filters={filters}
+              onChange={setFilters}
+              summary={
+                state.status === "success" ? snapshot?.summary : undefined
+              }
+            />
+            <Divider />
+            <FleetFilters
+              filters={filters}
+              search={search}
+              onSearchChange={setSearch}
+              onChange={setFilters}
+              onOpenChange={setFilterOpen}
+              options={snapshot?.filterOptions}
+            />
+          </Stack>
+        }
         search={filters.search}
         fleetTotal={snapshot?.fleetTotal}
         onClearFilters={() => {
           setSearch("");
           setFilters({ view: "all" });
+        }}
+        onClearSearch={() => {
+          setSearch("");
+          setFilters({ ...filters, search: undefined });
         }}
         headingRef={headingRef}
         now={now}

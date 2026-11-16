@@ -1,23 +1,19 @@
-import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
 import MenuItem from "@mui/material/MenuItem";
+import Popover from "@mui/material/Popover";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
-import ToggleButton from "@mui/material/ToggleButton";
-import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
-import Skeleton from "@mui/material/Skeleton";
 import IconButton from "@mui/material/IconButton";
 import InputAdornment from "@mui/material/InputAdornment";
 import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
-import { useEffect, useEffectEvent, useState, useRef } from "react";
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
 import { integrationTypes, robotTypes } from "@/modules/robots/robot";
 import {
-  fleetViews,
   type RobotFilters,
-  type FleetSummary,
   type FilterOptions,
 } from "@/modules/robots/robot-filters";
 import {
@@ -25,12 +21,6 @@ import {
   formatRobotType,
 } from "../utils/robot-formatters";
 
-const labels = {
-  all: "All robots",
-  "needs-attention": "Needs attention",
-  offline: "Offline",
-  "low-battery": "Low battery",
-};
 function formatFilterValue(key: keyof RobotFilters, value: string) {
   if (key === "integrationType")
     return formatIntegrationType(value as (typeof integrationTypes)[number]);
@@ -38,20 +28,11 @@ function formatFilterValue(key: keyof RobotFilters, value: string) {
     return formatRobotType(value as (typeof robotTypes)[number]);
   return value;
 }
-const explanations = {
-  all: "All robots within the selected location, manufacturer, type and integration.",
-  "needs-attention":
-    "Offline, a reported problem, or critical battery at or below 10% while not charging.",
-  offline:
-    "Last report received more than 15 seconds ago. Robots with no reports are Unknown.",
-  "low-battery":
-    "Last-reported battery at or below 15%, including Returning but excluding Charging.",
-};
+
 export default function FleetFilters({
   filters,
   search,
   onSearchChange,
-  summary,
   options,
   onChange,
   onOpenChange,
@@ -59,12 +40,30 @@ export default function FleetFilters({
   filters: RobotFilters;
   search: string;
   onSearchChange: (value: string) => void;
-  summary?: FleetSummary;
   options?: FilterOptions;
   onChange: (filters: RobotFilters) => void;
   onOpenChange: (open: boolean) => void;
 }) {
   const [composing, setComposing] = useState(false);
+  const [moreAnchor, setMoreAnchor] = useState<HTMLElement | null>(null);
+  const [openSelect, setOpenSelect] = useState<string | null>(null);
+  const openSelectRef = useRef<string | null>(null);
+  const container = useRef<HTMLDivElement>(null);
+  const moreButtonRef = useRef<HTMLButtonElement>(null);
+  const popoverId = useId();
+
+  const anyOpen = moreAnchor !== null || openSelect !== null;
+  const notifyOpen = useEffectEvent((open: boolean) => onOpenChange(open));
+  useEffect(() => {
+    notifyOpen(anyOpen);
+  }, [anyOpen]);
+  useEffect(() => () => notifyOpen(false), []);
+
+  function setSelectOpen(key: string | null) {
+    openSelectRef.current = key;
+    setOpenSelect(key);
+  }
+
   const applySearch = useEffectEvent((value: string) => {
     const normalized = value.trim();
     const applied = normalized.length >= 2 ? normalized : undefined;
@@ -75,16 +74,19 @@ export default function FleetFilters({
     const timer = setTimeout(() => applySearch(search), 300);
     return () => clearTimeout(timer);
   }, [search, composing]);
+
   function clearSearch() {
     container.current?.querySelector<HTMLElement>("#fleet-search")?.focus();
     onSearchChange("");
     if (filters.search !== undefined)
       onChange({ ...filters, search: undefined });
   }
-  const container = useRef<HTMLDivElement>(null);
-  const fields = [
+
+  const primaryFields = [
     { key: "site", label: "Location", options: options?.sites ?? [] },
     { key: "type", label: "Type", options: [...robotTypes] },
+  ] as const;
+  const secondaryFields = [
     {
       key: "manufacturer",
       label: "Manufacturer",
@@ -96,6 +98,11 @@ export default function FleetFilters({
       options: [...integrationTypes],
     },
   ] as const;
+  const fields = [...primaryFields, ...secondaryFields];
+  const secondaryCount = secondaryFields.filter(
+    (field) => filters[field.key] !== undefined,
+  ).length;
+
   const chips: { key: keyof RobotFilters; label: string }[] = fields.flatMap(
     (field) => {
       const value = filters[field.key];
@@ -121,77 +128,110 @@ export default function FleetFilters({
             ? "Battery: Low"
             : "Needs attention",
     });
+
   function remove(key: keyof RobotFilters, button: HTMLElement) {
     const next = (button.closest('[role="button"]') ?? button)
       .nextElementSibling;
+    const doc = container.current?.ownerDocument;
     const field =
       key === "search"
         ? container.current?.querySelector<HTMLElement>("#fleet-search")
         : key === "view"
-          ? container.current?.querySelector<HTMLElement>('[data-view="all"]')
-          : container.current?.querySelector<HTMLElement>(
-              `#fleet-filter-${key}`,
-            );
+          ? doc?.querySelector<HTMLElement>('[data-view="all"]')
+          : key === "manufacturer" || key === "integrationType"
+            ? moreButtonRef.current
+            : container.current?.querySelector<HTMLElement>(
+                `#fleet-filter-${key}`,
+              );
     if (key === "search") onSearchChange("");
     onChange({ ...filters, [key]: key === "view" ? "all" : undefined });
     if (next instanceof HTMLElement && next.getAttribute("role") === "button")
       next.focus();
     else field?.focus();
   }
-  return (
-    <Stack ref={container} spacing={2} sx={{ flexShrink: 0 }}>
-      <Box
-        role="group"
-        aria-label="Fleet summary filters"
-        sx={{
-          display: "grid",
-          gridTemplateColumns: { xs: "repeat(2, 1fr)", md: "repeat(4, 1fr)" },
-          gap: 2,
+
+  function renderField(
+    field: (typeof fields)[number],
+    sx?: { minWidth?: number; maxWidth?: number; flex?: string },
+    inPopover = false,
+  ) {
+    return (
+      <TextField
+        key={field.key}
+        select
+        size="small"
+        variant="standard"
+        disabled={!options}
+        id={`fleet-filter-${field.key}`}
+        label={field.label}
+        value={filters[field.key] ?? ""}
+        sx={sx}
+        slotProps={{
+          inputLabel: { shrink: true },
+          select: {
+            displayEmpty: true,
+            onOpen: () => setSelectOpen(field.key),
+            onClose: () => setSelectOpen(null),
+          },
+        }}
+        onChange={(event) => {
+          onChange({
+            ...filters,
+            [field.key]: event.target.value || undefined,
+          });
+          if (inPopover) {
+            setSelectOpen(null);
+            setMoreAnchor(null);
+          }
         }}
       >
-        {fleetViews.map((view) => (
-          <Tooltip
-            key={view}
-            title={explanations[view]}
-            placement="top"
-            describeChild
-          >
-            <ToggleButton
-              value={view}
-              color="primary"
-              data-view={view}
-              selected={filters.view === view}
-              onChange={() => {
-                if (view !== filters.view) onChange({ ...filters, view });
-              }}
-              aria-label={labels[view]}
-            >
-              <Stack sx={{ alignItems: "center" }}>
-                <Typography
-                  variant="h5"
-                  component="span"
-                  sx={{ fontVariantNumeric: "tabular-nums" }}
-                >
-                  {summary ? summary[view] : <Skeleton width={40} />}
-                </Typography>
-                <span>{labels[view]}</span>
-              </Stack>
-            </ToggleButton>
-          </Tooltip>
+        <MenuItem value="">
+          All{" "}
+          {field.label === "Location"
+            ? "locations"
+            : field.label === "Manufacturer"
+              ? "manufacturers"
+              : field.label === "Type"
+                ? "types"
+                : "integrations"}
+        </MenuItem>
+        {[
+          ...new Set([
+            ...field.options,
+            ...(filters[field.key] ? [filters[field.key]!] : []),
+          ]),
+        ].map((value) => (
+          <MenuItem key={value} value={value}>
+            {formatFilterValue(field.key, value)}
+          </MenuItem>
         ))}
-      </Box>
+      </TextField>
+    );
+  }
+
+  return (
+    <Stack ref={container} spacing={3}>
       <Stack
         direction="row"
         useFlexGap
-        sx={{ flexWrap: "wrap", gap: 2, pt: 2 }}
+        sx={{
+          flexWrap: "wrap",
+          gap: 2,
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+        }}
       >
         <TextField
           id="fleet-search"
           label="Search robots"
+          placeholder="Name, manufacturer, location…"
+          size="small"
           variant="standard"
           value={search}
           helperText={
-            search.trim().length === 1 ? "Enter at least 2 characters" : " "
+            search.trim().length === 1
+              ? "Enter at least 2 characters"
+              : undefined
           }
           onChange={(event) => {
             const value = event.target.value;
@@ -200,7 +240,7 @@ export default function FleetFilters({
           }}
           onCompositionStart={() => setComposing(true)}
           onCompositionEnd={() => setComposing(false)}
-          sx={{ minWidth: 240 }}
+          sx={{ flex: "0 1 300px", minWidth: 200 }}
           slotProps={{
             htmlInput: { maxLength: 100 },
             input: {
@@ -209,67 +249,101 @@ export default function FleetFilters({
                   <SearchIcon />
                 </InputAdornment>
               ),
-              endAdornment: search ? (
+              endAdornment: (
                 <InputAdornment position="end">
                   <IconButton
                     size="small"
                     aria-label="Clear search"
+                    disabled={!search}
                     onClick={clearSearch}
+                    sx={{ opacity: search ? 1 : 0 }}
                   >
                     <CloseIcon />
                   </IconButton>
                 </InputAdornment>
-              ) : null,
+              ),
             },
           }}
         />
-        {fields.map((field) => (
-          <TextField
-            key={field.key}
-            select
-            variant="standard"
-            disabled={!options}
-            id={`fleet-filter-${field.key}`}
-            label={field.label}
-            value={filters[field.key] ?? ""}
-            sx={{ minWidth: 200 }}
+        <Stack
+          direction="row"
+          useFlexGap
+          sx={{
+            flexWrap: { xs: "wrap", md: "nowrap" },
+            gap: 2,
+            alignItems: "flex-end",
+            justifyContent: "flex-end",
+            flexGrow: 1,
+            minWidth: 0,
+          }}
+        >
+          {primaryFields.map((field) =>
+            renderField(field, {
+              minWidth: 120,
+              maxWidth: 260,
+              flex: "1 1 150px",
+            }),
+          )}
+          <Button
+            ref={moreButtonRef}
+            data-testid="fleet-more-filters"
+            size="small"
+            variant="outlined"
+            endIcon={<ArrowDropDownIcon />}
+            aria-haspopup="dialog"
+            aria-expanded={moreAnchor ? true : undefined}
+            aria-controls={moreAnchor ? popoverId : undefined}
+            onClick={(event) => setMoreAnchor(event.currentTarget)}
+            sx={{
+              flexShrink: 0,
+              whiteSpace: "nowrap",
+              mb: 0.5,
+              minWidth: 176,
+            }}
+          >
+            {secondaryCount > 0
+              ? `More filters (${secondaryCount})`
+              : "More filters"}
+          </Button>
+          <Popover
+            id={popoverId}
+            open={moreAnchor !== null}
+            anchorEl={moreAnchor}
+            onClose={(_event, reason) => {
+              if (reason === "escapeKeyDown" && openSelectRef.current) return;
+              setMoreAnchor(null);
+            }}
+            anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+            transformOrigin={{ vertical: "top", horizontal: "left" }}
+            aria-labelledby={`${popoverId}-title`}
             slotProps={{
-              inputLabel: { shrink: true },
-              select: {
-                displayEmpty: true,
-                onOpen: () => onOpenChange(true),
-                onClose: () => onOpenChange(false),
+              paper: {
+                sx: { p: 2, width: 280, maxWidth: "calc(100vw - 32px)" },
               },
             }}
-            onChange={(event) =>
-              onChange({
-                ...filters,
-                [field.key]: event.target.value || undefined,
-              })
-            }
           >
-            <MenuItem value="">
-              All{" "}
-              {field.label === "Location"
-                ? "locations"
-                : field.label === "Manufacturer"
-                  ? "manufacturers"
-                  : field.label === "Type"
-                    ? "types"
-                    : "integrations"}
-            </MenuItem>
-            {[
-              ...new Set([
-                ...field.options,
-                ...(filters[field.key] ? [filters[field.key]!] : []),
-              ]),
-            ].map((value) => (
-              <MenuItem key={value} value={value}>
-                {formatFilterValue(field.key, value)}
-              </MenuItem>
-            ))}
-          </TextField>
-        ))}
+            <Stack spacing={2}>
+              <Stack
+                direction="row"
+                sx={{ alignItems: "center", justifyContent: "space-between" }}
+              >
+                <Typography id={`${popoverId}-title`} variant="subtitle1">
+                  More filters
+                </Typography>
+                <IconButton
+                  size="small"
+                  aria-label="Close more filters"
+                  onClick={() => setMoreAnchor(null)}
+                >
+                  <CloseIcon />
+                </IconButton>
+              </Stack>
+              {secondaryFields.map((field) =>
+                renderField(field, undefined, true),
+              )}
+            </Stack>
+          </Popover>
+        </Stack>
       </Stack>
       {chips.length > 0 && (
         <Stack
@@ -280,19 +354,26 @@ export default function FleetFilters({
           {chips.map((chip) => (
             <Chip
               key={chip.key}
+              size="small"
               data-testid={`fleet-chip-${chip.key}`}
               label={chip.label}
+              sx={
+                chip.key === "search"
+                  ? { maxWidth: { xs: "100%", sm: 360 } }
+                  : undefined
+              }
               onDelete={(event: React.SyntheticEvent) =>
                 remove(chip.key, event.currentTarget as HTMLElement)
               }
             />
           ))}
           <Button
+            size="small"
             onClick={() => {
               onSearchChange("");
               onChange({ view: "all" });
-              container.current
-                ?.querySelector<HTMLElement>('[data-view="all"]')
+              container.current?.ownerDocument
+                .querySelector<HTMLElement>('[data-view="all"]')
                 ?.focus();
             }}
           >

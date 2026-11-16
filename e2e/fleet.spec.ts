@@ -182,6 +182,8 @@ async function seedFleet(request: APIRequestContext, count = 1) {
   return ((await response.json()) as { items: Robot[] }).items;
 }
 async function chooseFilter(page: Page, label: string, value: string) {
+  const secondary = label === "Manufacturer" || label === "Integration";
+  if (secondary) await page.getByTestId("fleet-more-filters").click();
   await page.getByRole("combobox", { name: label, exact: true }).click();
   await page.getByRole("option", { name: value, exact: true }).click();
 }
@@ -262,9 +264,11 @@ test("combines dropdowns and tiles, removes chips and retries a failed filter re
     timeout: 15000,
   });
   await page.setViewportSize({ width: 600, height: 900 });
+  await page.getByTestId("fleet-more-filters").click();
   await expect(
     page.getByRole("combobox", { name: "Integration", exact: true }),
   ).toBeVisible();
+  await page.getByRole("button", { name: "Close more filters" }).click();
   await page.screenshot({ path: "/tmp/fleet-filters-narrow.png" });
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.getByRole("button", { name: "Switch to dark theme" }).click();
@@ -355,7 +359,9 @@ test("search combines with filters and tiles, clears through chips and recovers 
   ).toHaveText("ROS 2");
   await expect(search).toBeFocused();
   await search.fill("no-such-robot");
-  await expect(page.getByText("No robots match these filters.")).toBeVisible();
+  await expect(
+    page.getByText("No robots match “no-such-robot”."),
+  ).toBeVisible();
   await page.getByTestId("fleet-chip-search").focus();
   await page.keyboard.press("Delete");
   await expect(search).toHaveValue("");
@@ -363,7 +369,9 @@ test("search combines with filters and tiles, clears through chips and recovers 
   await expect(page.getByTestId("fleet-chip-site")).toBeVisible();
   await expect(page.locator("tbody mark")).toHaveCount(0);
   await search.fill("no-such-robot");
-  await expect(page.getByText("No robots match these filters.")).toBeVisible();
+  await expect(
+    page.getByText("No robots match “no-such-robot”."),
+  ).toBeVisible();
   await page
     .getByRole("button", { name: "Clear filters", exact: true })
     .last()

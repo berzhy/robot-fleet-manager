@@ -1,11 +1,11 @@
 "use client";
 import type { RobotAction } from "@/modules/robots/robot-actions";
 
-import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import type { IconButtonProps } from "@mui/material/IconButton";
+import Skeleton from "@mui/material/Skeleton";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Table from "@mui/material/Table";
@@ -18,6 +18,7 @@ import TableRow from "@mui/material/TableRow";
 import {
   useRef,
   useLayoutEffect,
+  type ReactNode,
   type RefObject,
   type HTMLAttributes,
 } from "react";
@@ -32,22 +33,25 @@ import {
 } from "./fleet-table-states";
 
 const columns = [
-  "Robot",
-  "Type",
-  "Registered",
-  "Location",
-  "Connection",
-  "Activity",
-  "Battery",
-  "Integration",
-  "Actions",
-];
+  { label: "Robot", width: "20%" },
+  { label: "Location", width: "12%" },
+  { label: "Connection", width: "13%" },
+  { label: "Activity", width: "13%" },
+  { label: "Battery", width: "7%" },
+  { label: "Type", width: "12%" },
+  { label: "Integration", width: "10%" },
+  { label: "Registered", width: "10%" },
+  { label: "Actions", width: "64px" },
+] as const;
 const rowHeight = 70;
 
 export default function FleetTable({
+  toolbar,
+  resultCount,
   search,
   fleetTotal,
   onClearFilters,
+  onClearSearch,
   headingRef,
   now = 0,
   verifiedAt = now,
@@ -65,9 +69,12 @@ export default function FleetTable({
   onAdd,
   adding,
 }: {
+  toolbar?: ReactNode;
+  resultCount?: string;
   search?: string;
   fleetTotal?: number;
   onClearFilters?: () => void;
+  onClearSearch?: () => void;
   headingRef?: RefObject<HTMLHeadingElement | null>;
   now?: number;
   verifiedAt?: number;
@@ -107,6 +114,9 @@ export default function FleetTable({
         overflow: "hidden",
       }}
     >
+      {toolbar && (
+        <Box sx={{ flexShrink: 0, px: 2, pt: 2, pb: 2.5 }}>{toolbar}</Box>
+      )}
       <TableContainer
         ref={containerRef}
         onFocusCapture={(event) => {
@@ -136,32 +146,33 @@ export default function FleetTable({
           stickyHeader
           aria-label="Robot fleet"
           sx={{
-            minWidth: 650,
+            minWidth: 900,
             flexShrink: 0,
           }}
         >
+          <colgroup>
+            {columns.map((column) => (
+              <Box
+                component="col"
+                key={column.label}
+                sx={{
+                  width: column.width,
+                }}
+              />
+            ))}
+          </colgroup>
           <TableHead ref={headerRef}>
             <TableRow>
               {columns.map((column) => (
                 <TableCell
-                  key={column}
+                  key={column.label}
                   scope="col"
-                  aria-sort={column === "Registered" ? "descending" : undefined}
-                  align={column === "Actions" ? "right" : "left"}
+                  aria-sort={
+                    column.label === "Registered" ? "descending" : undefined
+                  }
+                  align={column.label === "Actions" ? "right" : "left"}
                 >
-                  {column === "Registered" ? (
-                    <Stack
-                      component="span"
-                      direction="row"
-                      spacing={0.5}
-                      sx={{ alignItems: "center" }}
-                    >
-                      <span>{column}</span>
-                      <ArrowDownwardIcon sx={{ fontSize: 16 }} color="action" />
-                    </Stack>
-                  ) : (
-                    column
-                  )}
+                  {column.label}
                 </TableCell>
               ))}
             </TableRow>
@@ -205,17 +216,50 @@ export default function FleetTable({
               }}
               spacing={2}
             >
-              <Typography role="status">
-                No robots match these filters.
-              </Typography>
-              <Button onClick={onClearFilters}>Clear filters</Button>
+              {search ? (
+                <>
+                  <Typography
+                    role="status"
+                    sx={{ overflowWrap: "anywhere", textAlign: "center" }}
+                  >
+                    {`No robots match “${search}”.`}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ textAlign: "center" }}
+                  >
+                    Search matches name, ID, manufacturer, location, area, type,
+                    integration, activity, problem, connection and battery.
+                  </Typography>
+                  <Stack direction="row" spacing={1}>
+                    <Button onClick={onClearSearch}>Clear search</Button>
+                    <Button onClick={onClearFilters}>Clear filters</Button>
+                  </Stack>
+                </>
+              ) : (
+                <>
+                  <Typography role="status">
+                    No robots match these filters.
+                  </Typography>
+                  <Button onClick={onClearFilters}>Clear filters</Button>
+                </>
+              )}
             </Stack>
           ) : (
             <FleetTableEmptyState onAdd={onAdd} adding={adding} />
           ))}
         {state.status === "error" && <FleetTableErrorState onRetry={onRetry} />}
       </TableContainer>
-      <Box sx={{ minHeight: 52, flexShrink: 0, bgcolor: "background.default" }}>
+      <Box
+        sx={{
+          minHeight: 52,
+          flexShrink: 0,
+          bgcolor: "background.default",
+          display: "flex",
+          alignItems: "center",
+        }}
+      >
         {total > 0 && (
           <TablePagination
             data-testid="fleet-pagination"
@@ -252,6 +296,14 @@ export default function FleetTable({
             onPageChange={(_, nextPage) => onPageChange(nextPage)}
           />
         )}
+        <Typography
+          data-testid="fleet-result-count"
+          variant="body2"
+          color="text.secondary"
+          sx={{ ml: "auto", pr: 2, fontVariantNumeric: "tabular-nums" }}
+        >
+          {resultCount ?? <Skeleton width={180} aria-hidden="true" />}
+        </Typography>
       </Box>
     </Paper>
   );

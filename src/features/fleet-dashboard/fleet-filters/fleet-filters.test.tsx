@@ -3,26 +3,33 @@ import { afterEach, expect, test, vi } from "vitest";
 import { useState } from "react";
 import type { RobotFilters } from "@/modules/robots/robot-filters";
 import FleetFilters from "./fleet-filters";
+import FleetSummary from "./fleet-summary";
 
 test("dropdowns, tiles and removable chips share one selection", () => {
   const open = vi.fn();
   function Controls() {
     const [filters, setFilters] = useState<RobotFilters>({ view: "all" });
     return (
-      <FleetFilters
-        search=""
-        onSearchChange={vi.fn()}
-        filters={filters}
-        onChange={setFilters}
-        onOpenChange={open}
-        options={{ sites: ["Munich", "Berlin"], manufacturers: ["Maker"] }}
-        summary={{
-          all: 12,
-          offline: 3,
-          "needs-attention": 5,
-          "low-battery": 2,
-        }}
-      />
+      <>
+        <FleetSummary
+          filters={filters}
+          onChange={setFilters}
+          summary={{
+            all: 12,
+            offline: 3,
+            "needs-attention": 5,
+            "low-battery": 2,
+          }}
+        />
+        <FleetFilters
+          search=""
+          onSearchChange={vi.fn()}
+          filters={filters}
+          onChange={setFilters}
+          onOpenChange={open}
+          options={{ sites: ["Munich", "Berlin"], manufacturers: ["Maker"] }}
+        />
+      </>
     );
   }
   render(<Controls />);
@@ -57,15 +64,7 @@ test("dropdowns, tiles and removable chips share one selection", () => {
 
 test("selecting the active tile does not restart its query", () => {
   const change = vi.fn();
-  render(
-    <FleetFilters
-      search=""
-      onSearchChange={vi.fn()}
-      filters={{ view: "all" }}
-      onChange={change}
-      onOpenChange={vi.fn()}
-    />,
-  );
+  render(<FleetSummary filters={{ view: "all" }} onChange={change} />);
   fireEvent.click(screen.getByRole("button", { name: "All robots" }));
   expect(change).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole("button", { name: "Offline" }));
@@ -183,4 +182,41 @@ test("chip removal and Clear filters cancel pending search", async () => {
   expect(field).toHaveValue("");
   expect(screen.queryByTestId("fleet-chip-search")).not.toBeInTheDocument();
   expect(screen.queryByText("Location: Munich")).not.toBeInTheDocument();
+});
+
+test("selecting in more filters closes it, applies immediately and counts active criteria", () => {
+  function Controls() {
+    const [filters, setFilters] = useState<RobotFilters>({ view: "all" });
+    return (
+      <FleetFilters
+        search=""
+        onSearchChange={vi.fn()}
+        filters={filters}
+        onChange={setFilters}
+        onOpenChange={vi.fn()}
+        options={{ sites: ["Munich"], manufacturers: ["Maker"] }}
+      />
+    );
+  }
+  render(<Controls />);
+  fireEvent.click(screen.getByRole("button", { name: "More filters" }));
+  fireEvent.mouseDown(screen.getByRole("combobox", { name: "Manufacturer" }));
+  fireEvent.click(screen.getByRole("option", { name: "Maker" }));
+  expect(screen.getByText("Manufacturer: Maker")).toBeVisible();
+  expect(
+    screen.queryByRole("button", { name: "Close more filters" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "More filters (1)" }),
+  ).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "More filters (1)" }));
+  expect(
+    screen.getByRole("combobox", { name: "Manufacturer" }),
+  ).toHaveTextContent("Maker");
+  fireEvent.click(screen.getByRole("button", { name: "Close more filters" }));
+  const chip = screen.getByTestId("fleet-chip-manufacturer");
+  fireEvent.keyDown(chip, { key: "Delete" });
+  fireEvent.keyUp(chip, { key: "Delete" });
+  expect(screen.queryByText("Manufacturer: Maker")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "More filters" })).toHaveFocus();
 });

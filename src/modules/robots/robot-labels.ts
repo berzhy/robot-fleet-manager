@@ -12,3 +12,15 @@ export function formatIntegrationType(type: Robot["integrationType"]) {
   };
   return labels[type];
 }
+
+export function formatActivity(activity: Robot["activity"]) {
+  const labels = {
+    working: "Working",
+    idle: "Idle",
+    returning: "Returning",
+    charging: "Charging",
+    "needs-attention": "Needs attention",
+    unknown: "Unknown",
+  };
+  return labels[activity];
+}

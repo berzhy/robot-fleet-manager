@@ -626,12 +626,17 @@ test("search matches metadata and displayed labels before pagination and scopes 
   for (const search of [
     "SURVEY",
     robot.id,
+    robot.id.slice(0, 8),
     "Maker",
     "Munich",
     "Inspection robot",
     "ROS 2",
     "ros2",
     "Loading bay",
+    "Needs attention",
+    "Path blocked",
+    "Online",
+    "80%",
   ]) {
     const result = listRobots(db, 0, 10, {
       view: "needs-attention",
@@ -640,7 +645,17 @@ test("search matches metadata and displayed labels before pagination and scopes 
     });
     expect(result.items.map((item) => item.id)).toEqual([robot.id]);
     expect(result.summary.all).toBe(
-      search === robot.id || search === "Loading bay" ? 1 : 12,
+      [
+        robot.id,
+        robot.id.slice(0, 8),
+        "Loading bay",
+        "Needs attention",
+        "Path blocked",
+        "Online",
+        "80%",
+      ].includes(search)
+        ? 1
+        : 12,
     );
     expect(result.summary["needs-attention"]).toBe(1);
     expect(result.fleetTotal).toBe(13);

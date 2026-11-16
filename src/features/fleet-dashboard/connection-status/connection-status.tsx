@@ -12,6 +12,30 @@ const colors = {
   Checking: "text.secondary",
 } as const;
 
+/** Decorative dot; visible connection text must accompany it somewhere in the view. */
+export function ConnectionIndicator({ status }: { status: Status }) {
+  const Icon =
+    status === "Unknown" || status === "Checking"
+      ? FiberManualRecordOutlinedIcon
+      : FiberManualRecordIcon;
+  return (
+    <Icon
+      fontSize="inherit"
+      aria-hidden="true"
+      sx={[
+        { color: colors[status] },
+        (theme) =>
+          theme.applyStyles(
+            "light",
+            status === "Online"
+              ? { color: (theme.vars ?? theme).palette.success.light }
+              : {},
+          ),
+      ]}
+    />
+  );
+}
+
 export default function ConnectionStatus({
   status,
   unverified = false,
@@ -19,10 +43,6 @@ export default function ConnectionStatus({
   status: Status;
   unverified?: boolean;
 }) {
-  const Icon =
-    status === "Unknown" || status === "Checking"
-      ? FiberManualRecordOutlinedIcon
-      : FiberManualRecordIcon;
   return (
     <Stack
       component="span"
@@ -30,11 +50,7 @@ export default function ConnectionStatus({
       spacing={1}
       sx={{ alignItems: "center" }}
     >
-      <Icon
-        fontSize="inherit"
-        aria-hidden="true"
-        sx={{ color: colors[status] }}
-      />
+      <ConnectionIndicator status={status} />
       <span>
         {status}
         {unverified ? " (unverified)" : ""}
