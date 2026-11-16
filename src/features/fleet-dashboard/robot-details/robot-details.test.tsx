@@ -10,6 +10,7 @@ import { expect, test, vi, afterEach } from "vitest";
 
 import type { Robot } from "@/modules/robots/robot";
 import RobotDetails from "@/features/fleet-dashboard/robot-details/robot-details";
+import ActivityControls from "./activity-controls";
 
 const robot: Robot = {
   problemCode: null,
@@ -76,6 +77,47 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
 });
+
+test.each([
+  ["idle", "Start activity", false],
+  ["working", "Stop activity", false],
+  ["returning", "Stop activity", false],
+  ["charging", "Start activity", true],
+  ["needs-attention", "Start activity", true],
+  ["unknown", "Start activity", true],
+] as const)(
+  "%s shows one start/stop control with the correct availability",
+  (activity, label, disabled) => {
+    const now = Date.now();
+    const onAction = vi.fn();
+    render(
+      <ActivityControls
+        robot={{
+          ...robot,
+          activity,
+          batteryPercent: 80,
+          lastReceivedAt: new Date(now).toISOString(),
+        }}
+        now={now}
+        unverified={false}
+        pending={false}
+        onAction={onAction}
+      />,
+    );
+    const buttons = screen.getAllByRole("button", {
+      name: /^(Start|Stop) activity$/,
+    });
+    expect(buttons).toHaveLength(1);
+    expect(buttons[0]).toHaveAccessibleName(label);
+    expect(buttons[0]).toHaveAttribute("aria-disabled", String(disabled));
+    fireEvent.click(buttons[0]);
+    if (disabled) expect(onAction).not.toHaveBeenCalled();
+    else
+      expect(onAction).toHaveBeenCalledWith(
+        activity === "idle" ? "start" : "stop",
+      );
+  },
+);
 
 test.each([
   ["Start activity", "idle", null],
@@ -186,6 +228,7 @@ test("activity requests are guarded while pending and telemetry confirms the cha
     name: "Stop activity",
   });
   await waitFor(() => expect(stop).toHaveAttribute("aria-disabled", "false"));
+  stop.focus();
   fireEvent.click(stop);
   fireEvent.click(stop);
   expect(
@@ -202,6 +245,31 @@ test("activity requests are guarded while pending and telemetry confirms the cha
   expect(screen.getByRole("status")).toHaveTextContent(
     "Stop activity requested.",
   );
+  const start = screen.getByRole("button", { name: "Start activity" });
+  expect(start).toBe(stop);
+  expect(start).toHaveFocus();
+  expect(start).toHaveAttribute("aria-disabled", "false");
+  expect(
+    screen.queryByRole("button", { name: "Stop activity" }),
+  ).not.toBeInTheDocument();
+  fireEvent.click(start);
+  expect(fetcher).toHaveBeenLastCalledWith(
+    "/api/robots/test/actions",
+    expect.objectContaining({
+      method: "POST",
+      body: JSON.stringify({ action: "start" }),
+    }),
+  );
+  observed = online;
+  resolveAction(new Response(null, { status: 202 }));
+  await waitFor(() =>
+    expect(
+      screen.getByRole("button", { name: "Stop activity" }),
+    ).toHaveAttribute("aria-disabled", "false"),
+  );
+  expect(
+    screen.queryByRole("button", { name: "Start activity" }),
+  ).not.toBeInTheDocument();
 });
 
 test("failed action keeps reported activity and explains the failure", async () => {

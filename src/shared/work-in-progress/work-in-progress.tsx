@@ -32,9 +32,9 @@ export default function WorkInProgress({
           src={illustration}
           alt=""
           loading="eager"
-          width={280}
-          height={187}
-          sx={{ width: 280, maxWidth: "100%", height: "auto" }}
+          width={480}
+          height={320}
+          sx={{ width: 480, maxWidth: "100%", height: "auto" }}
         />
         <Typography component="h2" variant="h6">
           Work in progress

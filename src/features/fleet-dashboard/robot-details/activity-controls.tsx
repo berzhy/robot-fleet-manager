@@ -7,7 +7,6 @@ import type { Robot } from "@/modules/robots/robot";
 import {
   actionLabels,
   actionUnavailable,
-  robotActions,
   type RobotAction,
 } from "@/modules/robots/robot-actions";
 export default function ActivityControls({
@@ -24,6 +23,11 @@ export default function ActivityControls({
   onAction: (action: RobotAction) => void;
 }) {
   const id = useId();
+  const activityAction =
+    robot.activity === "working" || robot.activity === "returning"
+      ? "stop"
+      : "start";
+  const actions: RobotAction[] = [activityAction, "retry", "return-to-base"];
   return (
     <Stack
       direction="row"
@@ -33,14 +37,18 @@ export default function ActivityControls({
       aria-label="Activity controls"
       aria-busy={pending}
     >
-      {robotActions.map((action) => {
+      {actions.map((action) => {
         const reason = pending
           ? "An activity request is in progress"
           : unverified
             ? "Waiting for verified robot data"
             : actionUnavailable(robot, action, now);
         return (
-          <Tooltip key={action} title={reason ?? ""} describeChild>
+          <Tooltip
+            key={action === "start" || action === "stop" ? "activity" : action}
+            title={reason ?? ""}
+            describeChild
+          >
             <Button
               variant={reason ? "outlined" : "contained"}
               disableElevation

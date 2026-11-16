@@ -15,21 +15,23 @@ Time was very short, so parts of this are AI-written, especially the simulator a
 
 ## Interface
 
-Integrations are out of scope.
+The screen answers four questions: which robots need attention and why, where they are, what they are doing, and how current the information is.
+
+Skills and Integrations are placeholders.
 
 The interface starts in the standard light theme. A button switches between light and dark. On desktop it sits at the bottom of the sidebar, and on a small screen it sits in the header. The choice is kept in the browser.
 
-The dashboard lists the robots, with summary tiles, filters, and search. Choosing a tile, a filter, or a search adds a chip above the table, so you can see what the list is showing.
+The dashboard lists the robots, with tiles for All robots, Needs attention, Offline, and Low battery, plus filters and search. Choosing a tile, a filter, or a search adds a chip above the table, so you can see what the list is showing.
 
 The table polls every 5 seconds. That was enough for this proof of concept.
 
-Each row shows the robot's stable details and its current state, and offers actions.
+Each row shows the robot's stable details and its current state, and offers actions. The list is newest registered first. The other columns are not sortable. Those values can be filtered, and sorting by battery is not useful here.
 
 The app starts empty. You can auto-magically(POC) create 1, 10, or 100 generated robots. The simulator picks each one up and starts tracking it.
 
 It is possible to delete individual robot or drop all of them via the action in the split button.
 
-Clicking the robot row will open details page about that robot. That includes commands, positioning, model data, logs.
+Clicking the robot row will open a details page about that robot. That includes commands, an illustrative location view, model data, and a static log sample.
 
 ## How to run
 

@@ -61,6 +61,9 @@ test("detail context and controls follow reported telemetry", async ({
   await expect(
     page.getByRole("button", { name: "Stop activity", exact: true }),
   ).toHaveAttribute("aria-disabled", "false");
+  await expect(
+    page.getByRole("button", { name: "Start activity", exact: true }),
+  ).toHaveCount(0);
   let releaseAction!: () => void;
   const actionGate = new Promise<void>((resolve) => (releaseAction = resolve));
   await page.route(`**/api/robots/${selected.id}/actions`, async (route) => {
@@ -96,6 +99,12 @@ test("detail context and controls follow reported telemetry", async ({
   await expect(page.getByTestId("robot-activity")).toHaveText("Idle", {
     timeout: 15000,
   });
+  await expect(
+    page.getByRole("button", { name: "Start activity", exact: true }),
+  ).toHaveAttribute("aria-disabled", "false");
+  await expect(
+    page.getByRole("button", { name: "Stop activity", exact: true }),
+  ).toHaveCount(0);
   const batteryAfterAction = await page
     .getByTestId("robot-battery")
     .boundingBox();

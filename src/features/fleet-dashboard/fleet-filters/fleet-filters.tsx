@@ -258,7 +258,7 @@ export default function FleetFilters({
                     onClick={clearSearch}
                     sx={{ opacity: search ? 1 : 0 }}
                   >
-                    <CloseIcon />
+                    <CloseIcon fontSize="inherit" />
                   </IconButton>
                 </InputAdornment>
               ),
@@ -287,8 +287,8 @@ export default function FleetFilters({
           <Button
             ref={moreButtonRef}
             data-testid="fleet-more-filters"
-            size="small"
-            variant="outlined"
+            size="medium"
+            variant="text"
             endIcon={<ArrowDropDownIcon />}
             aria-haspopup="dialog"
             aria-expanded={moreAnchor ? true : undefined}
@@ -297,8 +297,6 @@ export default function FleetFilters({
             sx={{
               flexShrink: 0,
               whiteSpace: "nowrap",
-              mb: 0.5,
-              minWidth: 176,
             }}
           >
             {secondaryCount > 0

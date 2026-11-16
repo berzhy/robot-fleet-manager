@@ -171,9 +171,14 @@ export default function FleetTableRow({
           sx={{ fontVariantNumeric: "tabular-nums" }}
         >
           {registered.date}
-          <Box component="span" sx={{ display: "block" }}>
+          <Typography
+            component="span"
+            variant="caption"
+            color="textSecondary"
+            sx={{ display: "block" }}
+          >
             {registered.time}
-          </Box>
+          </Typography>
         </Typography>
       </TableCell>
       <TableCell align="right" sx={{ position: "relative" }}>
