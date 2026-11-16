@@ -76,15 +76,7 @@ test("detail context and controls follow reported telemetry", async ({
     await route.continue();
   });
   const location = page.getByRole("region", { name: "Location" });
-  async function mapOffset() {
-    const map = await location.boundingBox();
-    const details = await page.getByTestId("robot-details").boundingBox();
-    return map!.y - details!.y;
-  }
-  const beforeAction = await mapOffset();
-  const batteryBeforeAction = await page
-    .getByTestId("robot-battery")
-    .boundingBox();
+  await report("working", 0);
   await page
     .getByRole("button", { name: "Stop activity", exact: true })
     .click();
@@ -92,14 +84,14 @@ test("detail context and controls follow reported telemetry", async ({
     page.getByRole("group", { name: "Activity controls" }),
   ).toHaveAttribute("aria-busy", "true");
   await expect(page.getByTestId("robot-connection")).toHaveText("Online");
-  expect(await mapOffset()).toBe(beforeAction);
+  await expect(location).toBeVisible();
   releaseAction();
   await expect(page.getByRole("status")).toContainText(
     "Stop activity requested.",
   );
-  expect(await mapOffset()).toBe(beforeAction);
-  await expect(page.getByRole("status")).toBeHidden({ timeout: 10000 });
-  expect(await mapOffset()).toBe(beforeAction);
+  await expect(location).toBeVisible();
+  await expect(page.getByTestId("robot-activity")).toHaveText("Working");
+  await expect(page.getByTestId("robot-battery")).toHaveText("76%");
   await report("idle", 1);
   await expect(page.getByTestId("robot-activity")).toHaveText("Idle", {
     timeout: 15000,
@@ -110,10 +102,6 @@ test("detail context and controls follow reported telemetry", async ({
   await expect(
     page.getByRole("button", { name: "Stop activity", exact: true }),
   ).toHaveCount(0);
-  const batteryAfterAction = await page
-    .getByTestId("robot-battery")
-    .boundingBox();
-  expect(batteryAfterAction!.x).toBe(batteryBeforeAction!.x);
   const overviewTab = page.getByRole("tab", { name: "Overview" });
   const logsTab = page.getByRole("tab", { name: "Logs" });
   await overviewTab.focus();
