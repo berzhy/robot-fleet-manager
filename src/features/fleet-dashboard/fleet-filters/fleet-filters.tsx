@@ -10,6 +10,7 @@ import InputAdornment from "@mui/material/InputAdornment";
 import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import ArrowDropUpIcon from "@mui/icons-material/ArrowDropUp";
 import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
 import { integrationTypes, robotTypes } from "@/modules/robots/robot";
 import {
@@ -289,7 +290,9 @@ export default function FleetFilters({
             data-testid="fleet-more-filters"
             size="medium"
             variant="text"
-            endIcon={<ArrowDropDownIcon />}
+            endIcon={
+              moreAnchor ? <ArrowDropUpIcon /> : <ArrowDropDownIcon />
+            }
             aria-haspopup="dialog"
             aria-expanded={moreAnchor ? true : undefined}
             aria-controls={moreAnchor ? popoverId : undefined}
