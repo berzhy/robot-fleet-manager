@@ -25,7 +25,7 @@ export function actionUnavailable(
     case "start":
       if (robot.activity === "working") return "Robot is already working";
       if (robot.activity !== "idle") return "Robot must be idle";
-      return robot.batteryPercent !== null && robot.batteryPercent > 20
+      return robot.batteryPercent !== null && robot.batteryPercent > 10
         ? null
         : "Battery is too low";
     case "stop":

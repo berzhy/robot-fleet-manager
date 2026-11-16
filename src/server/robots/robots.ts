@@ -51,11 +51,12 @@ export function listRobots(
 ): RobotPage {
   const evaluatedAt = Date.now();
   const offline = sql<boolean>`${latestTelemetry.receivedAt} < ${new Date(evaluatedAt - 15000).toISOString()}`;
-  const lowBattery = sql<boolean>`${latestTelemetry.batteryPercent} <= 20 and ${latestTelemetry.activity} not in ('charging', 'returning')`;
+  const lowBattery = sql<boolean>`${latestTelemetry.batteryPercent} <= 15 and ${latestTelemetry.activity} != 'charging'`;
+  const criticalBattery = sql<boolean>`${latestTelemetry.batteryPercent} <= 10 and ${latestTelemetry.activity} != 'charging'`;
   const attention = or(
     offline,
     sql`${latestTelemetry.problemCode} is not null`,
-    lowBattery,
+    criticalBattery,
   )!;
   const views = {
     all: sql`1`,

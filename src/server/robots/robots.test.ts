@@ -456,7 +456,7 @@ test("filters before pagination, scopes summaries without the view, and retains 
       .values({
         robotId: robot.id,
         activity: "idle",
-        batteryPercent: 20,
+        batteryPercent: 15,
         observedAt: "2026-11-15T11:00:00Z",
         receivedAt: "2026-11-15T11:00:00Z",
       })
@@ -499,10 +499,20 @@ test("filters before pagination, scopes summaries without the view, and retains 
 test.each([
   ["idle", null, 0, 0, 0],
   ["idle", 0, 0, 1, 1],
-  ["working", 20, 0, 1, 1],
+  ["working", 20, 0, 0, 0],
   ["idle", 20.1, 0, 0, 0],
+  ["working", 15, 0, 1, 0],
+  ["working", 15.1, 0, 0, 0],
+  ["returning", 15, 0, 1, 0],
+  ["returning", 15.1, 0, 0, 0],
+  ["returning", null, 0, 0, 0],
+  ["charging", 15, 0, 0, 0],
   ["charging", 10, 0, 0, 0],
-  ["returning", 10, 0, 0, 0],
+  ["returning", 10, 0, 1, 1],
+  ["working", 10, 0, 1, 1],
+  ["working", 10.1, 0, 1, 0],
+  ["returning", 10.1, 0, 1, 0],
+  ["charging", 0, 0, 0, 0],
   ["idle", 80, 10000, 0, 0],
   ["idle", 80, 15000, 0, 0],
   ["idle", 80, 15001, 0, 1],
@@ -530,6 +540,10 @@ test.each([
       "needs-attention": attention,
       offline: age > 15000 ? 1 : 0,
     });
+    expect(listRobots(db, 0, 10, { view: "low-battery" }).total).toBe(low);
+    expect(listRobots(db, 0, 10, { view: "needs-attention" }).total).toBe(
+      attention,
+    );
   },
 );
 
@@ -710,3 +724,32 @@ test("failed bulk deletion returns an error and rolls back every deletion", asyn
   expect(listRobots(db, 0).total).toBe(2);
   expect(log).toHaveBeenCalledOnce();
 });
+
+test.each([10, 10.1, null])(
+  "Start activity requires a known battery above 10%% (%s)",
+  async (batteryPercent) => {
+    const { requestRobotAction } = await import("./robot-actions");
+    const robot = createRobot(db, input);
+    db.insert(latestTelemetry)
+      .values({
+        robotId: robot.id,
+        activity: "idle",
+        batteryPercent,
+        area: "Base",
+        observedAt: new Date().toISOString(),
+        receivedAt: new Date().toISOString(),
+      })
+      .run();
+    const response = await requestRobotAction(
+      db,
+      robot.id,
+      new Request("http://local", {
+        method: "POST",
+        body: JSON.stringify({ action: "start" }),
+      }),
+    );
+    const allowed = batteryPercent !== null && batteryPercent > 10;
+    expect(response.status).toBe(allowed ? 202 : 409);
+    expect(getRobot(db, robot.id)?.controlRevision).toBe(allowed ? 1 : 0);
+  },
+);

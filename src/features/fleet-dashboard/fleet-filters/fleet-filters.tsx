@@ -41,11 +41,11 @@ function formatFilterValue(key: keyof RobotFilters, value: string) {
 const explanations = {
   all: "All robots within the selected location, manufacturer, type and integration.",
   "needs-attention":
-    "Offline, a reported problem, or battery at or below 20% while not charging or returning.",
+    "Offline, a reported problem, or critical battery at or below 10% while not charging.",
   offline:
     "Last report received more than 15 seconds ago. Robots with no reports are Unknown.",
   "low-battery":
-    "Last-reported battery at or below 20%, excluding Charging and Returning.",
+    "Last-reported battery at or below 15%, including Returning but excluding Charging.",
 };
 export default function FleetFilters({
   filters,

@@ -66,7 +66,7 @@ Counts refer to robots, not incidents, and categories overlap. They respect drop
 
 ### Attention rules
 
-Needs attention matches Offline OR a reported problem OR Low battery. Offline uses the existing >15-second receipt threshold; Unknown and Delayed alone do not qualify. Low battery uses the last-reported battery ≤20%, excluding Charging and Returning. Missing battery never qualifies. These filters are derived, without a persisted attention flag. Operational tiles have accessible explanations.
+Needs attention matches Offline OR a reported problem OR critical battery (≤10%, excluding Charging). Offline uses the existing >15-second receipt threshold; Unknown and Delayed alone do not qualify. Low battery uses the last-reported battery ≤15%, including Returning but excluding Charging. Missing battery never qualifies. These filters are derived, without a persisted attention flag. Operational tiles have accessible explanations.
 
 ## Live updates and ordering
 
@@ -140,6 +140,6 @@ Report age is hidden for Online robots and retained for Delayed/Offline robots. 
 
 Activity and Connection remain separate. Activity labels are Idle, Working, Returning, Charging, Needs attention, and Unknown. Needs attention has a concrete problem code; Path blocked is the first simulated problem. Charging remains an activity without a duplicate charging flag. Base is a location, not an activity.
 
-New simulated robots start Idle at Base with a deterministic 50–100% battery, then automatically work after seven seconds. Low battery returns them to Base before charging. Manual Stop and Return hold until Start activity; they take precedence over automatic rules. Operational notifications confirm requests, not completion. Disabled menu actions retain keyboard-accessible explanations.
+New simulated robots start Idle at Base with a deterministic 22–100% battery, then automatically work after seven seconds. Low battery returns them to Base before charging. Manual Stop and Return hold until Start activity; they take precedence over automatic rules. Operational notifications confirm requests, not completion. Disabled menu actions retain keyboard-accessible explanations.
 
 Only the latest control target/revision and latest telemetry acknowledgment persist. The existing standalone simulator discovers changed controls each loop, retains local acknowledgments across failed reports, and restores observed phase/problem/manual intent on restart. Countdown and fault timers restart without downtime catch-up. Automatic problem eligibility covers about 20% of robots so an unattended fleet stays active. Full missions, administrative availability, further fault scenarios, and command-progress UI are deferred.

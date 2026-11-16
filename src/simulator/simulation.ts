@@ -16,7 +16,7 @@ export type SimulatedRobot = {
 };
 const departureDelay = 7;
 const returnDuration = 10;
-const lowBattery = 20;
+const lowBattery = 10;
 const chargedBattery = 90;
 const dischargeRate = 0.1;
 const chargeRate = 0.5;
@@ -33,7 +33,7 @@ function faultInterval(hash: number, count: number) {
 export function initializeRobot(robot: Robot): SimulatedRobot {
   const hash = hashId(robot.id);
   return {
-    battery: robot.batteryPercent ?? 50 + (hash % 51),
+    battery: robot.batteryPercent ?? 22 + (hash % 79),
     activity: robot.activity === "unknown" ? "idle" : robot.activity,
     area: robot.area ?? "Base",
     target: robot.controlTarget,

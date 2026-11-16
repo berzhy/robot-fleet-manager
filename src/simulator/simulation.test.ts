@@ -39,19 +39,19 @@ test("low battery returns before charging; automatic charging resumes work", () 
   const state = initializeRobot({
     ...robot,
     activity: "working",
-    batteryPercent: 20.05,
+    batteryPercent: 10.05,
     area: "Lobby",
   });
   expect(tick(state, 1).activity).toBe("returning");
   expect(tick(state, 9).activity).toBe("returning");
   expect(tick(state, 1)).toMatchObject({ activity: "charging", area: "Base" });
-  expect(tick(state, 150).activity).toBe("working");
+  expect(tick(state, 180).activity).toBe("working");
 });
 test("manual stop overrides low battery and remains held across restart", () => {
   const state = initializeRobot({
     ...robot,
     activity: "returning",
-    batteryPercent: 19,
+    batteryPercent: 9,
     area: "Lobby",
   });
   const stopped = {
@@ -64,7 +64,7 @@ test("manual stop overrides low battery and remains held across restart", () => 
   expect(report).toMatchObject({
     activity: "idle",
     area: "Lobby",
-    batteryPercent: 19,
+    batteryPercent: 9,
     appliedControlRevision: 1,
   });
   const restored = initializeRobot({
@@ -157,14 +157,31 @@ test("local acknowledgment survives stale registry data and elapsed catch-up is 
   expect(advanceRobot(robot.id, idle, 100000, 0).activity).toBe("idle");
 });
 
-test("initial battery spans 50–100 deterministically and reported battery survives restart", () => {
+test("initial battery spans 22–100 deterministically and reported battery survives restart", () => {
   const values = Array.from(
     { length: 1000 },
     (_, i) => initializeRobot({ ...robot, id: `battery-${i}` }).battery,
   );
-  expect(Math.min(...values)).toBe(50);
+  expect(Math.min(...values)).toBe(22);
   expect(Math.max(...values)).toBe(100);
   expect(initializeRobot(robot).battery).toBe(initializeRobot(robot).battery);
   expect(initializeRobot({ ...robot, batteryPercent: 17 }).battery).toBe(17);
   expect(initializeRobot({ ...robot, batteryPercent: 0 }).battery).toBe(0);
 });
+
+test.each([
+  [15, "working"],
+  [10.2, "working"],
+  [10, "returning"],
+] as const)(
+  "working robot with %s%% battery reports %s after one tick",
+  (batteryPercent, activity) => {
+    const state = initializeRobot({
+      ...robot,
+      activity: "working",
+      batteryPercent,
+      area: "Lobby",
+    });
+    expect(tick(state, 1).activity).toBe(activity);
+  },
+);
