@@ -536,7 +536,7 @@ test("a debounced search unmounting an open row menu releases the polling pause"
   expect(fetcher.mock.calls.length).toBeGreaterThan(requests);
 });
 
-test("cached fleet remount waits for verification and does not expose cached rows after failure", async () => {
+test("cached fleet remount preserves rows while refreshing and after refresh failure", async () => {
   vi.useFakeTimers();
   let rejectRefresh!: (error: Error) => void;
   const fetcher = vi
@@ -555,18 +555,18 @@ test("cached fleet remount waits for verification and does not expose cached row
   expect(screen.getByTestId("robot-row-live")).toBeInTheDocument();
   view.rerender(<></>);
   view.rerender(<FleetDashboard />);
-  expect(screen.getByTestId("fleet-loading")).toHaveTextContent(
+  expect(screen.getByTestId("fleet-loading")).not.toHaveTextContent(
     "Loading robots",
   );
-  expect(screen.queryByTestId("robot-row-live")).not.toBeInTheDocument();
+  expect(screen.getByTestId("robot-row-live")).toBeInTheDocument();
   await act(async () => {
     rejectRefresh(new Error("offline"));
     await Promise.resolve();
   });
-  expect(screen.getByTestId("fleet-load-error")).toBeInTheDocument();
-  expect(screen.queryByTestId("robot-row-live")).not.toBeInTheDocument();
-  fireEvent.click(screen.getByTestId("fleet-retry"));
-  await tick();
+  expect(screen.getByTestId("fleet-refresh-warning")).toBeInTheDocument();
+  expect(screen.queryByTestId("fleet-load-error")).not.toBeInTheDocument();
+  expect(screen.getByTestId("robot-row-live")).toHaveTextContent("50%");
+  await tick(5000);
   expect(screen.getByTestId("robot-row-live")).toHaveTextContent("40%");
 });
 

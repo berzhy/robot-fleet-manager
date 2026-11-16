@@ -69,7 +69,7 @@ test("page size changes cancel old requests and reload preserves the selection",
   });
 });
 
-test("failed page correction never presents previous-page rows under the new pager", async () => {
+test("failed page correction retains only cached destination data under the corrected pager", async () => {
   vi.mocked(getRobots)
     .mockResolvedValueOnce({
       items: [],
@@ -100,7 +100,9 @@ test("failed page correction never presents previous-page rows under the new pag
   await waitFor(() => expect(result.current.state.status).toBe("success"));
 
   act(() => result.current.refresh());
-  await waitFor(() => expect(result.current.state.status).toBe("error"));
+  await waitFor(() => expect(result.current.interrupted).toBe(true));
+  expect(result.current.state.status).toBe("success");
+  expect(result.current.snapshot?.page).toBe(0);
   expect(result.current.page).toBe(0);
   expect(getRobots).toHaveBeenLastCalledWith(0, 10, expect.any(AbortSignal), {
     view: "all",
@@ -205,4 +207,102 @@ test("announces explicit search results but keeps background refreshes quiet", a
   await waitFor(() => expect(result.current.total).toBe(1));
   expect(result.current.announcement).toBe("2 robots found.");
   expect(result.current.filters.search).toBe("Boston");
+});
+
+test("uncached filters keep summary data while their previous rows remain hidden", async () => {
+  const initial: RobotPage = {
+    items: [],
+    total: 30,
+    page: 0,
+    pageSize: 10,
+    ...pageMetadata(30),
+  };
+  let complete!: (response: RobotPage) => void;
+  vi.mocked(getRobots)
+    .mockResolvedValueOnce(initial)
+    .mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          complete = resolve;
+        }),
+    );
+
+  const { result } = renderHook(() => useRobots());
+  await waitFor(() => expect(result.current.state.status).toBe("success"));
+
+  act(() => result.current.setFilters({ view: "offline" }));
+
+  expect(result.current.state).toEqual({ status: "loading" });
+  expect(result.current.snapshot?.summary).toEqual(initial.summary);
+  expect(result.current.filters.view).toBe("offline");
+
+  await act(async () => {
+    complete({ ...initial, total: 5 });
+    await Promise.resolve();
+  });
+
+  await waitFor(() => expect(result.current.state.status).toBe("success"));
+  expect(result.current.total).toBe(5);
+});
+
+test("returning to a cached filter shows only that scope and retains it after refresh failure", async () => {
+  const initial: RobotPage = {
+    items: [],
+    total: 30,
+    page: 0,
+    pageSize: 10,
+    ...pageMetadata(30),
+  };
+  let failRefresh!: (error: Error) => void;
+  vi.mocked(getRobots)
+    .mockResolvedValueOnce(initial)
+    .mockResolvedValueOnce({ ...initial, total: 5 })
+    .mockImplementationOnce(
+      () =>
+        new Promise((_resolve, reject) => {
+          failRefresh = reject;
+        }),
+    );
+
+  const { result } = renderHook(() => useRobots());
+  await waitFor(() => expect(result.current.state.status).toBe("success"));
+
+  act(() => result.current.setFilters({ view: "offline" }));
+  await waitFor(() => expect(result.current.total).toBe(5));
+
+  act(() => result.current.setFilters({ view: "all" }));
+
+  expect(result.current.state.status).toBe("success");
+  expect(result.current.total).toBe(30);
+  expect(result.current.filters.view).toBe("all");
+  await waitFor(() => expect(getRobots).toHaveBeenCalledTimes(3));
+
+  await act(async () => {
+    failRefresh(new Error("offline"));
+    await Promise.resolve();
+  });
+
+  await waitFor(() => expect(result.current.interrupted).toBe(true));
+  expect(result.current.state.status).toBe("success");
+  expect(result.current.total).toBe(30);
+});
+
+test("equivalent filters do not issue an extra request", async () => {
+  vi.mocked(getRobots).mockResolvedValue({
+    items: [],
+    total: 0,
+    page: 0,
+    pageSize: 10,
+    ...pageMetadata(),
+  });
+  const { result } = renderHook(() => useRobots());
+  await waitFor(() => expect(result.current.state.status).toBe("success"));
+
+  await act(async () => {
+    result.current.setFilters({ view: "all" });
+    await Promise.resolve();
+  });
+
+  expect(getRobots).toHaveBeenCalledTimes(1);
+  expect(result.current.state.status).toBe("success");
 });
