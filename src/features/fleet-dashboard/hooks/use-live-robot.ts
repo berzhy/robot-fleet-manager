@@ -18,6 +18,15 @@ export default function useLiveRobot(initial: RobotContext, paused = false) {
     client.getQueryState(options.queryKey)?.dataUpdateCount ?? 0;
 
   const [refreshAfter, setRefreshAfter] = useState<number | null>(null);
+  const [wasPaused, setWasPaused] = useState(paused);
+
+  // Commands pause polling via `paused`; when it releases, stay in the
+  // refreshing state until a fresh response reconciles reported data.
+  if (paused !== wasPaused) {
+    setWasPaused(paused);
+
+    if (!paused) setRefreshAfter(count());
+  }
 
   const query = useQuery({
     ...options,
@@ -35,11 +44,6 @@ export default function useLiveRobot(initial: RobotContext, paused = false) {
 
   const missing = query.data === null;
 
-  function cancelRefresh() {
-    setRefreshAfter(count());
-    void client.cancelQueries({ queryKey: options.queryKey, exact: true });
-  }
-
   return {
     ...(query.data ?? initial),
     missing,
@@ -50,6 +54,5 @@ export default function useLiveRobot(initial: RobotContext, paused = false) {
       !query.isError &&
       !missing,
     unverified: query.isError,
-    cancelRefresh,
   };
 }

@@ -53,7 +53,6 @@ export default function RobotDetails(initial: RobotContext) {
     refreshing,
     unverified,
     verifiedAt,
-    cancelRefresh,
   } = useLiveRobot(initial, pending);
   const now = useReportClock(pending || refreshing);
   const evaluatedAt = unverified || !now ? verifiedAt : now;
@@ -67,7 +66,6 @@ export default function RobotDetails(initial: RobotContext) {
       actionUnavailable(robot, action, Date.now())
     )
       return;
-    cancelRefresh();
     inFlight.current = true;
     setNotice(null);
     try {
