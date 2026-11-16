@@ -40,8 +40,7 @@ export function actionUnavailable(
         ? null
         : "Robot must be working or idle away from base";
     case "retry":
-      return robot.activity === "needs-attention" &&
-        robot.problemCode === "path-blocked"
+      return robot.activity === "needs-attention" && robot.problemCode !== null
         ? null
         : "Robot has no activity to retry";
   }

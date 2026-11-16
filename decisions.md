@@ -128,7 +128,7 @@ Public competitor screenshots illustrate product patterns. They do not establish
 
 ## Implemented simulation and polling
 
-The separate TypeScript simulator discovers the fleet through a single registry snapshot and sends transactional batches of up to 100 reports. Behaviour is automatic Idle → Working → Returning → Charging, with manual Start/Stop/Return overrides. Roughly 20% of robots encounter a retryable path blockage after 2–40 working minutes. No history, command queue, or administrative availability is added. See README for timing and restart rules.
+The separate TypeScript simulator discovers the fleet through a single registry snapshot and sends transactional batches of up to 100 reports. Behaviour is automatic Idle → Working → Returning → Charging, with manual Start/Stop/Return overrides. Roughly 20% of robots encounter a retryable path blockage, lost position, or sensor obstruction after 2–10 working minutes. No history, command queue, or administrative availability is added. A stable 20% subset also has staggered 60-second telemetry outages every three minutes; activity continues locally and reporting recovers automatically. Offline is derived from receipt freshness and counts toward Needs attention. See README for timing and restart rules.
 
 Receipt time determines Online (≤10 seconds), Delayed (>10–15 seconds), Offline (>15 seconds), or Unknown (no report). Observation time determines whether an update is newer; ignored reports do not refresh receipt time. Missing data stays unknown. Connection labels are unverified after interrupted requests or while awaiting refresh after a hidden tab. Intentional interaction pauses freeze the display clock and do not relabel robots. After a dashboard outage, connection states remain last verified rather than implying that individual robots lost contact.
 
@@ -138,7 +138,7 @@ Report age is hidden for Online robots and retained for Delayed/Offline robots. 
 
 ## Simple robot controls and simulation
 
-Activity and Connection remain separate. Activity labels are Idle, Working, Returning, Charging, Needs attention, and Unknown. Needs attention has a concrete problem code; Path blocked is the first simulated problem. Charging remains an activity without a duplicate charging flag. Base is a location, not an activity.
+Activity and Connection remain separate. Activity labels are Idle, Working, Returning, Charging, Needs attention, and Unknown. Needs attention has a concrete problem code; Simulated problems are Path blocked, Position lost, and Sensor obstructed, all recoverable through Retry. Charging remains an activity without a duplicate charging flag. Base is a location, not an activity.
 
 New simulated robots start Idle at Base with a deterministic 22–100% battery, then automatically work after seven seconds. Low battery returns them to Base before charging. Manual Stop and Return hold until Start activity; they take precedence over automatic rules. Operational notifications confirm requests, not completion. Disabled menu actions retain keyboard-accessible explanations.
 

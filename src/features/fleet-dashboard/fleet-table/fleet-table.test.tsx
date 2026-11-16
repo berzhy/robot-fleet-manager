@@ -89,31 +89,38 @@ test("robot names are plain text with one accessible navigation link per row", (
   );
 });
 
-test("blocked activity shows Needs attention and its concrete reason", () => {
-  render(
-    <FleetTable
-      state={{
-        status: "success",
-        robots: [
-          {
-            ...robot,
-            activity: "needs-attention",
-            problemCode: "path-blocked",
-          },
-        ],
-      }}
-      page={0}
-      pageSize={20}
-      total={1}
-      onPageSizeChange={() => {}}
-      onPageChange={() => {}}
-      onRetry={() => {}}
-      onDelete={() => {}}
-      onAdd={() => {}}
-      adding={false}
-    />,
-  );
-  expect(screen.getByTestId("robot-activity")).toHaveTextContent(
-    "Needs attentionPath blocked",
-  );
-});
+test.each([
+  ["path-blocked", "Path blocked"],
+  ["position-lost", "Position lost"],
+  ["sensor-obstructed", "Sensor obstructed"],
+] as const)(
+  "%s shows Needs attention and its concrete reason",
+  (problemCode, label) => {
+    render(
+      <FleetTable
+        state={{
+          status: "success",
+          robots: [
+            {
+              ...robot,
+              activity: "needs-attention",
+              problemCode,
+            },
+          ],
+        }}
+        page={0}
+        pageSize={20}
+        total={1}
+        onPageSizeChange={() => {}}
+        onPageChange={() => {}}
+        onRetry={() => {}}
+        onDelete={() => {}}
+        onAdd={() => {}}
+        adding={false}
+      />,
+    );
+    expect(screen.getByTestId("robot-activity")).toHaveTextContent(
+      `Needs attention${label}`,
+    );
+  },
+);

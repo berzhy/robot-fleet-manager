@@ -1,9 +1,11 @@
+import { robotProblemCodes } from "@/modules/robots/robot-problems";
 import type { Robot } from "@/modules/robots/robot";
 import type { TelemetryReport } from "@/modules/telemetry/telemetry";
 
 type Target = Robot["controlTarget"];
 export type SimulatedRobot = {
   battery: number;
+  problemCode: Robot["problemCode"];
   activity: Robot["activity"];
   area: string;
   target: Target;
@@ -13,6 +15,7 @@ export type SimulatedRobot = {
   faultAfter: number;
   faultCount: number;
   hash: number;
+  connectionHash: number;
 };
 const departureDelay = 7;
 const returnDuration = 10;
@@ -20,6 +23,8 @@ const lowBattery = 10;
 const chargedBattery = 90;
 const dischargeRate = 0.1;
 const chargeRate = 0.5;
+const minFaultInterval = 120;
+const maxFaultInterval = 600;
 const areas = ["Lobby", "Floor 1", "Warehouse"];
 function hashId(id: string) {
   return Array.from(id).reduce(
@@ -28,11 +33,15 @@ function hashId(id: string) {
   );
 }
 function faultInterval(hash: number, count: number) {
-  return 120 + (hashId(`${hash}:${count}`) % 2281);
+  return (
+    minFaultInterval +
+    (hashId(`${hash}:${count}`) % (maxFaultInterval - minFaultInterval + 1))
+  );
 }
 export function initializeRobot(robot: Robot): SimulatedRobot {
   const hash = hashId(robot.id);
   return {
+    problemCode: robot.problemCode,
     battery: robot.batteryPercent ?? 22 + (hash % 79),
     activity: robot.activity === "unknown" ? "idle" : robot.activity,
     area: robot.area ?? "Base",
@@ -43,12 +52,14 @@ export function initializeRobot(robot: Robot): SimulatedRobot {
     faultAfter: faultInterval(hash, 0),
     faultCount: 0,
     hash,
+    connectionHash: hashId(`${robot.id}:connection`),
   };
 }
 export function applyControl(state: SimulatedRobot, robot: Robot) {
   if (robot.controlRevision <= state.appliedRevision) return;
   state.appliedRevision = robot.controlRevision;
   state.target = robot.controlTarget;
+  state.problemCode = null;
   if (state.target === "stop") state.activity = "idle";
   else if (state.target === "base") {
     state.activity = "returning";
@@ -93,8 +104,14 @@ export function advanceRobot(
         } else if (
           state.hash % 5 === 0 &&
           state.workingSeconds >= state.faultAfter
-        )
+        ) {
           state.activity = "needs-attention";
+          state.problemCode =
+            robotProblemCodes[
+              (Math.floor(state.hash / 5) + state.faultCount) %
+                robotProblemCodes.length
+            ];
+        }
         break;
       case "returning":
         state.battery = Math.max(0, state.battery - step * dischargeRate);
@@ -121,8 +138,17 @@ export function advanceRobot(
     activity: state.activity,
     batteryPercent: state.battery,
     area: state.area,
-    problemCode: state.activity === "needs-attention" ? "path-blocked" : null,
+    problemCode:
+      state.activity === "needs-attention" ? state.problemCode : null,
     appliedControlRevision: state.appliedRevision,
     observedAt: new Date(now).toISOString(),
   };
+}
+
+export function telemetryAvailable(state: SimulatedRobot, now: number) {
+  const hash = state.connectionHash;
+  return (
+    hash % 5 !== 0 ||
+    (Math.floor(now / 1000) + Math.floor(hash / 5)) % 180 >= 60
+  );
 }

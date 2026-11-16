@@ -1,3 +1,4 @@
+import { robotProblemCodes } from "@/modules/robots/robot-problems";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -379,36 +380,39 @@ test("actions validate current state, persist latest intent, and leave observati
   expect(getRobot(db, robot.id)?.controlRevision).toBe(2);
 });
 
-test("Retry requires a reported blockage and reissues work with a new revision", async () => {
-  const { requestRobotAction } = await import("./robot-actions");
-  const robot = createRobot(db, input);
-  db.insert(latestTelemetry)
-    .values({
-      robotId: robot.id,
+test.each(robotProblemCodes)(
+  "Retry for %s reissues work with a new revision",
+  async (problemCode) => {
+    const { requestRobotAction } = await import("./robot-actions");
+    const robot = createRobot(db, input);
+    db.insert(latestTelemetry)
+      .values({
+        robotId: robot.id,
+        activity: "needs-attention",
+        problemCode,
+        batteryPercent: 50,
+        area: "Lobby",
+        observedAt: new Date().toISOString(),
+        receivedAt: new Date().toISOString(),
+      })
+      .run();
+    const response = await requestRobotAction(
+      db,
+      robot.id,
+      new Request("http://local", {
+        method: "POST",
+        body: JSON.stringify({ action: "retry" }),
+      }),
+    );
+    expect(response.status).toBe(202);
+    expect(getRobot(db, robot.id)).toMatchObject({
+      controlTarget: "work",
+      controlRevision: 1,
       activity: "needs-attention",
-      problemCode: "path-blocked",
-      batteryPercent: 50,
-      area: "Lobby",
-      observedAt: new Date().toISOString(),
-      receivedAt: new Date().toISOString(),
-    })
-    .run();
-  const response = await requestRobotAction(
-    db,
-    robot.id,
-    new Request("http://local", {
-      method: "POST",
-      body: JSON.stringify({ action: "retry" }),
-    }),
-  );
-  expect(response.status).toBe(202);
-  expect(getRobot(db, robot.id)).toMatchObject({
-    controlTarget: "work",
-    controlRevision: 1,
-    activity: "needs-attention",
-    problemCode: "path-blocked",
-  });
-});
+      problemCode,
+    });
+  },
+);
 
 test("action persistence failures roll back the target and return a generic error", async () => {
   const { requestRobotAction } = await import("./robot-actions");

@@ -1,3 +1,4 @@
+import { robotProblemCodes } from "@/modules/robots/robot-problems";
 import { afterAll, afterEach, beforeEach, expect, test, vi } from "vitest";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { openDatabase } from "../db/database";
@@ -169,4 +170,62 @@ test("telemetry preserves problems and rejects impossible or regressing acknowle
     expect(
       (await post({ reports: [{ ...report(), ...invalid }] })).status,
     ).toBe(400);
+});
+
+test.each(robotProblemCodes)(
+  "%s ingests, persists, counts as attention",
+  async (problemCode) => {
+    const now = new Date().toISOString();
+    const response = await post({
+      reports: [
+        {
+          ...report(),
+          activity: "needs-attention",
+          problemCode,
+          observedAt: now,
+        },
+      ],
+    });
+    expect(response.status).toBe(204);
+    expect(getRobot(db, id)).toMatchObject({
+      activity: "needs-attention",
+      problemCode,
+    });
+    const list = (await robotHandlers(() => db)
+      .list(new Request("http://local/api/robots?view=needs-attention"))
+      .json()) as { total: number };
+    expect(list.total).toBe(1);
+    expect(
+      (
+        await post({
+          reports: [{ ...report(), activity: "working", problemCode }],
+        })
+      ).status,
+    ).toBe(400);
+  },
+);
+
+test("unsupported problem codes and missing attention reasons are rejected by API and database", async () => {
+  expect(
+    (
+      await post({
+        reports: [
+          {
+            ...report(),
+            activity: "needs-attention",
+            problemCode: "hardware-broken",
+          },
+        ],
+      })
+    ).status,
+  ).toBe(400);
+  for (const problem of [null, "hardware-broken"]) {
+    expect(() =>
+      db.$client
+        .prepare(
+          "INSERT INTO latest_telemetry (robot_id, activity, problem_code, observed_at) VALUES (?, 'needs-attention', ?, ?)",
+        )
+        .run(id, problem, observedAt),
+    ).toThrow();
+  }
 });

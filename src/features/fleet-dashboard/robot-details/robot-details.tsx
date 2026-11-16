@@ -1,4 +1,5 @@
 "use client";
+import { robotProblemDetails } from "@/modules/robots/robot-problems";
 import { useRef, useState } from "react";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
@@ -181,7 +182,8 @@ export default function RobotDetails(initial: RobotContext) {
               </Stack>
               {robot.problemCode && (
                 <Alert severity="warning">
-                  Path blocked. Clear the obstruction before retrying activity.
+                  {robotProblemDetails[robot.problemCode].label}.{" "}
+                  {robotProblemDetails[robot.problemCode].guidance}
                 </Alert>
               )}
               {stale && (

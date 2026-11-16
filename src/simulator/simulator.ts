@@ -4,6 +4,7 @@ import {
   advanceRobot,
   applyControl,
   initializeRobot,
+  telemetryAvailable,
   type SimulatedRobot,
 } from "./simulation";
 
@@ -42,9 +43,11 @@ export async function runSimulator(origin: string, signal: AbortSignal) {
     const now = Date.now();
     const seconds = Math.max(0, (now - previous) / 1000);
     previous = now;
-    const reports = Array.from(states, ([id, state]) =>
-      advanceRobot(id, state, discovered.has(id) ? 0 : seconds, now),
-    );
+    const reports = Array.from(states).flatMap(([id, state]) => {
+      const firstReport = discovered.has(id);
+      const report = advanceRobot(id, state, firstReport ? 0 : seconds, now);
+      return firstReport || telemetryAvailable(state, now) ? [report] : [];
+    });
     for (
       let start = 0;
       start < reports.length && !signal.aborted;

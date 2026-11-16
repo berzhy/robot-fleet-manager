@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { robotProblemCodes } from "../robots/robot-problems";
 import { robotActivities } from "../robots/robot";
 
 export const telemetryBatchSchema = z
@@ -9,7 +10,7 @@ export const telemetryBatchSchema = z
           .strictObject({
             robotId: z.string().trim().min(1).max(100),
             activity: z.enum(robotActivities),
-            problemCode: z.literal("path-blocked").nullable().default(null),
+            problemCode: z.enum(robotProblemCodes).nullable().default(null),
             appliedControlRevision: z.number().int().nonnegative().default(0),
             batteryPercent: z.number().min(0).max(100),
             area: z.string().trim().min(1).max(100).nullable(),

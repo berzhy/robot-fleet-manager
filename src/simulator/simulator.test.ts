@@ -1,3 +1,4 @@
+import { initializeRobot } from "./simulation";
 import { afterEach, expect, test, vi } from "vitest";
 import { runSimulator } from "./simulator";
 import type { Robot } from "@/modules/robots/robot";
@@ -127,5 +128,46 @@ test("existing robots receive controls and failed telemetry does not replay olde
   expect(reports.slice(1)).toEqual([
     expect.objectContaining({ activity: "idle", appliedControlRevision: 1 }),
     expect.objectContaining({ activity: "idle", appliedControlRevision: 1 }),
+  ]);
+});
+
+test("outages omit telemetry but preserve discovery and local activity until reporting recovers", async () => {
+  const candidate = Array.from({ length: 20 }, (_, i) => ({
+    ...robot,
+    id: `connection-${i}`,
+  })).find((record) => initializeRobot(record).connectionHash % 5 === 0)!;
+  const state = initializeRobot(candidate);
+  const start =
+    ((180 - (Math.floor(state.connectionHash / 5) % 180)) % 180) * 1000;
+  const clock = vi.spyOn(Date, "now").mockReturnValue(start);
+  const controller = new AbortController();
+  let discoveries = 0;
+  const delivered: { activity: string; observedAt: string }[] = [];
+  vi.stubGlobal(
+    "fetch",
+    vi.fn((url: URL, init?: RequestInit) => {
+      if (url.pathname.endsWith("registry")) {
+        clock.mockReturnValue(start + discoveries++ * 30000);
+        return Promise.resolve(Response.json({ items: [candidate] }));
+      }
+      const body = JSON.parse(init!.body as string) as {
+        reports: typeof delivered;
+      };
+      delivered.push(...body.reports);
+      if (discoveries === 3) controller.abort();
+      return Promise.resolve(new Response(null, { status: 204 }));
+    }),
+  );
+  await runSimulator("http://local", controller.signal);
+  expect(discoveries).toBe(3);
+  expect(delivered).toEqual([
+    expect.objectContaining({
+      activity: "idle",
+      observedAt: new Date(start).toISOString(),
+    }),
+    expect.objectContaining({
+      activity: "working",
+      observedAt: new Date(start + 60000).toISOString(),
+    }),
   ]);
 });

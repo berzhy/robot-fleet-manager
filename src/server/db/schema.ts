@@ -7,6 +7,7 @@ import {
   text,
 } from "drizzle-orm/sqlite-core";
 
+import { robotProblemCodes } from "@/modules/robots/robot-problems";
 import {
   robotActivities,
   robotTypes,
@@ -61,7 +62,7 @@ export const latestTelemetry = sqliteTable(
     activity: text("activity").$type<RobotActivity>().notNull(),
     batteryPercent: real("battery_percent"),
     area: text("area"),
-    problemCode: text("problem_code", { enum: ["path-blocked"] }),
+    problemCode: text("problem_code", { enum: robotProblemCodes }),
     appliedControlRevision: integer("applied_control_revision")
       .notNull()
       .default(0),
@@ -71,7 +72,10 @@ export const latestTelemetry = sqliteTable(
   (table) => [
     check(
       "problem_activity",
-      sql`(${table.activity} = 'needs-attention' AND ${table.problemCode} IS 'path-blocked') OR (${table.activity} != 'needs-attention' AND ${table.problemCode} IS NULL)`,
+      sql`(${table.activity} = 'needs-attention' AND ${table.problemCode} IS NOT NULL AND ${table.problemCode} IN (${sql.join(
+        robotProblemCodes.map((code) => sql.raw("'" + code + "'")),
+        sql`, `,
+      )})) OR (${table.activity} != 'needs-attention' AND ${table.problemCode} IS NULL)`,
     ),
     check("battery_range", sql`${table.batteryPercent} between 0 and 100`),
     check(

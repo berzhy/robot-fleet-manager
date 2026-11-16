@@ -1,4 +1,5 @@
 "use client";
+import { robotProblemDetails } from "@/modules/robots/robot-problems";
 import type { RobotAction } from "@/modules/robots/robot-actions";
 import Link from "@mui/material/Link";
 import TableCell from "@mui/material/TableCell";
@@ -118,7 +119,7 @@ export default function FleetTableRow({
         {formatActivity(robot.activity)}
         {robot.problemCode && (
           <Typography variant="body2" color="textSecondary">
-            Path blocked
+            {robotProblemDetails[robot.problemCode].label}
           </Typography>
         )}
       </TableCell>

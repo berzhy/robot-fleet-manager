@@ -1,5 +1,11 @@
+import { robotProblemCodes } from "@/modules/robots/robot-problems";
 import { expect, test } from "vitest";
-import { advanceRobot, initializeRobot, applyControl } from "./simulation";
+import {
+  advanceRobot,
+  initializeRobot,
+  applyControl,
+  telemetryAvailable,
+} from "./simulation";
 import type { Robot } from "@/modules/robots/robot";
 const robot: Robot = {
   problemCode: null,
@@ -100,15 +106,14 @@ test("faults affect a stable minority, accumulate across charging, and Retry rec
   expect(states.filter((s) => s.hash % 5 === 0)).toHaveLength(200);
   for (const state of states)
     expect(state.faultAfter).toBeGreaterThanOrEqual(120);
-  expect(states.every((s) => s.faultAfter <= 2400)).toBe(true);
+  expect(states.every((s) => s.faultAfter <= 600)).toBe(true);
   const state = states.find((s) => s.hash % 5 === 0)!;
   state.activity = "working";
   state.area = "Lobby";
   state.workingSeconds = state.faultAfter - 1;
-  expect(tick(state, 1)).toMatchObject({
-    activity: "needs-attention",
-    problemCode: "path-blocked",
-  });
+  const fault = tick(state, 1);
+  expect(fault.activity).toBe("needs-attention");
+  expect(robotProblemCodes).toContain(fault.problemCode);
   const battery = state.battery;
   expect(tick(state, 100).batteryPercent).toBe(battery);
   applyControl(state, { ...robot, controlRevision: 1 });
@@ -167,6 +172,77 @@ test("initial battery spans 22–100 deterministically and reported battery surv
   expect(initializeRobot(robot).battery).toBe(initializeRobot(robot).battery);
   expect(initializeRobot({ ...robot, batteryPercent: 17 }).battery).toBe(17);
   expect(initializeRobot({ ...robot, batteryPercent: 0 }).battery).toBe(0);
+});
+
+test.each(robotProblemCodes)(
+  "%s survives restart, pauses work and is cleared by Retry",
+  (problemCode) => {
+    const record: Robot = {
+      ...robot,
+      activity: "needs-attention",
+      problemCode,
+      batteryPercent: 61,
+      area: "Lobby",
+    };
+    const state = initializeRobot(record);
+    expect(tick(state, 100)).toMatchObject({
+      activity: "needs-attention",
+      problemCode,
+      batteryPercent: 61,
+    });
+    expect(state.workingSeconds).toBe(0);
+    applyControl(state, { ...record, controlRevision: 1 });
+    expect(tick(state, 1)).toMatchObject({
+      activity: "working",
+      problemCode: null,
+    });
+    expect(state.faultAfter).toBeGreaterThanOrEqual(120);
+  },
+);
+
+test("fault-prone robots produce all three causes without increasing incident eligibility", () => {
+  const causes = new Set();
+  for (let i = 0; i < 1000; i++) {
+    const state = initializeRobot({
+      ...robot,
+      id: `robot-${i}`,
+      activity: "working",
+      batteryPercent: 100,
+    });
+    state.workingSeconds = state.faultAfter - 1;
+    const report = tick(state, 1);
+    if (state.hash % 5 === 0) {
+      expect(report.activity).toBe("needs-attention");
+      causes.add(report.problemCode);
+    } else expect(report.activity).toBe("working");
+  }
+  expect(causes).toEqual(new Set(robotProblemCodes));
+});
+
+test("connection outages affect a stable minority, recover on schedule and are independent of activity", () => {
+  const states = Array.from({ length: 1000 }, (_, i) =>
+    initializeRobot({ ...robot, id: `connection-${i}` }),
+  );
+  const affected = states.filter((state) => state.connectionHash % 5 === 0);
+  expect(affected).toHaveLength(200);
+  for (const state of affected) {
+    const start =
+      ((180 - (Math.floor(state.connectionHash / 5) % 180)) % 180) * 1000;
+    expect(telemetryAvailable(state, start)).toBe(false);
+    expect(telemetryAvailable(state, start + 59000)).toBe(false);
+    expect(telemetryAvailable(state, start + 60000)).toBe(true);
+    expect(telemetryAvailable(state, start + 179000)).toBe(true);
+    expect(telemetryAvailable(state, start + 180000)).toBe(false);
+    state.activity = "needs-attention";
+    state.problemCode = "position-lost";
+    expect(telemetryAvailable(state, start)).toBe(false);
+  }
+  for (const state of states.filter(
+    (state) => state.connectionHash % 5 !== 0,
+  )) {
+    for (const now of [0, 59000, 60000, 180000])
+      expect(telemetryAvailable(state, now)).toBe(true);
+  }
 });
 
 test.each([

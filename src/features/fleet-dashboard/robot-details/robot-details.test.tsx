@@ -67,6 +67,8 @@ test.each([
   ["Stop activity", "working", null],
   ["Return to base", "working", null],
   ["Retry activity", "needs-attention", "path-blocked"],
+  ["Retry activity", "needs-attention", "position-lost"],
+  ["Retry activity", "needs-attention", "sensor-obstructed"],
 ] as const)(
   "%s preserves reported status while requesting and refreshing, then dismisses success",
   async (action, activity, problemCode) => {

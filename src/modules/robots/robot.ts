@@ -1,3 +1,4 @@
+import type { RobotProblemCode } from "./robot-problems";
 import type { FleetSummary, FilterOptions } from "./robot-filters";
 export const robotTypes = [
   "cleaning",
@@ -30,7 +31,7 @@ export type Robot = {
   site: string;
   area: string | null;
   activity: RobotActivity;
-  problemCode: "path-blocked" | null;
+  problemCode: RobotProblemCode | null;
   controlTarget: "work" | "stop" | "base";
   controlRevision: number;
   appliedControlRevision: number;
