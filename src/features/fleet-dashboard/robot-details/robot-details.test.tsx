@@ -55,6 +55,21 @@ test("details show fields, missing values, and breadcrumbs", () => {
   expect(details.getByTestId("robot-connection")).toHaveTextContent(
     /^Unknown$/,
   );
+  expect(screen.getByRole("tab", { name: "Overview" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  expect(screen.getByRole("tabpanel", { name: "Overview" })).toBeVisible();
+  fireEvent.click(screen.getByRole("tab", { name: "Logs" }));
+  const logs = screen.getByRole("tabpanel", { name: "Logs" });
+  expect(logs).toHaveTextContent(`Initializing ${robot.name}`);
+  expect(logs).toHaveTextContent("Integration initialized: Vendor API");
+  expect(logs).toHaveTextContent("Location configuration loaded: Munich");
+  expect(
+    screen.queryByRole("region", { name: "Location" }),
+  ).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("tab", { name: "Overview" }));
+  expect(screen.getByRole("region", { name: "Location" })).toBeVisible();
 });
 
 afterEach(() => {
@@ -99,6 +114,9 @@ test.each([
       <RobotDetails robot={online} siteRobots={[]} verifiedAt={Date.now()} />,
     );
     await act(async () => {});
+    fireEvent.click(screen.getByRole("tab", { name: "Logs" }));
+    const logs = screen.getByRole("tabpanel", { name: "Logs" });
+    const originalLogs = logs.textContent;
     vi.useFakeTimers();
     const button = screen.getByRole("button", { name: action });
     fireEvent.click(button);
@@ -128,6 +146,11 @@ test.each([
     expect(button).toHaveAttribute("aria-disabled", "false");
     await act(async () => vi.advanceTimersByTimeAsync(6000));
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Logs" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(logs.textContent).toBe(originalLogs);
   },
 );
 

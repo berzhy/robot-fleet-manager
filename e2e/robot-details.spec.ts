@@ -20,7 +20,10 @@ test("detail context and controls follow reported telemetry", async ({
   ].entries()) {
     const response = await request.post("/api/robots", {
       data: {
-        name: `Detail ${index}`,
+        name:
+          index === 3
+            ? `Detail ${index} inspection robot assigned to the northern warehouse service corridor`
+            : `Detail ${index}`,
         site,
         manufacturer: "Demo manufacturer",
         type,
@@ -97,6 +100,26 @@ test("detail context and controls follow reported telemetry", async ({
     .getByTestId("robot-battery")
     .boundingBox();
   expect(batteryAfterAction!.x).toBe(batteryBeforeAction!.x);
+  const overviewTab = page.getByRole("tab", { name: "Overview" });
+  const logsTab = page.getByRole("tab", { name: "Logs" });
+  await overviewTab.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(logsTab).toBeFocused();
+  await page.keyboard.press("Enter");
+  const logs = page.getByRole("tabpanel", { name: "Logs" });
+  await expect(logs).toContainText(`Initializing ${selected.name}`);
+  await expect(
+    page.getByRole("group", { name: "Activity controls" }),
+  ).toBeVisible();
+  await expect(location).toBeHidden();
+  await page.screenshot({
+    path: testInfo.outputPath("robot-logs-light.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
+  await page.keyboard.press("ArrowLeft");
+  await page.keyboard.press("Enter");
+  await expect(location).toBeVisible();
   await page.mouse.move(0, 0);
   await page.evaluate(() => {
     const main = document.querySelector("main")!;
@@ -148,6 +171,18 @@ test("detail context and controls follow reported telemetry", async ({
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
+  await logsTab.click();
+  await expect(logs).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: testInfo.outputPath("robot-logs-mobile.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
   expect(browserErrors).toEqual([]);
   for (const robot of records) await request.delete(`/api/robots/${robot.id}`);
 });

@@ -1,6 +1,6 @@
 "use client";
 import { robotProblemDetails } from "@/modules/robots/robot-problems";
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Breadcrumbs from "@mui/material/Breadcrumbs";
@@ -8,6 +8,8 @@ import Link from "@mui/material/Link";
 import LinearProgress from "@mui/material/LinearProgress";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
+import Tab from "@mui/material/Tab";
+import Tabs from "@mui/material/Tabs";
 import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import type { RobotContext } from "@/modules/robots/robot";
@@ -30,8 +32,11 @@ import {
 import ActivityControls from "./activity-controls";
 import LocationMap from "./location-map";
 import RobotProfile from "./robot-profile";
+import RobotLogs from "./robot-logs";
 
 export default function RobotDetails(initial: RobotContext) {
+  const tabId = useId();
+  const [tab, setTab] = useState<"overview" | "logs">("overview");
   const [pending, setPending] = useState(false);
   const inFlight = useRef(false);
   const [notice, setNotice] = useState<{
@@ -201,24 +206,59 @@ export default function RobotDetails(initial: RobotContext) {
               />
             </Stack>
           </Paper>
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: {
-                xs: "1fr",
-                md: "minmax(0, 1.7fr) minmax(0, 1fr)",
-              },
-              gap: 3,
-              alignItems: "start",
-            }}
+          <Tabs
+            value={tab}
+            onChange={(_event, value: "overview" | "logs") => setTab(value)}
+            aria-label="Robot details"
           >
-            <LocationMap
-              robot={robot}
-              peers={siteRobots}
-              now={evaluatedAt}
-              unverified={unverified}
+            <Tab
+              label="Overview"
+              value="overview"
+              id={`${tabId}-overview-tab`}
+              aria-controls={`${tabId}-overview-panel`}
             />
-            <RobotProfile robot={robot} />
+            <Tab
+              label="Logs"
+              value="logs"
+              id={`${tabId}-logs-tab`}
+              aria-controls={`${tabId}-logs-panel`}
+            />
+          </Tabs>
+          <Box
+            role="tabpanel"
+            id={`${tabId}-overview-panel`}
+            aria-labelledby={`${tabId}-overview-tab`}
+            hidden={tab !== "overview"}
+            tabIndex={0}
+          >
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  md: "minmax(0, 1.7fr) minmax(0, 1fr)",
+                },
+                gap: 3,
+                alignItems: "start",
+              }}
+            >
+              <LocationMap
+                robot={robot}
+                peers={siteRobots}
+                now={evaluatedAt}
+                unverified={unverified}
+              />
+              <RobotProfile robot={robot} />
+            </Box>
+          </Box>
+          <Box
+            role="tabpanel"
+            id={`${tabId}-logs-panel`}
+            aria-labelledby={`${tabId}-logs-tab`}
+            hidden={tab !== "logs"}
+            tabIndex={0}
+          >
+            <RobotLogs robot={initial.robot} />
           </Box>
         </>
       )}

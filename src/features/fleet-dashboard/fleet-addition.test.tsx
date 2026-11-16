@@ -94,7 +94,7 @@ test("both add buttons share pending state; empty creation reloads and restores 
   );
   expect(screen.queryByTestId("fleet-empty")).not.toBeInTheDocument();
   expect(
-    screen.getByRole("columnheader", { name: "Added" }),
+    screen.getByRole("columnheader", { name: "Registered" }),
   ).toBeInTheDocument();
   expect(
     within(screen.getByTestId("robot-row-new")).getByTestId("robot-added-at"),

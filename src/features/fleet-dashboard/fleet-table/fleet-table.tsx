@@ -34,7 +34,7 @@ import {
 const columns = [
   "Robot",
   "Type",
-  "Added",
+  "Registered",
   "Location",
   "Connection",
   "Activity",
@@ -146,10 +146,10 @@ export default function FleetTable({
                 <TableCell
                   key={column}
                   scope="col"
-                  aria-sort={column === "Added" ? "descending" : undefined}
+                  aria-sort={column === "Registered" ? "descending" : undefined}
                   align={column === "Actions" ? "right" : "left"}
                 >
-                  {column === "Added" ? (
+                  {column === "Registered" ? (
                     <Stack
                       component="span"
                       direction="row"
@@ -157,7 +157,7 @@ export default function FleetTable({
                       sx={{ alignItems: "center" }}
                     >
                       <span>{column}</span>
-                      <ArrowDownwardIcon fontSize="small" color="action" />
+                      <ArrowDownwardIcon sx={{ fontSize: 16 }} color="action" />
                     </Stack>
                   ) : (
                     column
