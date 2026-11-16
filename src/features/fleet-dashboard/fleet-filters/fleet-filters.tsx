@@ -24,6 +24,8 @@ import {
   formatRobotType,
 } from "../utils/robot-formatters";
 
+const searchDebounceMs = 300;
+
 function formatFilterValue(key: keyof RobotFilters, value: string) {
   if (key === "integrationType")
     return formatIntegrationType(value as (typeof integrationTypes)[number]);
@@ -74,7 +76,7 @@ export default function FleetFilters({
   });
   useEffect(() => {
     if (composing) return;
-    const timer = setTimeout(() => applySearch(search), 300);
+    const timer = setTimeout(() => applySearch(search), searchDebounceMs);
     return () => clearTimeout(timer);
   }, [search, composing]);
 

@@ -14,6 +14,9 @@ export const integrationTypes = ["ros2", "vda5050", "vendor-api"] as const;
 export const robotPageSize = 10;
 export const robotPageSizes = [10, 20, 50] as const;
 
+export const lowBatteryPercent = 15;
+export const criticalBatteryPercent = 10;
+
 export const robotActivities = [
   "working",
   "idle",

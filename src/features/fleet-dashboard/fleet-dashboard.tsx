@@ -82,6 +82,8 @@ export default function FleetDashboard() {
     message: string;
   } | null>(null);
 
+  // Restore focus only once mutations, loading, and the delete dialog
+  // settle; a poll may have replaced the recorded trigger meanwhile.
   useEffect(() => {
     if (
       adding ||

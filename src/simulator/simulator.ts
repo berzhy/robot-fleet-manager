@@ -8,6 +8,8 @@ import {
   type SimulatedRobot,
 } from "./simulation";
 
+const requestTimeoutMs = 5_000;
+
 export async function runSimulator(origin: string, signal: AbortSignal) {
   const states = new Map<string, SimulatedRobot>();
   let previous = Date.now();
@@ -16,7 +18,7 @@ export async function runSimulator(origin: string, signal: AbortSignal) {
   async function request(path: string, init?: RequestInit) {
     const response = await fetch(new URL(path, origin), {
       ...init,
-      signal: AbortSignal.any([signal, AbortSignal.timeout(5000)]),
+      signal: AbortSignal.any([signal, AbortSignal.timeout(requestTimeoutMs)]),
       cache: "no-store",
     });
     if (!response.ok)

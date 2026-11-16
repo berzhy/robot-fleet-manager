@@ -4,6 +4,8 @@ import type { FleetDatabase } from "../db/database";
 import { errorResponse } from "../http/responses";
 import { ingestTelemetry } from "./telemetry";
 
+const maxClockSkewMs = 5_000;
+
 export function telemetryHandlers(database: () => FleetDatabase) {
   return {
     async ingest(request: Request) {
@@ -19,7 +21,7 @@ export function telemetryHandlers(database: () => FleetDatabase) {
       if (
         !parsed.success ||
         parsed.data.reports.some(
-          (report) => Date.parse(report.observedAt) > now + 5000,
+          (report) => Date.parse(report.observedAt) > now + maxClockSkewMs,
         )
       )
         return invalid();
@@ -47,6 +49,6 @@ function invalid() {
   return errorResponse(
     400,
     "INVALID_INPUT",
-    "Provide 1–100 valid telemetry reports with unique robot IDs and timestamps no more than five seconds ahead.",
+    `Provide 1–100 valid telemetry reports with unique robot IDs and timestamps no more than ${maxClockSkewMs / 1000} seconds ahead.`,
   );
 }

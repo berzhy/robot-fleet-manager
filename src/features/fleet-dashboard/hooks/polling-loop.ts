@@ -1,3 +1,6 @@
+const pollTimeoutMs = 5_000;
+const pollDelayMs = 5_000;
+
 /** Return false to stop scheduling. cancelled() excludes request timeouts. */
 export function createPollingLoop(
   poll: (signal: AbortSignal, cancelled: () => boolean) => Promise<boolean>,
@@ -20,12 +23,12 @@ export function createPollingLoop(
     const cancelled = () => disposed || current.signal.aborted;
 
     const keepPolling = await poll(
-      AbortSignal.any([current.signal, AbortSignal.timeout(5000)]),
+      AbortSignal.any([current.signal, AbortSignal.timeout(pollTimeoutMs)]),
       cancelled,
     );
 
     if (keepPolling && !cancelled())
-      timer = setTimeout(() => void start(), 5000);
+      timer = setTimeout(() => void start(), pollDelayMs);
   }
 
   return {

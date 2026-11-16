@@ -54,6 +54,8 @@ export default function useRobots(paused = false) {
     setRequest((previous) => ({ ...previous, page: 0, filters }));
   }
 
+  // Refetch at the clamped page; the new request object retriggers
+  // the polling effect below.
   function reload() {
     invalidate();
     setRequest((previous) => ({ ...previous, page }));

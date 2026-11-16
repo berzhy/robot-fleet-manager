@@ -8,6 +8,8 @@ import {
   type RobotContext,
 } from "@/modules/robots/robot";
 
+const actionRequestTimeoutMs = 5_000;
+
 export async function getRobots(
   page: number,
   pageSize = robotPageSize,
@@ -72,7 +74,7 @@ export async function sendRobotAction(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action }),
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(actionRequestTimeoutMs),
     },
   );
   if (response.status !== 202)

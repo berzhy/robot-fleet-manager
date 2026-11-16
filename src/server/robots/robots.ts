@@ -5,6 +5,8 @@ import { randomUUID } from "node:crypto";
 
 import type { RobotFilters } from "@/modules/robots/robot-filters";
 import {
+  criticalBatteryPercent,
+  lowBatteryPercent,
   robotPageSize,
   type Robot,
   type RobotPage,
@@ -59,8 +61,8 @@ export function listRobots(
   ).toISOString();
 
   const offline = sql<boolean>`${latestTelemetry.receivedAt} < ${delayedCutoff}`;
-  const lowBattery = sql<boolean>`${latestTelemetry.batteryPercent} <= 15 and ${latestTelemetry.activity} != 'charging'`;
-  const criticalBattery = sql<boolean>`${latestTelemetry.batteryPercent} <= 10 and ${latestTelemetry.activity} != 'charging'`;
+  const lowBattery = sql<boolean>`${latestTelemetry.batteryPercent} <= ${lowBatteryPercent} and ${latestTelemetry.activity} != 'charging'`;
+  const criticalBattery = sql<boolean>`${latestTelemetry.batteryPercent} <= ${criticalBatteryPercent} and ${latestTelemetry.activity} != 'charging'`;
   const attention = or(
     offline,
     sql`${latestTelemetry.problemCode} is not null`,

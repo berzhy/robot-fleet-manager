@@ -9,6 +9,11 @@ import {
   type RobotFilters,
   type FleetSummary,
 } from "@/modules/robots/robot-filters";
+import {
+  criticalBatteryPercent,
+  lowBatteryPercent,
+} from "@/modules/robots/robot";
+import { delayedReportMaxAgeMs } from "@/modules/telemetry/freshness";
 
 const labels = {
   all: "All robots",
@@ -18,12 +23,9 @@ const labels = {
 };
 const explanations = {
   all: "All robots within the selected location, manufacturer, type and integration.",
-  "needs-attention":
-    "Offline, a reported problem, or critical battery at or below 10% while not charging.",
-  offline:
-    "Last report received more than 15 seconds ago. Robots with no reports are Unknown.",
-  "low-battery":
-    "Last-reported battery at or below 15%, including Returning but excluding Charging.",
+  "needs-attention": `Offline, a reported problem, or critical battery at or below ${criticalBatteryPercent}% while not charging.`,
+  offline: `Last report received more than ${delayedReportMaxAgeMs / 1000} seconds ago. Robots with no reports are Unknown.`,
+  "low-battery": `Last-reported battery at or below ${lowBatteryPercent}%, including Returning but excluding Charging.`,
 };
 
 export default function FleetSummary({

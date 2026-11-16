@@ -21,7 +21,7 @@ export type SimulatedRobot = {
 
 const departureDelay = 7;
 const returnDuration = 10;
-const lowBattery = 10;
+const returnToBaseBattery = 10;
 const chargedBattery = 90;
 const dischargeRate = 0.1;
 const chargeRate = 0.5;
@@ -43,8 +43,17 @@ function faultInterval(hash: number, count: number) {
   );
 }
 
+function faultProne(state: SimulatedRobot) {
+  return state.hash % 5 === 0;
+}
+
+function offlineProne(state: SimulatedRobot) {
+  return state.connectionHash % 5 === 0;
+}
+
 export function initializeRobot(robot: Robot): SimulatedRobot {
   const hash = hashId(robot.id);
+  // Seeded robots start above the low-battery tier: deterministic 22–100%.
   return {
     problemCode: robot.problemCode,
     battery: robot.batteryPercent ?? 22 + (hash % 79),
@@ -110,11 +119,11 @@ export function advanceRobot(
             (state.hash + Math.floor(state.workingSeconds / 30)) % areas.length
           ];
 
-        if (state.battery <= lowBattery) {
+        if (state.battery <= returnToBaseBattery) {
           state.activity = "returning";
           state.remaining = returnDuration;
         } else if (
-          state.hash % 5 === 0 &&
+          faultProne(state) &&
           state.workingSeconds >= state.faultAfter
         ) {
           state.activity = "needs-attention";
@@ -160,10 +169,12 @@ export function advanceRobot(
   };
 }
 
+// Offline-prone robots stop reporting for 60s of every 180s cycle,
+// phase-shifted per robot so they do not go silent together.
 export function telemetryAvailable(state: SimulatedRobot, now: number) {
   const hash = state.connectionHash;
   return (
-    hash % 5 !== 0 ||
+    !offlineProne(state) ||
     (Math.floor(now / 1000) + Math.floor(hash / 5)) % 180 >= 60
   );
 }
