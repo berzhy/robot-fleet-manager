@@ -4,6 +4,7 @@ import {
   within,
   fireEvent,
   waitFor,
+  act,
 } from "@testing-library/react";
 import { expect, test, vi, afterEach } from "vitest";
 
@@ -56,7 +57,77 @@ test("details show fields, missing values, and breadcrumbs", () => {
   );
 });
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
+
+test.each([
+  ["Start activity", "idle", null],
+  ["Stop activity", "working", null],
+  ["Return to base", "working", null],
+  ["Retry activity", "needs-attention", "path-blocked"],
+] as const)(
+  "%s preserves reported status while requesting and refreshing, then dismisses success",
+  async (action, activity, problemCode) => {
+    const online: Robot = {
+      ...robot,
+      activity,
+      problemCode,
+      area: "Lobby",
+      batteryPercent: 80,
+      lastReceivedAt: new Date().toISOString(),
+    };
+    const context = () =>
+      Response.json({ robot: online, siteRobots: [], verifiedAt: Date.now() });
+    let resolveAction!: (response: Response) => void;
+    let resolveRefresh!: (response: Response) => void;
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(context())
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (resolveAction = resolve)),
+      )
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (resolveRefresh = resolve)),
+      )
+      .mockImplementation(() => Promise.resolve(context()));
+    vi.stubGlobal("fetch", fetcher);
+    render(
+      <RobotDetails robot={online} siteRobots={[]} verifiedAt={Date.now()} />,
+    );
+    await act(async () => {});
+    vi.useFakeTimers();
+    const button = screen.getByRole("button", { name: action });
+    fireEvent.click(button);
+    expect(screen.getByTestId("robot-connection")).toHaveTextContent(
+      /^Online$/,
+    );
+    expect(screen.getByText("Activity", { exact: true })).toBeVisible();
+    expect(screen.getByText("Battery", { exact: true })).toBeVisible();
+    expect(screen.queryByText(/Last reported/)).not.toBeInTheDocument();
+    await act(async () => {
+      resolveAction(new Response(null, { status: 202 }));
+      await Promise.resolve();
+    });
+    expect(screen.getByRole("status")).toHaveTextContent(
+      `${action} requested.`,
+    );
+    expect(screen.getByTestId("robot-connection")).toHaveTextContent(
+      /^Online$/,
+    );
+    expect(button).toHaveAttribute("aria-disabled", "true");
+    fireEvent.click(button);
+    expect(fetcher).toHaveBeenCalledTimes(3);
+    await act(async () => {
+      resolveRefresh(context());
+      await Promise.resolve();
+    });
+    expect(button).toHaveAttribute("aria-disabled", "false");
+    await act(async () => vi.advanceTimersByTimeAsync(6000));
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  },
+);
 
 test("activity requests are guarded while pending and telemetry confirms the change", async () => {
   const online: Robot = {

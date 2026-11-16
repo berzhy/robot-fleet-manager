@@ -53,7 +53,7 @@ test("disabled actions explain their reason on keyboard focus and cannot execute
     />,
   );
   const menu = await openMenu();
-  const start = within(menu).getByRole("menuitem", { name: "Start work" });
+  const start = within(menu).getByRole("menuitem", { name: "Start activity" });
   expect(start).toHaveAttribute("aria-disabled", "true");
   fireEvent.focus(start);
   expect(await screen.findByRole("tooltip")).toHaveTextContent(

@@ -4,12 +4,12 @@ import { connectionStatus } from "../telemetry/freshness";
 export const robotActions = [
   "start",
   "stop",
-  "return-to-base",
   "retry",
+  "return-to-base",
 ] as const;
 export type RobotAction = (typeof robotActions)[number];
 export const actionLabels: Record<RobotAction, string> = {
-  start: "Start work",
+  start: "Start activity",
   stop: "Stop activity",
   "return-to-base": "Return to base",
   retry: "Retry activity",

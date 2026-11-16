@@ -48,7 +48,11 @@ export default function RobotProfile({ robot }: { robot: Robot }) {
             <Typography component="dt" variant="body2" color="text.secondary">
               {label}
             </Typography>
-            <Typography component="dd" sx={{ m: 0, overflowWrap: "anywhere" }}>
+            <Typography
+              component="dd"
+              variant="subtitle2"
+              sx={{ m: 0, overflowWrap: "anywhere" }}
+            >
               {value}
             </Typography>
           </Box>

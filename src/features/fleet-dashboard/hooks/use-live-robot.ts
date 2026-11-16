@@ -7,13 +7,14 @@ export default function useLiveRobot(initial: RobotContext, paused = false) {
   const [revision, setRevision] = useState(0);
   const reload = useCallback(() => setRevision((value) => value + 1), []);
   const [interrupted, setInterrupted] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [unverified, setUnverified] = useState(
     () => typeof document !== "undefined" && document.hidden,
   );
   const request = useRef<AbortController | undefined>(undefined);
   const invalidate = useCallback(() => {
     request.current?.abort();
-    setUnverified(true);
+    setRefreshing(true);
   }, []);
   const [missing, setMissing] = useState(false);
   const [verifiedAt, setVerifiedAt] = useState(initial.verifiedAt);
@@ -38,6 +39,7 @@ export default function useLiveRobot(initial: RobotContext, paused = false) {
           AbortSignal.any([current.signal, AbortSignal.timeout(5000)]),
         );
         if (disposed || current.signal.aborted) return;
+        setRefreshing(false);
         if (!result) {
           terminal = true;
           setMissing(true);
@@ -51,6 +53,7 @@ export default function useLiveRobot(initial: RobotContext, paused = false) {
         setVerifiedAt(result.verifiedAt);
       } catch {
         if (disposed || current.signal.aborted) return;
+        setRefreshing(false);
         setInterrupted(true);
         setUnverified(true);
       }
@@ -73,6 +76,7 @@ export default function useLiveRobot(initial: RobotContext, paused = false) {
   return {
     ...snapshot,
     interrupted,
+    refreshing,
     unverified,
     verifiedAt,
     missing,

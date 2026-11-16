@@ -129,7 +129,7 @@ test("keyboard explanations and Stop/Retry requests follow reported activity", a
     "Robot is already working",
   );
   await expect(
-    page.getByRole("menuitem", { name: "Start work" }),
+    page.getByRole("menuitem", { name: "Start activity" }),
   ).toHaveAttribute("aria-disabled", "true");
   await page.getByRole("menuitem", { name: "Stop activity" }).click();
   await expect(page.getByTestId("fleet-notification")).toContainText(

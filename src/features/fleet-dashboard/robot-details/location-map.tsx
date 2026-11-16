@@ -180,7 +180,7 @@ export default function LocationMap({
         }}
       >
         <Box>
-          <Typography variant="subtitle2" sx={{ mb: 2 }}>
+          <Typography component="h3" variant="subtitle2" sx={{ mb: 2 }}>
             Facility details
           </Typography>
           <Box
@@ -196,31 +196,19 @@ export default function LocationMap({
             <Typography component="dt" variant="body2" color="text.secondary">
               Type
             </Typography>
-            <Typography
-              component="dd"
-              variant="body2"
-              sx={{ m: 0, fontWeight: 500 }}
-            >
+            <Typography component="dd" variant="subtitle2" sx={{ m: 0 }}>
               {facilityDetails.type}
             </Typography>
             <Typography component="dt" variant="body2" color="text.secondary">
               Floor area
             </Typography>
-            <Typography
-              component="dd"
-              variant="body2"
-              sx={{ m: 0, fontWeight: 500 }}
-            >
+            <Typography component="dd" variant="subtitle2" sx={{ m: 0 }}>
               {facilityDetails.floorArea}
             </Typography>
             <Typography component="dt" variant="body2" color="text.secondary">
               Charging bays
             </Typography>
-            <Typography
-              component="dd"
-              variant="body2"
-              sx={{ m: 0, fontWeight: 500 }}
-            >
+            <Typography component="dd" variant="subtitle2" sx={{ m: 0 }}>
               {facilityDetails.chargingBays.length}
             </Typography>
           </Box>
@@ -235,7 +223,9 @@ export default function LocationMap({
             alignItems: "flex-start",
           }}
         >
-          <Typography variant="subtitle2">Map legend</Typography>
+          <Typography component="h3" variant="subtitle2">
+            Map legend
+          </Typography>
           <Stack
             direction="row"
             spacing={1.5}
@@ -260,12 +250,13 @@ export default function LocationMap({
               <circle cx="12" cy="12" r="4" fill="currentColor" />
             </Box>
             <Box sx={{ minWidth: 0 }}>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="body2" color="text.secondary">
                 Selected robot
               </Typography>
               <Typography
-                variant="body2"
-                sx={{ fontWeight: 500, overflowWrap: "anywhere" }}
+                variant="subtitle2"
+                component="p"
+                sx={{ overflowWrap: "anywhere" }}
               >
                 {robot.name}
               </Typography>

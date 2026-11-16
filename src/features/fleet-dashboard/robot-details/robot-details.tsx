@@ -17,6 +17,7 @@ import {
 } from "@/modules/robots/robot-actions";
 import { connectionStatus, reportAge } from "@/modules/telemetry/freshness";
 import { sendRobotAction } from "../api/robot-api";
+import ActionNotification from "../action-notification";
 import ConnectionStatus from "../connection-status/connection-status";
 import useLiveRobot from "../hooks/use-live-robot";
 import useReportClock from "../hooks/use-report-clock";
@@ -41,18 +42,20 @@ export default function RobotDetails(initial: RobotContext) {
     siteRobots,
     missing,
     interrupted,
+    refreshing,
     unverified,
     verifiedAt,
     reload,
     invalidate,
   } = useLiveRobot(initial, pending);
-  const now = useReportClock(pending);
+  const now = useReportClock(pending || refreshing);
   const evaluatedAt = unverified || !now ? verifiedAt : now;
   const connection = connectionStatus(robot.lastReceivedAt, evaluatedAt);
   const stale = connection === "Delayed" || connection === "Offline";
   async function act(action: RobotAction) {
     if (
       inFlight.current ||
+      refreshing ||
       unverified ||
       actionUnavailable(robot, action, Date.now())
     )
@@ -124,7 +127,11 @@ export default function RobotDetails(initial: RobotContext) {
                   <Typography variant="body2" color="text.secondary">
                     Connection
                   </Typography>
-                  <Box data-testid="robot-connection">
+                  <Typography
+                    component="div"
+                    variant="h6"
+                    data-testid="robot-connection"
+                  >
                     <ConnectionStatus
                       status={
                         robot.lastReceivedAt === null
@@ -135,23 +142,17 @@ export default function RobotDetails(initial: RobotContext) {
                       }
                       unverified={unverified}
                     />
-                  </Box>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    {stale || unverified
-                      ? "Last reported activity"
-                      : "Activity"}
-                  </Typography>
-                  <Typography data-testid="robot-activity" variant="h6">
-                    {formatActivity(robot.activity)}
                   </Typography>
                 </Box>
-                <Box sx={{ minWidth: 160 }}>
+                <Box sx={{ minWidth: 120 }}>
                   <Typography variant="body2" color="text.secondary">
                     {stale || unverified ? "Last reported battery" : "Battery"}
                   </Typography>
-                  <Typography data-testid="robot-battery" variant="h6">
+                  <Typography
+                    component="p"
+                    data-testid="robot-battery"
+                    variant="h6"
+                  >
                     {formatBattery(robot.batteryPercent)}
                   </Typography>
                   {robot.batteryPercent !== null && (
@@ -159,9 +160,23 @@ export default function RobotDetails(initial: RobotContext) {
                       variant="determinate"
                       value={robot.batteryPercent}
                       aria-label="Battery level"
-                      sx={{ mt: 0.5 }}
+                      sx={{ mt: 0.5, width: 120 }}
                     />
                   )}
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    {stale || unverified
+                      ? "Last reported activity"
+                      : "Activity"}
+                  </Typography>
+                  <Typography
+                    component="p"
+                    data-testid="robot-activity"
+                    variant="h6"
+                  >
+                    {formatActivity(robot.activity)}
+                  </Typography>
                 </Box>
               </Stack>
               {robot.problemCode && (
@@ -178,19 +193,10 @@ export default function RobotDetails(initial: RobotContext) {
               <ActivityControls
                 robot={robot}
                 now={evaluatedAt}
-                unverified={unverified || !verifiedAt}
+                unverified={unverified || refreshing || !verifiedAt}
                 pending={pending}
                 onAction={(action) => void act(action)}
               />
-              {notice && (
-                <Alert
-                  severity={notice.severity}
-                  role={notice.severity === "success" ? "status" : "alert"}
-                  onClose={() => setNotice(null)}
-                >
-                  {notice.message}
-                </Alert>
-              )}
             </Stack>
           </Paper>
           <Box
@@ -213,6 +219,9 @@ export default function RobotDetails(initial: RobotContext) {
             <RobotProfile robot={robot} />
           </Box>
         </>
+      )}
+      {notice && (
+        <ActionNotification {...notice} onClose={() => setNotice(null)} />
       )}
     </Stack>
   );

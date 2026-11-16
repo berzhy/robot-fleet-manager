@@ -3,7 +3,6 @@
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Portal from "@mui/material/Portal";
-import Snackbar from "@mui/material/Snackbar";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { useEffect, useRef, useState } from "react";
@@ -18,6 +17,7 @@ import {
   deleteAllRobots,
   sendRobotAction,
 } from "./api/robot-api";
+import ActionNotification from "./action-notification";
 import AddRobotSplitButton from "./fleet-table/add-robot-split-button";
 import DeleteRobotDialog from "./fleet-table/delete-robot-dialog";
 import FleetFilters from "./fleet-filters/fleet-filters";
@@ -216,29 +216,10 @@ export default function FleetDashboard() {
   }
 
   const notice = notification && (
-    <Snackbar
-      key={notification.message}
-      open
-      anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      autoHideDuration={notification.severity === "success" ? 6000 : null}
-      onClose={(_event, reason) => {
-        if (reason !== "clickaway") setNotification(null);
-      }}
-    >
-      <Alert
-        data-testid="fleet-notification"
-        severity={notification.severity}
-        role={notification.severity === "success" ? "status" : "alert"}
-        slotProps={{
-          closeButton: () => ({ "data-testid": "fleet-notification-close" }),
-        }}
-        onClose={() => setNotification(null)}
-      >
-        <Typography component="span" variant="body1">
-          {notification.message}
-        </Typography>
-      </Alert>
-    </Snackbar>
+    <ActionNotification
+      {...notification}
+      onClose={() => setNotification(null)}
+    />
   );
 
   return (

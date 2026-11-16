@@ -12,6 +12,7 @@ import type { Robot } from "@/modules/robots/robot";
 import FleetDashboard from "./fleet-dashboard";
 import RobotDetails from "./robot-details/robot-details";
 import useRobots from "./hooks/use-robots";
+import useLiveRobot from "./hooks/use-live-robot";
 const robot: Robot = {
   problemCode: null,
   controlTarget: "work",
@@ -176,6 +177,51 @@ test("detail refreshes quietly and stops when its robot is deleted", async () =>
   );
   await tick(5000);
   expect(fetch).toHaveBeenCalledTimes(2);
+});
+
+test("detail action refresh cancels older polls without relabeling verified data", async () => {
+  vi.useFakeTimers();
+  const context = (batteryPercent: number) => ({
+    robot: { ...robot, batteryPercent },
+    siteRobots: [],
+    verifiedAt: Date.now(),
+  });
+  let stale!: (response: Response) => void;
+  let fresh!: (response: Response) => void;
+  vi.stubGlobal(
+    "fetch",
+    vi
+      .fn()
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (stale = resolve)),
+      )
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (fresh = resolve)),
+      )
+      .mockRejectedValue(new Error("unavailable")),
+  );
+  const { result } = renderHook(() => useLiveRobot(context(50)));
+  act(() => {
+    result.current.invalidate();
+    result.current.reload();
+  });
+  await act(async () => {
+    stale(Response.json(context(99)));
+    await Promise.resolve();
+  });
+  expect(result.current.robot.batteryPercent).toBe(50);
+  expect(result.current.refreshing).toBe(true);
+  expect(result.current.unverified).toBe(false);
+  await act(async () => {
+    fresh(Response.json(context(40)));
+    await Promise.resolve();
+  });
+  expect(result.current.robot.batteryPercent).toBe(40);
+  expect(result.current.refreshing).toBe(false);
+  await tick(5000);
+  expect(result.current.interrupted).toBe(true);
+  expect(result.current.unverified).toBe(true);
+  expect(result.current.robot.batteryPercent).toBe(40);
 });
 
 test("connection classification stays on the last fleet snapshot between refreshes", async () => {
