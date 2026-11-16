@@ -6,28 +6,26 @@
 
 ## Intro
 
-Hi, I had to build a useful user interface for the enigneering challenge. I tried to stick to the tech stack you are using (e.g. using Next.js, MUI, with a standard theme for now).
+Hi, I had to build a useful user interface for the enigneering challenge. I tried to stick to the tech stack you are using (e.g. using Next.js, MUI, with a standard theme for now). Hope we can discuss more this week.
 
-A small feature set makes the frontend easy, and there is little interface to show. As the product grows, the interface gets harder, and the structure of the application has to change with it. I wanted enough real behaviour to plan that structure, and to have some interface decisions worth showing.
-Time was very short, so parts of this are AI-written, especially the simulator and the API. I have spent less time in those files than in the interface. In normal work I review that code before I keep it.
+A small feature set makes the frontend easy, and there is little interface to show. As the product grows, the interface gets more complex, and the structure of the application has to change with it. I wanted enough real behaviour to plan that structure, and to have some interface decisions worth showing.
+Time was very short, so parts of this are very AI-written, especially the simulator and the API. I have spent less time in those files than in the interface. In normal work I try keeping uniformly good quality of my code.
 
 ## Interface
 
-The screen answers four questions: which robots need attention and why, where they are, what they are doing, and how current the information is.
+The interace consists of 3 screens. Main one - Fleet Dashboard, while Skills and Integrations are placeholders. The Fleet screen answers four questions: which robots need attention and why, where they are, what they are doing, and how current the information is.
 
-Skills and Integrations are placeholders.
-
-The interface starts in the standard light theme. A button switches between light and dark. On desktop it sits at the bottom of the sidebar, and on a small screen it sits in the header. The choice is kept in the browser.
+The interface starts in the standard light theme. A button switches between light and dark. The choice is kept in the browser.
 
 The dashboard lists the robots, with tiles for All robots, Needs attention, Offline, and Low battery, plus filters and search. Choosing a tile, a filter, or a search adds a chip above the table, so you can see what the list is showing.
 
 The table polls every 5 seconds. That was enough for this proof of concept.
 
-Each row shows the robot's stable details and its current state, and offers actions. The list is newest registered first. The other columns are not sortable. Those values can be filtered, and sorting by battery is not useful here.
+Each row shows the robot's stable details and its current state, and offers actions. The list shows newest registered first, with pagination enabled. The other columns are not sortable. Those values can be filtered, and sorting by battery is not useful here.
 
 The app starts empty. You can auto-magically(POC) create 1, 10, or 100 generated robots. The simulator picks each one up and starts tracking it.
 
-It is possible to delete individual robot or drop all of them via the action in the split button.
+It is possible to delete individual robot via row action or drop all of them via the action in the split button.
 
 Clicking the robot row will open a details page about that robot. That includes commands, an illustrative location view, model data, and a static log sample.
 
