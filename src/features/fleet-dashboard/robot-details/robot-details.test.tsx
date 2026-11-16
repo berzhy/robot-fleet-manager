@@ -1,5 +1,11 @@
-import { render, screen, within } from "@testing-library/react";
-import { expect, test } from "vitest";
+import {
+  render,
+  screen,
+  within,
+  fireEvent,
+  waitFor,
+} from "@testing-library/react";
+import { expect, test, vi, afterEach } from "vitest";
 
 import type { Robot } from "@/modules/robots/robot";
 import RobotDetails from "@/features/fleet-dashboard/robot-details/robot-details";
@@ -24,7 +30,7 @@ const robot: Robot = {
 };
 
 test("details show fields, missing values, and breadcrumbs", () => {
-  render(<RobotDetails robot={robot} />);
+  render(<RobotDetails robot={robot} siteRobots={[]} verifiedAt={0} />);
   const details = within(screen.getByTestId("robot-details"));
   expect(
     screen.getByRole("heading", { level: 1, name: robot.name }),
@@ -37,27 +43,100 @@ test("details show fields, missing values, and breadcrumbs", () => {
     "aria-current",
     "page",
   );
-  expect(screen.getAllByRole("term").map((term) => term.textContent)).toEqual([
-    "ID",
-    "Manufacturer",
-    "Type",
-    "Integration",
-    "Site",
-    "Area",
-    "Activity",
-    "Battery",
-    "Connection",
-  ]);
-  expect(details.getByTestId("robot-integration")).toHaveTextContent(
-    /^Vendor API$/,
-  );
-  expect(details.getByTestId("robot-type")).toHaveTextContent(
-    /^Inspection robot$/,
+  expect(
+    screen.getByRole("region", { name: "Robot information" }),
+  ).toHaveTextContent("Vendor API");
+  expect(screen.getByRole("region", { name: "Location" })).toHaveTextContent(
+    "Reported area: Unknown",
   );
   expect(details.getByTestId("robot-activity")).toHaveTextContent(/^Charging$/);
-  expect(details.getByTestId("robot-area")).toHaveTextContent(/^Unknown$/);
   expect(details.getByTestId("robot-battery")).toHaveTextContent(/^Unknown$/);
   expect(details.getByTestId("robot-connection")).toHaveTextContent(
     /^Unknown$/,
   );
+});
+
+afterEach(() => vi.unstubAllGlobals());
+
+test("activity requests are guarded while pending and telemetry confirms the change", async () => {
+  const online: Robot = {
+    ...robot,
+    activity: "working" as const,
+    batteryPercent: 80,
+    lastReceivedAt: new Date().toISOString(),
+  };
+  let resolveAction!: (value: Response) => void;
+  let observed: Robot = online;
+  const fetcher = vi
+    .fn()
+    .mockImplementation((_url: string, init?: RequestInit) => {
+      if (init?.method === "POST")
+        return new Promise<Response>((resolve) => {
+          resolveAction = resolve;
+        });
+      return Promise.resolve(
+        Response.json({
+          robot: observed,
+          siteRobots: [],
+          verifiedAt: Date.now(),
+        }),
+      );
+    });
+  vi.stubGlobal("fetch", fetcher);
+  render(
+    <RobotDetails robot={online} siteRobots={[]} verifiedAt={Date.now()} />,
+  );
+  const stop = screen.getByRole("button", {
+    name: "Stop activity",
+  });
+  await waitFor(() => expect(stop).toHaveAttribute("aria-disabled", "false"));
+  fireEvent.click(stop);
+  fireEvent.click(stop);
+  expect(
+    fetcher.mock.calls.filter(
+      (call) => (call[1] as RequestInit)?.method === "POST",
+    ),
+  ).toHaveLength(1);
+  expect(stop).toHaveAttribute("aria-disabled", "true");
+  observed = { ...online, activity: "idle" };
+  resolveAction(new Response(null, { status: 202 }));
+  await waitFor(() =>
+    expect(screen.getByTestId("robot-activity")).toHaveTextContent("Idle"),
+  );
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "Stop activity requested.",
+  );
+});
+
+test("failed action keeps reported activity and explains the failure", async () => {
+  const online: Robot = {
+    ...robot,
+    activity: "working" as const,
+    batteryPercent: 80,
+    lastReceivedAt: new Date().toISOString(),
+  };
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockImplementation((_url: string, init?: RequestInit) =>
+      Promise.resolve(
+        init?.method === "POST"
+          ? new Response(null, { status: 409 })
+          : Response.json({
+              robot: online,
+              siteRobots: [],
+              verifiedAt: Date.now(),
+            }),
+      ),
+    ),
+  );
+  render(
+    <RobotDetails robot={online} siteRobots={[]} verifiedAt={Date.now()} />,
+  );
+  fireEvent.click(screen.getByRole("button", { name: /^Stop activity$/ }));
+  await waitFor(() =>
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Unable to request activity change",
+    ),
+  );
+  expect(screen.getByTestId("robot-activity")).toHaveTextContent("Working");
 });

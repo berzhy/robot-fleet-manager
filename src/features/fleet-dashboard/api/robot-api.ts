@@ -5,6 +5,7 @@ import {
   robotPageSize,
   type Robot,
   type RobotPage,
+  type RobotContext,
 } from "@/modules/robots/robot";
 export async function getRobots(
   page: number,
@@ -86,4 +87,17 @@ export async function sendRobotAction(
   );
   if (response.status !== 202)
     throw new Error("Unable to request robot action.");
+}
+
+export async function getRobotContext(
+  id: string,
+  signal?: AbortSignal,
+): Promise<RobotContext | null> {
+  const response = await fetch(
+    `/api/robots/${encodeURIComponent(id)}/context`,
+    { cache: "no-store", signal },
+  );
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error("Unable to refresh robot context.");
+  return response.json() as Promise<RobotContext>;
 }

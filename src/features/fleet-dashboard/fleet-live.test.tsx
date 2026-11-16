@@ -156,10 +156,16 @@ test("detail refreshes quietly and stops when its robot is deleted", async () =>
     "fetch",
     vi
       .fn()
-      .mockResolvedValueOnce(Response.json({ ...robot, batteryPercent: 45 }))
+      .mockResolvedValueOnce(
+        Response.json({
+          robot: { ...robot, batteryPercent: 45 },
+          siteRobots: [],
+          verifiedAt: Date.now(),
+        }),
+      )
       .mockResolvedValueOnce(new Response(null, { status: 404 })),
   );
-  render(<RobotDetails robot={robot} />);
+  render(<RobotDetails robot={robot} siteRobots={[]} verifiedAt={0} />);
   await tick();
   expect(
     within(screen.getByTestId("robot-details")).getByTestId("robot-battery"),
@@ -198,7 +204,7 @@ test("a confirmed detail deletion clears an earlier refresh warning", async () =
       .mockResolvedValueOnce(new Response(null, { status: 500 }))
       .mockResolvedValueOnce(new Response(null, { status: 404 })),
   );
-  render(<RobotDetails robot={robot} />);
+  render(<RobotDetails robot={robot} siteRobots={[]} verifiedAt={0} />);
   await tick();
   expect(screen.getByTestId("robot-refresh-warning")).toHaveTextContent(
     "Live updates interrupted",
@@ -214,7 +220,9 @@ test("failed initial detail refresh keeps server-verified connection information
   vi.useFakeTimers();
   vi.setSystemTime(new Date(Date.parse(robot.lastReceivedAt!) + 20000));
   vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("unavailable")));
-  render(<RobotDetails robot={robot} verifiedAt={Date.now()} />);
+  render(
+    <RobotDetails robot={robot} siteRobots={[]} verifiedAt={Date.now()} />,
+  );
   await tick();
   expect(
     within(screen.getByTestId("robot-details")).getByTestId("robot-connection"),

@@ -97,15 +97,7 @@ For larger fleets, filtering and sorting must cover the full result set before p
 
 ## Robot detail
 
-Proposed contents:
-
-- Exact position and its timestamp, with spatial context when available.
-- Current activity or task context.
-- Active attention reasons and recent events.
-- Battery history.
-- Manufacturer, model, and administrative state.
-
-These are candidates, not a requirement to build all of them. Keep the initial feature set focused.
+Implemented direction: a dedicated page with identity, connection/activity/battery, and visible activity controls before visual context. A larger location panel shows actual same-site peers at illustrative positions, with twelve compact peer markers per area and additional counts. One SVG schematic is shared by sites; chargers are decorative, with no availability tracking. Four generated type illustrations accompany actual manufacturer/integration metadata. Equipment callouts, exact coordinates, map interaction, and telemetry history are deferred. Context reads share one database snapshot and refresh every five seconds; requests reuse existing action rules and require verified connection data.
 
 ## Accessibility and usability
 

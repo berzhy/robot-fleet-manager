@@ -18,6 +18,7 @@ import {
   deleteRobot,
   getRobot,
   getRobotSnapshot,
+  getRobotContext,
   listRobots,
   robotRegistry,
 } from "./robots";
@@ -653,4 +654,22 @@ test("search treats SQL wildcards and escapes literally and validates trimmed in
   );
   expect(response.status).toBe(200);
   expect(await response.json()).toMatchObject({ total: 1 });
+});
+
+test("detail context includes only same-site peers and returns 404 for a missing robot", async () => {
+  const selected = createRobot(db, input);
+  const peer = createRobot(db, { ...input, name: "Peer" });
+  createRobot(db, { ...input, site: "Berlin" });
+  const context = getRobotContext(db, selected.id)!;
+  expect(context.robot.id).toBe(selected.id);
+  expect(context.siteRobots).toEqual([
+    { id: peer.id, name: "Peer", area: null, lastReceivedAt: null },
+  ]);
+  const response = robotHandlers(() => db).context(selected.id);
+  expect(response.status).toBe(200);
+  expect(await response.json()).toMatchObject({
+    robot: { id: selected.id },
+    siteRobots: [{ id: peer.id }],
+  });
+  expect(robotHandlers(() => db).context("missing").status).toBe(404);
 });

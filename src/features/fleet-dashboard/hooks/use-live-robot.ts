@@ -1,19 +1,24 @@
 "use client";
-import { useEffect, useState } from "react";
-import type { Robot } from "@/modules/robots/robot";
-import { getRobot } from "../api/robot-api";
-export default function useLiveRobot(
-  initial: Robot,
-  initialVerifiedAt: number,
-) {
-  const [robot, setRobot] = useState(initial);
+import { useEffect, useState, useCallback, useRef } from "react";
+import type { RobotContext } from "@/modules/robots/robot";
+import { getRobotContext } from "../api/robot-api";
+export default function useLiveRobot(initial: RobotContext, paused = false) {
+  const [snapshot, setSnapshot] = useState(initial);
+  const [revision, setRevision] = useState(0);
+  const reload = useCallback(() => setRevision((value) => value + 1), []);
   const [interrupted, setInterrupted] = useState(false);
   const [unverified, setUnverified] = useState(
     () => typeof document !== "undefined" && document.hidden,
   );
+  const request = useRef<AbortController | undefined>(undefined);
+  const invalidate = useCallback(() => {
+    request.current?.abort();
+    setUnverified(true);
+  }, []);
   const [missing, setMissing] = useState(false);
-  const [verifiedAt, setVerifiedAt] = useState(initialVerifiedAt);
+  const [verifiedAt, setVerifiedAt] = useState(initial.verifiedAt);
   useEffect(() => {
+    if (paused) return;
     let disposed = false;
     let terminal = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -26,9 +31,10 @@ export default function useLiveRobot(
       if (disposed || terminal || document.hidden) return;
       const current = new AbortController();
       controller = current;
+      request.current = current;
       try {
-        const result = await getRobot(
-          initial.id,
+        const result = await getRobotContext(
+          initial.robot.id,
           AbortSignal.any([current.signal, AbortSignal.timeout(5000)]),
         );
         if (disposed || current.signal.aborted) return;
@@ -39,10 +45,10 @@ export default function useLiveRobot(
           setUnverified(false);
           return;
         }
-        setRobot(result);
+        setSnapshot(result);
         setInterrupted(false);
         setUnverified(false);
-        setVerifiedAt(Date.now());
+        setVerifiedAt(result.verifiedAt);
       } catch {
         if (disposed || current.signal.aborted) return;
         setInterrupted(true);
@@ -63,6 +69,14 @@ export default function useLiveRobot(
       stop();
       document.removeEventListener("visibilitychange", visibility);
     };
-  }, [initial.id]);
-  return { robot, interrupted, unverified, verifiedAt, missing };
+  }, [initial.robot.id, paused, revision]);
+  return {
+    ...snapshot,
+    interrupted,
+    unverified,
+    verifiedAt,
+    missing,
+    reload,
+    invalidate,
+  };
 }

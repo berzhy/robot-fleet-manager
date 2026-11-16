@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { io } from "next/cache";
-import { getRobotSnapshot } from "@/server/robots/robots";
+import { getRobotContext } from "@/server/robots/robots";
 import { getDatabase } from "@/server/db/runtime-database";
 import RobotDetails from "@/features/fleet-dashboard/robot-details/robot-details";
 
@@ -28,7 +28,7 @@ async function RobotContent({
 }) {
   const { robotId } = await params;
   await io();
-  const snapshot = getRobotSnapshot(getDatabase(), robotId);
+  const snapshot = getRobotContext(getDatabase(), robotId);
   if (!snapshot) notFound();
   return <RobotDetails {...snapshot} />;
 }

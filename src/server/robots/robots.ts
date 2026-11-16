@@ -207,3 +207,24 @@ export function getRobotSnapshot(db: FleetDatabase, id: string) {
   const robot = getRobot(db, id);
   return robot ? { robot, verifiedAt: Date.now() } : undefined;
 }
+
+export function getRobotContext(db: FleetDatabase, id: string) {
+  return db.transaction((tx) => {
+    const robot = getRobot(tx, id);
+    if (!robot) return undefined;
+    const siteRobots = tx
+      .select({
+        id: robots.id,
+        name: robots.name,
+        area: latestTelemetry.area,
+        lastReceivedAt: latestTelemetry.receivedAt,
+      })
+      .from(robots)
+      .leftJoin(latestTelemetry, eq(robots.id, latestTelemetry.robotId))
+      .where(eq(robots.site, robot.site))
+      .orderBy(robots.id)
+      .all()
+      .filter((peer) => peer.id !== id);
+    return { robot, siteRobots, verifiedAt: Date.now() };
+  });
+}

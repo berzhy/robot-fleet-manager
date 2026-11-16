@@ -21,9 +21,10 @@ export function formatActivity(activity: Robot["activity"]) {
   return labels[activity];
 }
 
-const addedFormatter = new Intl.DateTimeFormat(undefined, {
+const addedFormatter = new Intl.DateTimeFormat("en-GB", {
   dateStyle: "medium",
-  timeStyle: "medium",
+  timeStyle: "long",
+  timeZone: "Europe/Berlin",
 });
 export function formatAdded(createdAt: string) {
   return addedFormatter.format(new Date(createdAt));

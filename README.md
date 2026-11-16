@@ -25,6 +25,7 @@ During this POC, schema changes may replace migration history and discard develo
 
 - `GET /api/robots?page=0&pageSize=10`: `{ items, total, page, pageSize, summary, fleetTotal, filterOptions, evaluatedAt }`, ordered by creation time descending, then ID descending.
 - `GET /api/robots/:id`: one robot, or 404.
+- `GET /api/robots/:id/context`: `{ robot, siteRobots, verifiedAt }` from one database snapshot; peers contain ID, name, reported area, and receipt time, excluding the selected robot. Returns 404 if missing.
 - `POST /api/robots/batch`: accept `{ robots: [...] }` with 1–100 metadata records; return 201 with `{ items: [...] }`. All records are created in one transaction.
 - `POST /api/robots`: create metadata from `name`, `manufacturer`, `site`, `type`, and `integrationType`; returns 201 with unknown telemetry.
 - `DELETE /api/robots/:id`: permanently remove a robot and its latest telemetry; returns 204, or 404.
@@ -126,3 +127,7 @@ Four tiles select All robots, Needs attention, Offline, or Low battery. Location
 The list API accepts optional `site`, `manufacturer`, `integrationType` (`ros2`, `vda5050`, `vendor-api`), `type` (`cleaning`, `security`, `delivery`, `inspection`), and `view` (`all`, `needs-attention`, `offline`, `low-battery`) query parameters. Summary counts respect dropdowns but ignore the tile. Dropdown options describe the full fleet. Rows, counts and dashboard connection classification share the response evaluation time; report-age text may continue ticking. Failed background refresh retains that snapshot.
 
 Offline means more than 15 seconds since receipt; no reports means Unknown. Low battery means a last-reported level ≤20%, excluding Charging and Returning. Needs attention includes Offline, a reported problem, or Low battery; robots are counted once per tile. Categories overlap. Search narrows this same scope, including tile counts. It matches name, ID, manufacturer, type, integration, site and area using case-insensitive literal substrings, including displayed type/integration labels. It applies after a 300 ms pause at two or more characters (maximum 100); shorter input means no search. Search resets pagination, combines with other filters, and can be removed through its chip or Clear filters. The API accepts an optional `search` query parameter.
+
+## Robot detail visuals
+
+Details combine existing activity controls with an illustrative robot profile and a shared SVG location schematic. Peer markers represent actual robots assigned to the same site; positions within reported areas are fixed demo slots, not measured coordinates. Up to twelve peers appear per area with overflow counts. Chargers are static symbols without occupancy data. Missing areas stay unknown; stale reports remain last known. Four generated illustrations represent robot categories rather than verified manufacturer models. No map interaction or sensor telemetry is implemented.

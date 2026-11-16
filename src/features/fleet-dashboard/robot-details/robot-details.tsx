@@ -1,16 +1,22 @@
 "use client";
-
+import { useRef, useState } from "react";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Breadcrumbs from "@mui/material/Breadcrumbs";
 import Link from "@mui/material/Link";
+import LinearProgress from "@mui/material/LinearProgress";
+import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
-
-import type { Robot } from "@/modules/robots/robot";
+import type { RobotContext } from "@/modules/robots/robot";
+import {
+  actionLabels,
+  actionUnavailable,
+  type RobotAction,
+} from "@/modules/robots/robot-actions";
 import { connectionStatus, reportAge } from "@/modules/telemetry/freshness";
-
+import { sendRobotAction } from "../api/robot-api";
 import ConnectionStatus from "../connection-status/connection-status";
 import useLiveRobot from "../hooks/use-live-robot";
 import useReportClock from "../hooks/use-report-clock";
@@ -18,113 +24,195 @@ import {
   formatActivity,
   formatBattery,
   formatRobotType,
-  formatIntegrationType,
 } from "../utils/robot-formatters";
+import ActivityControls from "./activity-controls";
+import LocationMap from "./location-map";
+import RobotProfile from "./robot-profile";
 
-export default function RobotDetails({
-  robot: initial,
-  verifiedAt: initialVerifiedAt = 0,
-}: {
-  robot: Robot;
-  verifiedAt?: number;
-}) {
-  const { robot, missing, interrupted, unverified, verifiedAt } = useLiveRobot(
-    initial,
-    initialVerifiedAt,
-  );
-  const now = useReportClock();
-  const connection = connectionStatus(
-    robot.lastReceivedAt,
-    unverified || !now ? verifiedAt : now,
-  );
-  const showReportAge = connection === "Delayed" || connection === "Offline";
-  const fields = {
-    id: { label: "ID", value: robot.id },
-    manufacturer: { label: "Manufacturer", value: robot.manufacturer },
-    type: { label: "Type", value: formatRobotType(robot.type) },
-    integration: {
-      label: "Integration",
-      value: formatIntegrationType(robot.integrationType),
-    },
-    site: { label: "Site", value: robot.site },
-    area: { label: "Area", value: robot.area ?? "Unknown" },
-    activity: {
-      label: "Activity",
-      value: robot.problemCode
-        ? `${formatActivity(robot.activity)}: Path blocked`
-        : formatActivity(robot.activity),
-    },
-    battery: { label: "Battery", value: formatBattery(robot.batteryPercent) },
-    connection: {
-      label: "Connection",
-      value: (
-        <ConnectionStatus
-          status={
-            robot.lastReceivedAt === null
-              ? "Unknown"
-              : verifiedAt
-                ? connection
-                : "Checking"
-          }
-          unverified={
-            robot.lastReceivedAt !== null && Boolean(verifiedAt) && unverified
-          }
-        />
-      ),
-    },
-    ...(showReportAge
-      ? {
-          "report-age": {
-            label: "Last report",
-            value: reportAge(robot.lastReceivedAt, now || verifiedAt),
-          },
-        }
-      : {}),
-  };
+export default function RobotDetails(initial: RobotContext) {
+  const [pending, setPending] = useState(false);
+  const inFlight = useRef(false);
+  const [notice, setNotice] = useState<{
+    severity: "success" | "error";
+    message: string;
+  } | null>(null);
+  const {
+    robot,
+    siteRobots,
+    missing,
+    interrupted,
+    unverified,
+    verifiedAt,
+    reload,
+    invalidate,
+  } = useLiveRobot(initial, pending);
+  const now = useReportClock(pending);
+  const evaluatedAt = unverified || !now ? verifiedAt : now;
+  const connection = connectionStatus(robot.lastReceivedAt, evaluatedAt);
+  const stale = connection === "Delayed" || connection === "Offline";
+  async function act(action: RobotAction) {
+    if (
+      inFlight.current ||
+      unverified ||
+      actionUnavailable(robot, action, Date.now())
+    )
+      return;
+    invalidate();
+    inFlight.current = true;
+    setPending(true);
+    setNotice(null);
+    try {
+      await sendRobotAction(robot.id, action);
+      setNotice({
+        severity: "success",
+        message: `${actionLabels[action]} requested.`,
+      });
+    } catch {
+      setNotice({
+        severity: "error",
+        message: "Unable to request activity change. Please try again.",
+      });
+    } finally {
+      inFlight.current = false;
+      setPending(false);
+      reload();
+    }
+  }
   return (
-    <Stack data-testid="robot-details" spacing={3}>
+    <Stack
+      data-testid="robot-details"
+      spacing={3}
+      sx={{ width: "100%", maxWidth: 1440, mx: "auto" }}
+    >
       <Breadcrumbs aria-label="Breadcrumb">
         <Link component={NextLink} href="/">
           Fleet dashboard
         </Link>
         <Typography aria-current="page">{robot.name}</Typography>
       </Breadcrumbs>
-      <Typography component="h1" variant="h4">
-        {robot.name}
-      </Typography>
-      {interrupted && (
-        <Alert data-testid="robot-refresh-warning" severity="warning">
-          Live updates interrupted. Showing last-known data and connection
-          states.
-        </Alert>
-      )}
+      <Box>
+        <Typography
+          component="h1"
+          variant="h4"
+          sx={{ overflowWrap: "anywhere" }}
+        >
+          {robot.name}
+        </Typography>
+        <Typography color="text.secondary" sx={{ mt: 0.5 }}>
+          {robot.manufacturer} · {formatRobotType(robot.type)}
+        </Typography>
+      </Box>
       {missing ? (
-        <Typography data-testid="robot-unavailable">
+        <Alert data-testid="robot-unavailable" severity="info">
           Robot is no longer available.{" "}
           <Link component={NextLink} href="/">
             Fleet dashboard
           </Link>
-        </Typography>
+        </Alert>
       ) : (
-        <Box component="dl" sx={{ m: 0 }}>
-          {Object.entries(fields).map(([field, { label, value }]) => (
-            <Box key={field} sx={{ mb: 2 }}>
-              <Typography component="dt" variant="body2" color="textSecondary">
-                {label}
-              </Typography>
-              <Typography
-                data-testid={`robot-${field}`}
-                component="dd"
-                sx={{ m: 0 }}
-              >
-                {value}
-              </Typography>
-            </Box>
-          ))}
-        </Box>
-      )}
-      {!missing && showReportAge && (
-        <Typography>Telemetry values are last known.</Typography>
+        <>
+          {interrupted && (
+            <Alert data-testid="robot-refresh-warning" severity="warning">
+              Live updates interrupted. Showing last-known data and connection
+              states.
+            </Alert>
+          )}
+          <Paper variant="outlined" sx={{ p: 3 }}>
+            <Stack spacing={3}>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={4}>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Connection
+                  </Typography>
+                  <Box data-testid="robot-connection">
+                    <ConnectionStatus
+                      status={
+                        robot.lastReceivedAt === null
+                          ? "Unknown"
+                          : verifiedAt
+                            ? connection
+                            : "Checking"
+                      }
+                      unverified={unverified}
+                    />
+                  </Box>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    {stale || unverified
+                      ? "Last reported activity"
+                      : "Activity"}
+                  </Typography>
+                  <Typography data-testid="robot-activity" variant="h6">
+                    {formatActivity(robot.activity)}
+                  </Typography>
+                </Box>
+                <Box sx={{ minWidth: 160 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    {stale || unverified ? "Last reported battery" : "Battery"}
+                  </Typography>
+                  <Typography data-testid="robot-battery" variant="h6">
+                    {formatBattery(robot.batteryPercent)}
+                  </Typography>
+                  {robot.batteryPercent !== null && (
+                    <LinearProgress
+                      variant="determinate"
+                      value={robot.batteryPercent}
+                      aria-label="Battery level"
+                      sx={{ mt: 0.5 }}
+                    />
+                  )}
+                </Box>
+              </Stack>
+              {robot.problemCode && (
+                <Alert severity="warning">
+                  Path blocked. Clear the obstruction before retrying activity.
+                </Alert>
+              )}
+              {stale && (
+                <Typography variant="body2" color="text.secondary">
+                  Telemetry values are last known.{" "}
+                  {reportAge(robot.lastReceivedAt, evaluatedAt)}.
+                </Typography>
+              )}
+              <ActivityControls
+                robot={robot}
+                now={evaluatedAt}
+                unverified={unverified || !verifiedAt}
+                pending={pending}
+                onAction={(action) => void act(action)}
+              />
+              {notice && (
+                <Alert
+                  severity={notice.severity}
+                  role={notice.severity === "success" ? "status" : "alert"}
+                  onClose={() => setNotice(null)}
+                >
+                  {notice.message}
+                </Alert>
+              )}
+            </Stack>
+          </Paper>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "1fr",
+                md: "minmax(0, 1.7fr) minmax(0, 1fr)",
+              },
+              gap: 3,
+              alignItems: "start",
+            }}
+          >
+            <LocationMap
+              robot={robot}
+              peers={siteRobots}
+              now={evaluatedAt}
+              unverified={unverified}
+            />
+            <RobotProfile robot={robot} />
+          </Box>
+        </>
       )}
     </Stack>
   );
