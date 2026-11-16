@@ -68,7 +68,7 @@ export default function FleetSummary({
               direction="row"
               spacing={1}
               sx={{
-                alignItems: "baseline",
+                alignItems: "center",
                 flexWrap: "wrap",
                 justifyContent: "center",
               }}

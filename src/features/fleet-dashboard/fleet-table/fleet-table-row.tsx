@@ -163,17 +163,18 @@ export default function FleetTableRow({
         />
       </TableCell>
       <TableCell>
-        <time data-testid="robot-added-at" dateTime={robot.createdAt}>
+        <Typography
+          component="time"
+          variant="body2"
+          data-testid="robot-added-at"
+          dateTime={robot.createdAt}
+          sx={{ fontVariantNumeric: "tabular-nums" }}
+        >
           {registered.date}
-          <Typography
-            component="span"
-            variant="body2"
-            color="textSecondary"
-            sx={{ display: "block" }}
-          >
+          <Box component="span" sx={{ display: "block" }}>
             {registered.time}
-          </Typography>
-        </time>
+          </Box>
+        </Typography>
       </TableCell>
       <TableCell align="right" sx={{ position: "relative" }}>
         <RobotActions
