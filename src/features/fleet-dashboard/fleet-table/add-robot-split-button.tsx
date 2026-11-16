@@ -1,5 +1,9 @@
 "use client";
 
+import DeleteIcon from "@mui/icons-material/Delete";
+import Divider from "@mui/material/Divider";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import ListItemText from "@mui/material/ListItemText";
 import AddIcon from "@mui/icons-material/Add";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import Button from "@mui/material/Button";
@@ -13,17 +17,19 @@ export default function AddRobotSplitButton({
   loading,
   disabled,
   onAdd,
+  onDeleteAll,
 }: {
   buttonRef: Ref<HTMLButtonElement>;
   loading: boolean;
   disabled: boolean;
+  onDeleteAll: () => void;
   onAdd: (trigger: HTMLButtonElement, count: 1 | 10 | 100) => void;
 }) {
   const [anchor, setAnchor] = useState<HTMLButtonElement | null>(null);
   const id = useId();
   return (
     <>
-      <ButtonGroup variant="outlined" aria-label="Add robots">
+      <ButtonGroup variant="contained" color="primary" aria-label="Add robots">
         <Button
           data-testid="fleet-add-robot"
           ref={buttonRef}
@@ -65,6 +71,21 @@ export default function AddRobotSplitButton({
             Add {count} robots
           </MenuItem>
         ))}
+        <Divider />
+        <MenuItem
+          onClick={() => {
+            onDeleteAll();
+            setAnchor(null);
+          }}
+        >
+          <ListItemIcon>
+            <DeleteIcon color="error" />
+          </ListItemIcon>
+          <ListItemText
+            primary="Delete all robots"
+            slotProps={{ primary: { color: "error" } }}
+          />
+        </MenuItem>
       </Menu>
     </>
   );

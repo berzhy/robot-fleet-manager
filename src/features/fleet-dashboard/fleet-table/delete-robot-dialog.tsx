@@ -20,7 +20,7 @@ export default function DeleteRobotDialog({
   children,
 }: {
   children?: ReactNode;
-  robot: Robot;
+  robot: Robot | null;
   open: boolean;
   pending: boolean;
   onCancel: () => void;
@@ -43,13 +43,17 @@ export default function DeleteRobotDialog({
         transition: { onExited, onEntered: () => cancelRef.current?.focus() },
       }}
     >
-      <DialogTitle id={`${id}-title`}>Delete robot?</DialogTitle>
+      <DialogTitle id={`${id}-title`}>
+        {robot ? "Delete robot?" : "Delete all robots?"}
+      </DialogTitle>
       <DialogContent>
         <DialogContentText
           data-testid="delete-robot-description"
           id={`${id}-description`}
         >
-          Delete “{robot.name}”? This cannot be undone.
+          {robot
+            ? `Delete “${robot.name}”? This cannot be undone.`
+            : "Delete all robots in the fleet, including those hidden by filters? This cannot be undone."}
         </DialogContentText>
       </DialogContent>
       <DialogActions>
@@ -68,7 +72,7 @@ export default function DeleteRobotDialog({
           loading={pending}
           onClick={onConfirm}
         >
-          Delete
+          {robot ? "Delete" : "Delete all robots"}
         </Button>
       </DialogActions>
       {children}

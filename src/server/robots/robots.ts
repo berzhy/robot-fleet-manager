@@ -191,6 +191,10 @@ export function createRobots(
   });
 }
 
+export function deleteAllRobots(db: FleetDatabase) {
+  db.delete(robots).run();
+}
+
 export function deleteRobot(db: FleetDatabase, id: string) {
   return db.delete(robots).where(eq(robots.id, id)).run().changes > 0;
 }

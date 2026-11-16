@@ -673,3 +673,40 @@ test("detail context includes only same-site peers and returns 404 for a missing
   });
   expect(robotHandlers(() => db).context("missing").status).toBe(404);
 });
+
+test("bulk deletion removes the entire fleet and cascades telemetry, including on repeated calls", () => {
+  const records = createRobots(db, [input, { ...input, site: "Berlin" }]);
+  db.insert(latestTelemetry)
+    .values(
+      records.map((robot) => ({
+        robotId: robot.id,
+        activity: "idle" as const,
+        observedAt: new Date().toISOString(),
+      })),
+    )
+    .run();
+  const handlers = robotHandlers(() => db);
+  expect(handlers.removeAll().status).toBe(204);
+  expect(listRobots(db, 0)).toMatchObject({
+    items: [],
+    total: 0,
+    fleetTotal: 0,
+  });
+  expect(db.select().from(latestTelemetry).all()).toEqual([]);
+  expect(handlers.removeAll().status).toBe(204);
+});
+
+test("failed bulk deletion returns an error and rolls back every deletion", async () => {
+  createRobots(db, [input, input]);
+  db.$client.exec(
+    "CREATE TRIGGER reject_deletion AFTER DELETE ON robots BEGIN SELECT RAISE(ABORT, 'Deletion failed'); END",
+  );
+  const log = vi.spyOn(console, "error").mockImplementation(() => {});
+  const result = robotHandlers(() => db).removeAll();
+  expect(result.status).toBe(500);
+  expect(await result.json()).toMatchObject({
+    error: { code: "INTERNAL_ERROR" },
+  });
+  expect(listRobots(db, 0).total).toBe(2);
+  expect(log).toHaveBeenCalledOnce();
+});

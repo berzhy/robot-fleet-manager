@@ -374,3 +374,46 @@ test("search combines with filters and tiles, clears through chips and recovers 
   await expect(search).toBeVisible();
   await page.screenshot({ path: "/tmp/fleet-search-narrow.png" });
 });
+
+test("delete all clears robots outside the active search and allows adding again", async ({
+  page,
+  request,
+}) => {
+  const records = [];
+  for (const name of ["Bulk visible", "Hidden robot"]) {
+    const response = await request.post("/api/robots", {
+      data: {
+        name,
+        site: "Munich",
+        manufacturer: "Maker",
+        type: "inspection",
+        integrationType: "ros2",
+      },
+    });
+    expect(response.status()).toBe(201);
+    records.push((await response.json()) as Robot);
+  }
+  await page.goto("/");
+  await expect(page.getByTestId(`robot-row-${records[1].id}`)).toBeVisible();
+  await page
+    .getByRole("textbox", { name: "Search robots" })
+    .fill("Bulk visible");
+  await expect(page.getByTestId(`robot-row-${records[1].id}`)).toBeHidden();
+  await page.getByTestId("fleet-add-options").click();
+  await page.getByRole("menuitem", { name: "Delete all robots" }).click();
+  const dialog = page.getByRole("dialog", { name: "Delete all robots?" });
+  await expect(dialog).toContainText("including those hidden by filters");
+  await dialog.getByRole("button", { name: "Delete all robots" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByTestId("fleet-notification")).toContainText(
+    "All robots deleted.",
+  );
+  await expect(page.getByTestId("fleet-empty")).toBeVisible();
+  expect(await registeredRobots(request)).toHaveLength(0);
+  await page.getByRole("textbox", { name: "Search robots" }).fill("");
+  await expect(
+    page.getByRole("textbox", { name: "Search robots" }),
+  ).toHaveValue("");
+  await addRobot(page);
+  expect(await registeredRobots(request)).toHaveLength(1);
+});

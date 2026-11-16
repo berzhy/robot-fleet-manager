@@ -15,6 +15,7 @@ import {
   createRobots,
   createRobot,
   deleteRobot,
+  deleteAllRobots,
   getRobot,
   getRobotContext,
   listRobots,
@@ -128,6 +129,12 @@ export function robotHandlers(database: () => FleetDatabase) {
         return context
           ? jsonResponse(context)
           : errorResponse(404, "NOT_FOUND", "Robot not found.");
+      });
+    },
+    removeAll() {
+      return safely(() => {
+        deleteAllRobots(database());
+        return new Response(null, { status: 204 });
       });
     },
     remove(id: string) {

@@ -15,6 +15,7 @@ import {
   createRobot,
   createRobots,
   deleteRobot,
+  deleteAllRobots,
   sendRobotAction,
 } from "./api/robot-api";
 import AddRobotSplitButton from "./fleet-table/add-robot-split-button";
@@ -37,7 +38,7 @@ export default function FleetDashboard() {
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const inFlightRef = useRef(false);
   const [deleteTarget, setDeleteTarget] = useState<{
-    robot: Robot;
+    robot: Robot | null;
     open: boolean;
   } | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -72,11 +73,17 @@ export default function FleetDashboard() {
   } | null>(null);
 
   useEffect(() => {
-    if (adding || state.status === "loading" || !addFocusRef.current) return;
+    if (
+      adding ||
+      deleteTarget ||
+      state.status === "loading" ||
+      !addFocusRef.current
+    )
+      return;
     const target = addFocusRef.current;
     addFocusRef.current = null;
     (target.isConnected ? target : addButtonRef.current)?.focus();
-  }, [adding, state.status]);
+  }, [adding, deleteTarget, state.status]);
 
   async function addRobot(trigger: HTMLButtonElement, count: 1 | 10 | 100 = 1) {
     if (inFlightRef.current || deleteTarget || state.status === "loading")
@@ -154,6 +161,14 @@ export default function FleetDashboard() {
     setDeleteTarget({ robot, open: true });
   }
 
+  function requestDeleteAll() {
+    if (inFlightRef.current || deleteTarget) return;
+    invalidate();
+    setNotification(null);
+    returnFocusRef.current = addButtonRef.current;
+    setDeleteTarget({ robot: null, open: true });
+  }
+
   function closeDeleteDialog() {
     if (inFlightRef.current) return;
     setDeleteTarget((target) => (target ? { ...target, open: false } : null));
@@ -166,10 +181,13 @@ export default function FleetDashboard() {
     inFlightRef.current = true;
     setDeleting(true);
     try {
-      await deleteRobot(deleteTarget.robot.id);
+      if (deleteTarget.robot) await deleteRobot(deleteTarget.robot.id);
+      else await deleteAllRobots();
       setNotification({
         severity: "success",
-        message: `“${deleteTarget.robot.name}” deleted.`,
+        message: deleteTarget.robot
+          ? `“${deleteTarget.robot.name}” deleted.`
+          : "All robots deleted.",
       });
       returnFocusRef.current = headingRef.current;
       setDeleteTarget({ ...deleteTarget, open: false });
@@ -177,7 +195,9 @@ export default function FleetDashboard() {
     } catch {
       setNotification({
         severity: "error",
-        message: `Unable to delete “${deleteTarget.robot.name}”. Please try again.`,
+        message: deleteTarget.robot
+          ? `Unable to delete “${deleteTarget.robot.name}”. Please try again.`
+          : "Unable to delete all robots. Please try again.",
       });
     } finally {
       inFlightRef.current = false;
@@ -188,6 +208,10 @@ export default function FleetDashboard() {
   function finishDialogClose() {
     setDeleteTarget(null);
     const target = returnFocusRef.current;
+    if (target === addButtonRef.current) {
+      addFocusRef.current = target;
+      return;
+    }
     (target?.isConnected ? target : headingRef.current)?.focus();
   }
 
@@ -241,6 +265,7 @@ export default function FleetDashboard() {
           Fleet dashboard
         </Typography>
         <AddRobotSplitButton
+          onDeleteAll={requestDeleteAll}
           buttonRef={addButtonRef}
           loading={adding}
           disabled={

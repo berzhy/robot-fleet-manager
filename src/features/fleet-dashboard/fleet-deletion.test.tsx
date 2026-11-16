@@ -246,3 +246,87 @@ test("success notification closes automatically after six seconds", async () => 
   });
   expect(screen.queryByTestId("fleet-notification")).not.toBeInTheDocument();
 });
+
+async function openDeleteAll() {
+  const trigger = await screen.findByTestId("fleet-add-options");
+  await waitFor(() => expect(trigger).toBeEnabled());
+  vi.spyOn(trigger, "getBoundingClientRect").mockReturnValue(
+    new DOMRect(0, 0, 40, 40),
+  );
+  fireEvent.click(trigger);
+  fireEvent.click(
+    await screen.findByRole("menuitem", { name: "Delete all robots" }),
+  );
+  return screen.findByRole("dialog", { name: "Delete all robots?" });
+}
+
+test("bulk deletion explains fleet-wide scope and cancellation makes no DELETE request", async () => {
+  const fetcher = vi
+    .fn()
+    .mockImplementation(() => Promise.resolve(response([robot])));
+  vi.stubGlobal("fetch", fetcher);
+  render(<FleetDashboard />);
+  const dialog = await openDeleteAll();
+  expect(dialog).toHaveTextContent("including those hidden by filters");
+  await waitFor(() =>
+    expect(
+      within(dialog).getByRole("button", { name: "Cancel" }),
+    ).toHaveFocus(),
+  );
+  fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+  await waitFor(() => expect(dialog).not.toBeInTheDocument());
+  await waitFor(() =>
+    expect(screen.getByTestId("fleet-add-robot")).toHaveFocus(),
+  );
+  expect(
+    fetcher.mock.calls.some(
+      (call: unknown[]) => (call[1] as RequestInit)?.method === "DELETE",
+    ),
+  ).toBe(false);
+});
+
+test("bulk deletion blocks duplicate clicks and dismissal, supports retry and refreshes to empty", async () => {
+  let resolve!: (value: Response) => void;
+  const fetcher = vi
+    .fn()
+    .mockResolvedValueOnce(response([robot]))
+    .mockReturnValueOnce(
+      new Promise<Response>((r) => {
+        resolve = r;
+      }),
+    )
+    .mockResolvedValueOnce(new Response(null, { status: 204 }))
+    .mockResolvedValueOnce(response([]));
+  vi.stubGlobal("fetch", fetcher);
+  render(<FleetDashboard />);
+  const dialog = await openDeleteAll();
+  const confirm = within(dialog).getByRole("button", {
+    name: "Delete all robots",
+  });
+  fireEvent.click(confirm);
+  fireEvent.click(confirm);
+  expect(confirm).toBeDisabled();
+  expect(within(dialog).getByRole("button", { name: "Cancel" })).toBeDisabled();
+  fireEvent.keyDown(dialog, { key: "Escape" });
+  expect(dialog).toBeInTheDocument();
+  expect(fetcher).toHaveBeenCalledTimes(2);
+  act(() => resolve(new Response(null, { status: 500 })));
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Unable to delete all robots. Please try again.",
+  );
+  expect(screen.getByTestId("robot-row-one")).toBeInTheDocument();
+  expect(confirm).toBeEnabled();
+  fireEvent.click(confirm);
+  await screen.findByTestId("fleet-empty");
+  await waitFor(() => expect(dialog).not.toBeInTheDocument());
+  expect(screen.getByTestId("fleet-notification")).toHaveTextContent(
+    "All robots deleted.",
+  );
+  expect(screen.getByTestId("fleet-heading")).toHaveFocus();
+  expect(fetcher).toHaveBeenNthCalledWith(2, "/api/robots", {
+    method: "DELETE",
+  });
+  expect(fetcher).toHaveBeenNthCalledWith(3, "/api/robots", {
+    method: "DELETE",
+  });
+});

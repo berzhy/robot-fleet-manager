@@ -101,3 +101,8 @@ export async function getRobotContext(
   if (!response.ok) throw new Error("Unable to refresh robot context.");
   return response.json() as Promise<RobotContext>;
 }
+
+export async function deleteAllRobots(): Promise<void> {
+  const response = await fetch("/api/robots", { method: "DELETE" });
+  if (response.status !== 204) throw new Error("Unable to delete all robots.");
+}

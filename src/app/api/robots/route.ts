@@ -10,3 +10,8 @@ export async function POST(request: Request) {
   await io();
   return handlers.create(request);
 }
+
+export async function DELETE() {
+  await io();
+  return handlers.removeAll();
+}
