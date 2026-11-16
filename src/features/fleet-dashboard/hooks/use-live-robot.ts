@@ -17,7 +17,6 @@ export default function useLiveRobot(initial: RobotContext, paused = false) {
     setRefreshing(true);
   }, []);
   const [missing, setMissing] = useState(false);
-  const [verifiedAt, setVerifiedAt] = useState(initial.verifiedAt);
   useEffect(() => {
     if (paused) return;
     let disposed = false;
@@ -50,7 +49,6 @@ export default function useLiveRobot(initial: RobotContext, paused = false) {
         setSnapshot(result);
         setInterrupted(false);
         setUnverified(false);
-        setVerifiedAt(result.verifiedAt);
       } catch {
         if (disposed || current.signal.aborted) return;
         setRefreshing(false);
@@ -78,7 +76,6 @@ export default function useLiveRobot(initial: RobotContext, paused = false) {
     interrupted,
     refreshing,
     unverified,
-    verifiedAt,
     missing,
     reload,
     invalidate,

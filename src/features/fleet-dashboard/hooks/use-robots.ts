@@ -14,7 +14,7 @@ export default function useRobots(paused = false) {
     pageSize: number;
     filters: RobotFilters;
   }>({ page: 0, pageSize: robotPageSize, filters: { view: "all" } });
-  const [state, setState] = useState<RobotQueryState>({ status: "loading" });
+  const [status, setStatus] = useState<RobotQueryState["status"]>("loading");
   const [interrupted, setInterrupted] = useState(false);
   const [hidden, setHidden] = useState(
     () => typeof document !== "undefined" && document.hidden,
@@ -30,19 +30,19 @@ export default function useRobots(paused = false) {
   }
   function setPage(page: number) {
     invalidate();
-    setState({ status: "loading" });
+    setStatus("loading");
     setRequest((previous) => ({ ...previous, page }));
   }
   function setPageSize(pageSize: number) {
     invalidate();
-    setState({ status: "loading" });
+    setStatus("loading");
     setRequest((previous) => ({ ...previous, page: 0, pageSize }));
   }
   function setFilters(filters: RobotFilters) {
     announceNext.current = true;
     setAnnouncement("");
     invalidate();
-    setState({ status: "loading" });
+    setStatus("loading");
     setRequest((previous) => ({ ...previous, page: 0, filters }));
   }
   function reload() {
@@ -70,7 +70,7 @@ export default function useRobots(paused = false) {
         if (controller.signal.aborted || disposed) return;
         const last = lastRobotPage(result.total, result.pageSize);
         if (request.page > last) {
-          setState({ status: "loading" });
+          setStatus("loading");
           setRequest((previous) => ({ ...previous, page: last }));
           return;
         }
@@ -80,16 +80,14 @@ export default function useRobots(paused = false) {
           );
           announceNext.current = false;
         }
-        setState({ status: "success", robots: result.items });
+        setStatus("success");
         setInterrupted(false);
         setSnapshot(result);
         setHidden(false);
       } catch {
         if (controller.signal.aborted || disposed) return;
         setInterrupted(true);
-        setState((previous) =>
-          previous.status === "success" ? previous : { status: "error" },
-        );
+        setStatus((previous) => (previous === "success" ? previous : "error"));
       }
       if (!disposed && !controller.signal.aborted)
         timer = setTimeout(() => void poll(), 5000);
@@ -107,6 +105,10 @@ export default function useRobots(paused = false) {
       document.removeEventListener("visibilitychange", visibility);
     };
   }, [request, paused]);
+  const state: RobotQueryState =
+    status === "success" && snapshot
+      ? { status, robots: snapshot.items }
+      : { status: status === "error" ? "error" : "loading" };
   return {
     state,
     announcement,
