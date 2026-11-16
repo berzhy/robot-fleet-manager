@@ -290,9 +290,7 @@ export default function FleetFilters({
             data-testid="fleet-more-filters"
             size="medium"
             variant="text"
-            endIcon={
-              moreAnchor ? <ArrowDropUpIcon /> : <ArrowDropDownIcon />
-            }
+            endIcon={moreAnchor ? <ArrowDropUpIcon /> : <ArrowDropDownIcon />}
             aria-haspopup="dialog"
             aria-expanded={moreAnchor ? true : undefined}
             aria-controls={moreAnchor ? popoverId : undefined}
