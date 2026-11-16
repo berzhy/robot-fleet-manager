@@ -18,7 +18,6 @@ import {
   createRobot,
   deleteRobot,
   getRobot,
-  getRobotSnapshot,
   getRobotContext,
   listRobots,
   robotRegistry,
@@ -57,10 +56,10 @@ test("created metadata persists after reopening with unknown telemetry", () => {
   db.$client.close();
   db = openDatabase(join(directory, "test.sqlite"));
   expect(getRobot(db, robot.id)).toEqual(robot);
-  const snapshot = getRobotSnapshot(db, robot.id);
+  const snapshot = getRobotContext(db, robot.id);
   expect(snapshot?.robot).toEqual(robot);
   expect(typeof snapshot?.verifiedAt).toBe("number");
-  expect(getRobotSnapshot(db, "missing")).toBeUndefined();
+  expect(getRobotContext(db, "missing")).toBeUndefined();
   expect(() => createRobot(db, { ...input, name: " " })).toThrow();
 });
 test("pagination orders newest first with descending id tie-breaking", () => {

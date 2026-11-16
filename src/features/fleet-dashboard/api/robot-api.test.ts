@@ -3,7 +3,7 @@ import { afterEach, expect, test, vi } from "vitest";
 import {
   createRobot,
   getRobots,
-  getRobot,
+  getRobotContext,
   deleteRobot as dataDeleteRobot,
 } from "./robot-api";
 afterEach(() => vi.unstubAllGlobals());
@@ -91,12 +91,14 @@ test("detail requests encode IDs, support cancellation, and distinguish deletion
     .mockResolvedValueOnce(new Response(null, { status: 500 }));
   vi.stubGlobal("fetch", fetcher);
   const controller = new AbortController();
-  expect(await getRobot("robot/id", controller.signal)).toBeNull();
-  expect(fetcher).toHaveBeenCalledWith("/api/robots/robot%2Fid", {
+  expect(await getRobotContext("robot/id", controller.signal)).toBeNull();
+  expect(fetcher).toHaveBeenCalledWith("/api/robots/robot%2Fid/context", {
     cache: "no-store",
     signal: controller.signal,
   });
-  await expect(getRobot("failure")).rejects.toThrow("Unable to refresh robot.");
+  await expect(getRobotContext("failure")).rejects.toThrow(
+    "Unable to refresh robot context.",
+  );
 });
 
 test("encodes combined filter values in the list request", async () => {

@@ -270,11 +270,6 @@ export function robotRegistry(db: FleetDatabase): Robot[] {
     .all();
 }
 
-export function getRobotSnapshot(db: FleetDatabase, id: string) {
-  const robot = getRobot(db, id);
-  return robot ? { robot, verifiedAt: Date.now() } : undefined;
-}
-
 export function getRobotContext(db: FleetDatabase, id: string) {
   return db.transaction((tx) => {
     const robot = getRobot(tx, id);

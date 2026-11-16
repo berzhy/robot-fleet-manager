@@ -59,19 +59,6 @@ export async function createRobots(
   return result.items;
 }
 
-export async function getRobot(
-  id: string,
-  signal?: AbortSignal,
-): Promise<Robot | null> {
-  const response = await fetch(`/api/robots/${encodeURIComponent(id)}`, {
-    cache: "no-store",
-    signal,
-  });
-  if (response.status === 404) return null;
-  if (!response.ok) throw new Error("Unable to refresh robot.");
-  return response.json() as Promise<Robot>;
-}
-
 export async function sendRobotAction(
   id: string,
   action: RobotAction,
