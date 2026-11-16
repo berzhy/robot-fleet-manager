@@ -1,8 +1,11 @@
+import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import Typography from "@mui/material/Typography";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { io } from "next/cache";
+import { createQueryClient } from "@/query/query-client";
+import { robotKeys } from "@/features/fleet-dashboard/api/robot-queries";
 import { getRobotContext } from "@/server/robots/robots";
 import { getDatabase } from "@/server/db/runtime-database";
 import RobotDetails from "@/features/fleet-dashboard/robot-details/robot-details";
@@ -30,5 +33,13 @@ async function RobotContent({
   await io();
   const snapshot = getRobotContext(getDatabase(), robotId);
   if (!snapshot) notFound();
-  return <RobotDetails {...snapshot} />;
+
+  const client = createQueryClient();
+  client.setQueryData(robotKeys.context(robotId), snapshot);
+
+  return (
+    <HydrationBoundary state={dehydrate(client)}>
+      <RobotDetails {...snapshot} />
+    </HydrationBoundary>
+  );
 }

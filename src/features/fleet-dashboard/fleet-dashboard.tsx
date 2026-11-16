@@ -12,13 +12,8 @@ import type { Robot } from "@/modules/robots/robot";
 import type { RobotAction } from "@/modules/robots/robot-actions";
 
 import ActionNotification from "./action-notification";
-import {
-  createRobot,
-  createRobots,
-  deleteAllRobots,
-  deleteRobot,
-  sendRobotAction,
-} from "./api/robot-api";
+import { isRequestTimeout } from "./api/robot-api";
+import useRobotMutations from "./hooks/use-robot-mutations";
 import FleetFilters from "./fleet-filters/fleet-filters";
 import FleetSummary from "./fleet-filters/fleet-summary";
 import AddRobotSplitButton from "./fleet-table/add-robot-split-button";
@@ -35,12 +30,10 @@ export default function FleetDashboard() {
   const [menuOpen, setMenuOpen] = useState(false);
   const addButtonRef = useRef<HTMLButtonElement>(null);
   const addFocusRef = useRef<HTMLElement | null>(null);
-  const [mutation, setMutation] = useState<"add" | "action" | "delete" | null>(
-    null,
-  );
-  const adding = mutation === "add";
-  const acting = mutation === "action";
-  const deleting = mutation === "delete";
+  const { add, remove, command } = useRobotMutations();
+  const adding = add.isPending;
+  const acting = command.isPending;
+  const deleting = remove.isPending;
 
   const headingRef = useRef<HTMLHeadingElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
@@ -67,8 +60,8 @@ export default function FleetDashboard() {
     pageSize,
     setPage,
     setPageSize,
-    reload,
-    invalidate,
+    refresh,
+    cancelRefresh,
     interrupted,
     unverified,
     verifiedAt,
@@ -86,6 +79,7 @@ export default function FleetDashboard() {
   // settle; a poll may have replaced the recorded trigger meanwhile.
   useEffect(() => {
     if (
+      inFlightRef.current ||
       adding ||
       deleteTarget ||
       state.status === "loading" ||
@@ -101,19 +95,15 @@ export default function FleetDashboard() {
     if (inFlightRef.current || deleteTarget || state.status === "loading")
       return;
 
-    invalidate();
+    cancelRefresh();
     inFlightRef.current = true;
-    setMutation("add");
     setNotification(null);
     addFocusRef.current = trigger;
 
     try {
-      const robots =
-        count === 1
-          ? [await createRobot(generateRobotInput())]
-          : await createRobots(
-              Array.from({ length: count }, () => generateRobotInput()),
-            );
+      const robots = await add.mutateAsync(
+        Array.from({ length: count }, () => generateRobotInput()),
+      );
 
       setNotification({
         severity: "success",
@@ -123,18 +113,17 @@ export default function FleetDashboard() {
             : `${robots.length} robots added.`,
       });
       addFocusRef.current = addButtonRef.current;
-      reload();
-    } catch {
+    } catch (error) {
       setNotification({
         severity: "error",
-        message:
-          count === 1
+        message: isRequestTimeout(error)
+          ? "The add request timed out. Its outcome is uncertain; checking the fleet before you try again."
+          : count === 1
             ? "Unable to add robot. Please try again."
             : "Unable to add robots. Please try again.",
       });
     } finally {
       inFlightRef.current = false;
-      setMutation(null);
     }
   }
 
@@ -142,12 +131,11 @@ export default function FleetDashboard() {
     if (inFlightRef.current) return;
 
     inFlightRef.current = true;
-    invalidate();
-    setMutation("action");
+    cancelRefresh();
     setNotification(null);
 
     try {
-      await sendRobotAction(robot.id, action);
+      await command.mutateAsync({ id: robot.id, action });
 
       const messages = {
         start: "Start requested",
@@ -159,21 +147,21 @@ export default function FleetDashboard() {
         severity: "success",
         message: `${messages[action]} for “${robot.name}”.`,
       });
-    } catch {
+    } catch (error) {
       setNotification({
         severity: "error",
-        message: `Unable to request action for “${robot.name}”. Please try again.`,
+        message: isRequestTimeout(error)
+          ? "The command timed out. Its outcome is uncertain; checking reported activity."
+          : `Unable to request action for “${robot.name}”. Please try again.`,
       });
     } finally {
       inFlightRef.current = false;
-      setMutation(null);
-      reload();
     }
   }
 
   function requestDelete(robot: Robot, trigger: HTMLButtonElement) {
     if (inFlightRef.current) return;
-    invalidate();
+    cancelRefresh();
     setNotification(null);
     returnFocusRef.current = trigger;
     setDeleteTarget({ robot, open: true });
@@ -181,7 +169,7 @@ export default function FleetDashboard() {
 
   function requestDeleteAll() {
     if (inFlightRef.current || deleteTarget) return;
-    invalidate();
+    cancelRefresh();
     setNotification(null);
     returnFocusRef.current = addButtonRef.current;
     setDeleteTarget({ robot: null, open: true });
@@ -196,13 +184,11 @@ export default function FleetDashboard() {
     if (!deleteTarget?.open || inFlightRef.current) return;
 
     setNotification(null);
-    invalidate();
+    cancelRefresh();
     inFlightRef.current = true;
-    setMutation("delete");
 
     try {
-      if (deleteTarget.robot) await deleteRobot(deleteTarget.robot.id);
-      else await deleteAllRobots();
+      await remove.mutateAsync(deleteTarget.robot?.id ?? null);
 
       setNotification({
         severity: "success",
@@ -212,17 +198,17 @@ export default function FleetDashboard() {
       });
       returnFocusRef.current = headingRef.current;
       setDeleteTarget({ ...deleteTarget, open: false });
-      reload();
-    } catch {
+    } catch (error) {
       setNotification({
         severity: "error",
-        message: deleteTarget.robot
-          ? `Unable to delete “${deleteTarget.robot.name}”. Please try again.`
-          : "Unable to delete all robots. Please try again.",
+        message: isRequestTimeout(error)
+          ? "The delete request timed out. Its outcome is uncertain; close this dialog to refresh the fleet before trying again."
+          : deleteTarget.robot
+            ? `Unable to delete “${deleteTarget.robot.name}”. Please try again.`
+            : "Unable to delete all robots. Please try again.",
       });
     } finally {
       inFlightRef.current = false;
-      setMutation(null);
     }
   }
 
@@ -311,9 +297,8 @@ export default function FleetDashboard() {
             <FleetSummary
               filters={filters}
               onChange={setFilters}
-              summary={
-                state.status === "success" ? snapshot?.summary : undefined
-              }
+              summary={snapshot?.summary}
+              updating={state.status === "loading"}
             />
             <Divider />
             <FleetFilters
@@ -347,7 +332,7 @@ export default function FleetDashboard() {
         pageSize={pageSize}
         onPageSizeChange={setPageSize}
         onPageChange={setPage}
-        onRetry={reload}
+        onRetry={refresh}
         onAction={(robot, action) => void actOnRobot(robot, action)}
         onDelete={requestDelete}
         onAdd={(trigger) => void addRobot(trigger)}

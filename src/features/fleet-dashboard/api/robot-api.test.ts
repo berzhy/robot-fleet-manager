@@ -2,6 +2,8 @@ import { pageMetadata } from "../test-fixtures";
 import { afterEach, expect, test, vi } from "vitest";
 import {
   createRobot,
+  createRobots,
+  deleteAllRobots,
   getRobots,
   getRobotContext,
   deleteRobot as dataDeleteRobot,
@@ -34,7 +36,7 @@ test("requests a server page with cancellation and rejects HTTP failures", async
     evaluatedAt: expect.any(Number) as number,
   });
   expect(fetcher).toHaveBeenCalledWith("/api/robots?page=2&pageSize=20", {
-    signal: controller.signal,
+    signal: expect.any(AbortSignal) as AbortSignal,
     cache: "no-store",
   });
 
@@ -51,6 +53,7 @@ test("deletes an encoded robot id, accepts an empty 204 and rejects failures", a
   await expect(dataDeleteRobot("robot/id")).resolves.toBeUndefined();
   expect(fetcher).toHaveBeenCalledWith("/api/robots/robot%2Fid", {
     method: "DELETE",
+    signal: expect.any(AbortSignal) as AbortSignal,
   });
 
   await expect(dataDeleteRobot("missing")).rejects.toThrow(
@@ -85,6 +88,7 @@ test("creates metadata using POST and requires a 201 response", async () => {
   expect(await createRobot(input)).toEqual(created);
   expect(fetcher).toHaveBeenCalledWith("/api/robots", {
     method: "POST",
+    signal: expect.any(AbortSignal) as AbortSignal,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   });
@@ -103,7 +107,7 @@ test("detail requests encode IDs, support cancellation, and distinguish deletion
   expect(await getRobotContext("robot/id", controller.signal)).toBeNull();
   expect(fetcher).toHaveBeenCalledWith("/api/robots/robot%2Fid/context", {
     cache: "no-store",
-    signal: controller.signal,
+    signal: expect.any(AbortSignal) as AbortSignal,
   });
 
   await expect(getRobotContext("failure")).rejects.toThrow(
@@ -143,3 +147,66 @@ test("encodes literal search text and combined filters in the list request", asy
     type: "inspection",
   });
 });
+
+test("caller cancellation aborts the combined read signal", async () => {
+  const fetcher = vi.fn().mockResolvedValue(Response.json({ items: [] }));
+  vi.stubGlobal("fetch", fetcher);
+  const controller = new AbortController();
+  await getRobots(0, 10, controller.signal);
+  const signal = (fetcher.mock.calls[0] as unknown as [string, RequestInit])[1]
+    .signal!;
+  expect(signal.aborted).toBe(false);
+  controller.abort();
+  expect(signal.aborted).toBe(true);
+});
+
+test.each(["create", "batch", "delete", "bulk-delete"])(
+  "%s requests terminate on their deadline without retrying",
+  async (operation) => {
+    const timeout = new AbortController();
+    const deadline = vi
+      .spyOn(AbortSignal, "timeout")
+      .mockReturnValue(timeout.signal);
+    const fetcher = vi.fn(
+      (_url: string, options: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          options.signal!.addEventListener(
+            "abort",
+            () => {
+              const reason: unknown = options.signal!.reason;
+              reject(
+                reason instanceof Error || reason instanceof DOMException
+                  ? reason
+                  : new Error("Request aborted"),
+              );
+            },
+            { once: true },
+          );
+        }),
+    );
+    vi.stubGlobal("fetch", fetcher);
+    const input = {
+      name: "Test",
+      manufacturer: "Maker",
+      type: "inspection" as const,
+      integrationType: "vendor-api" as const,
+      site: "Munich",
+    };
+    const request =
+      operation === "create"
+        ? createRobot(input)
+        : operation === "batch"
+          ? createRobots([input])
+          : operation === "delete"
+            ? dataDeleteRobot("one")
+            : deleteAllRobots();
+    const failure = expect(request).rejects.toMatchObject({
+      name: "TimeoutError",
+    });
+    timeout.abort(new DOMException("Timed out", "TimeoutError"));
+    await failure;
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(deadline).toHaveBeenCalledWith(5000);
+    vi.restoreAllMocks();
+  },
+);

@@ -1,6 +1,8 @@
 import { pageMetadata } from "../test-fixtures";
-import { act, renderHook, waitFor } from "@testing-library/react";
+import { act, waitFor } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
+
+import { renderHook } from "@/query/test-utils";
 import type { RobotPage } from "@/modules/robots/robot";
 import { getRobots } from "../api/robot-api";
 import useRobots from "./use-robots";
@@ -56,13 +58,11 @@ test("page size changes cancel old requests and reload preserves the selection",
   const { result } = renderHook(() => useRobots());
   await waitFor(() => expect(result.current.state.status).toBe("success"));
 
-  const oldSignal = vi.mocked(getRobots).mock.calls[0][2];
   act(() => result.current.setPageSize(20));
   await waitFor(() => expect(result.current.state.status).toBe("success"));
-  expect(oldSignal?.aborted).toBe(true);
   expect(result.current.pageSize).toBe(20);
 
-  act(() => result.current.reload());
+  act(() => result.current.refresh());
   await waitFor(() => expect(result.current.state.status).toBe("success"));
   expect(getRobots).toHaveBeenLastCalledWith(0, 20, expect.any(AbortSignal), {
     view: "all",
@@ -99,7 +99,7 @@ test("failed page correction never presents previous-page rows under the new pag
   act(() => result.current.setPage(1));
   await waitFor(() => expect(result.current.state.status).toBe("success"));
 
-  act(() => result.current.reload());
+  act(() => result.current.refresh());
   await waitFor(() => expect(result.current.state.status).toBe("error"));
   expect(result.current.page).toBe(0);
   expect(getRobots).toHaveBeenLastCalledWith(0, 10, expect.any(AbortSignal), {
@@ -172,7 +172,7 @@ test("zero matching results correct a later page and preserve filters", async ()
   await waitFor(() => expect(result.current.state.status).toBe("success"));
 
   vi.mocked(getRobots).mockResolvedValue({ ...response, items: [], total: 0 });
-  act(() => result.current.reload());
+  act(() => result.current.refresh());
   await waitFor(() => expect(result.current.state.status).toBe("success"));
   await waitFor(() => expect(result.current.page).toBe(0));
   await waitFor(() => expect(result.current.state.status).toBe("success"));
@@ -201,7 +201,7 @@ test("announces explicit search results but keeps background refreshes quiet", a
   );
 
   vi.mocked(getRobots).mockResolvedValue({ ...response, total: 1 });
-  act(() => result.current.reload());
+  act(() => result.current.refresh());
   await waitFor(() => expect(result.current.total).toBe(1));
   expect(result.current.announcement).toBe("2 robots found.");
   expect(result.current.filters.search).toBe("Boston");

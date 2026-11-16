@@ -2,12 +2,13 @@ import { pageMetadata } from "./test-fixtures";
 import {
   act,
   fireEvent,
-  render,
   screen,
   waitFor,
   within,
 } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
+
+import { render } from "@/query/test-utils";
 
 import type { Robot } from "@/modules/robots/robot";
 
@@ -53,8 +54,14 @@ async function openDelete() {
   vi.spyOn(trigger, "getBoundingClientRect").mockReturnValue(
     new DOMRect(0, 0, 40, 40),
   );
-  fireEvent.click(trigger);
-  fireEvent.click(await screen.findByTestId("robot-delete"));
+  await act(async () => {
+    fireEvent.click(trigger);
+    await Promise.resolve();
+  });
+  await act(async () => {
+    fireEvent.click(await screen.findByTestId("robot-delete"));
+    await Promise.resolve();
+  });
   return screen.findByTestId("delete-robot-dialog");
 }
 
@@ -85,7 +92,10 @@ test("menu targets the robot, cancellation sends no DELETE and restores focus", 
     expect(within(dialog).getByTestId("delete-robot-cancel")).toHaveFocus(),
   );
 
-  fireEvent.click(within(dialog).getByTestId("delete-robot-cancel"));
+  await act(async () => {
+    fireEvent.click(within(dialog).getByTestId("delete-robot-cancel"));
+    await Promise.resolve();
+  });
   await waitFor(() =>
     expect(screen.queryByTestId("delete-robot-dialog")).not.toBeInTheDocument(),
   );
@@ -116,8 +126,14 @@ test("pending deletion blocks duplicate submission and dismissal; failure permit
 
   const dialog = await openDelete();
   const confirm = within(dialog).getByTestId("delete-robot-confirm");
-  fireEvent.click(confirm);
-  fireEvent.click(confirm);
+  await act(async () => {
+    fireEvent.click(confirm);
+    await Promise.resolve();
+  });
+  await act(async () => {
+    fireEvent.click(confirm);
+    await Promise.resolve();
+  });
   expect(confirm).toBeDisabled();
   expect(within(dialog).getByTestId("delete-robot-cancel")).toBeDisabled();
   fireEvent.keyDown(dialog, { key: "Escape" });
@@ -148,14 +164,20 @@ test("pending deletion blocks duplicate submission and dismissal; failure permit
   );
   expect(screen.queryByTestId("fleet-notification")).not.toBeInTheDocument();
 
-  fireEvent.click(confirm);
+  await act(async () => {
+    fireEvent.click(confirm);
+    await Promise.resolve();
+  });
   await screen.findByTestId("fleet-empty");
   await waitFor(() =>
     expect(screen.getByTestId("fleet-notification")).toHaveTextContent(
       "“Atlas” deleted.",
     ),
   );
-  fireEvent.click(confirm);
+  await act(async () => {
+    fireEvent.click(confirm);
+    await Promise.resolve();
+  });
   expect(fetcher).toHaveBeenCalledTimes(4);
   await waitFor(() =>
     expect(screen.queryByTestId("delete-robot-dialog")).not.toBeInTheDocument(),
@@ -163,14 +185,19 @@ test("pending deletion blocks duplicate submission and dismissal; failure permit
   expect(screen.getByTestId("fleet-heading")).toHaveFocus();
   expect(fetcher).toHaveBeenNthCalledWith(2, "/api/robots/one", {
     method: "DELETE",
+    signal: expect.any(AbortSignal) as AbortSignal,
   });
   expect(fetcher).toHaveBeenNthCalledWith(3, "/api/robots/one", {
     method: "DELETE",
+    signal: expect.any(AbortSignal) as AbortSignal,
   });
   const notice = screen.getByTestId("fleet-notification");
   const close = within(notice).getByTestId("fleet-notification-close");
   expect(close).toHaveAccessibleName("Close");
-  fireEvent.click(close);
+  await act(async () => {
+    fireEvent.click(close);
+    await Promise.resolve();
+  });
   await waitFor(() =>
     expect(screen.queryByTestId("fleet-notification")).not.toBeInTheDocument(),
   );
@@ -188,7 +215,10 @@ test("successful deletion stays successful when the table refresh fails", async 
   render(<FleetDashboard />);
 
   const dialog = await openDelete();
-  fireEvent.click(within(dialog).getByTestId("delete-robot-confirm"));
+  await act(async () => {
+    fireEvent.click(within(dialog).getByTestId("delete-robot-confirm"));
+    await Promise.resolve();
+  });
   await waitFor(() =>
     expect(screen.getByTestId("fleet-notification")).toHaveTextContent(
       "“Atlas” deleted.",
@@ -215,9 +245,15 @@ test("deleting the last robot on a page requests the previous page", async () =>
   render(<FleetDashboard />);
 
   await screen.findByTestId("robot-row-previous");
-  fireEvent.click(screen.getByTestId("fleet-next-page"));
+  await act(async () => {
+    fireEvent.click(screen.getByTestId("fleet-next-page"));
+    await Promise.resolve();
+  });
   const dialog = await openDelete();
-  fireEvent.click(within(dialog).getByTestId("delete-robot-confirm"));
+  await act(async () => {
+    fireEvent.click(within(dialog).getByTestId("delete-robot-confirm"));
+    await Promise.resolve();
+  });
 
   await screen.findByTestId("robot-row-previous");
   expect(fetcher).toHaveBeenNthCalledWith(
@@ -246,7 +282,10 @@ test("success notification closes automatically after six seconds", async () => 
   const dialog = await openDelete();
   vi.useFakeTimers();
   await act(async () => {
-    fireEvent.click(within(dialog).getByTestId("delete-robot-confirm"));
+    await act(async () => {
+      fireEvent.click(within(dialog).getByTestId("delete-robot-confirm"));
+      await Promise.resolve();
+    });
     await Promise.resolve();
   });
   expect(screen.getByTestId("fleet-notification")).toHaveTextContent(
@@ -264,7 +303,10 @@ async function openDeleteAll() {
   vi.spyOn(trigger, "getBoundingClientRect").mockReturnValue(
     new DOMRect(0, 0, 40, 40),
   );
-  fireEvent.click(trigger);
+  await act(async () => {
+    fireEvent.click(trigger);
+    await Promise.resolve();
+  });
   fireEvent.click(
     await screen.findByRole("menuitem", { name: "Delete all robots" }),
   );
@@ -286,7 +328,10 @@ test("bulk deletion explains fleet-wide scope and cancellation makes no DELETE r
     ).toHaveFocus(),
   );
 
-  fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+  await act(async () => {
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    await Promise.resolve();
+  });
   await waitFor(() => expect(dialog).not.toBeInTheDocument());
   await waitFor(() =>
     expect(screen.getByTestId("fleet-add-robot")).toHaveFocus(),
@@ -317,8 +362,14 @@ test("bulk deletion blocks duplicate clicks and dismissal, supports retry and re
   const confirm = within(dialog).getByRole("button", {
     name: "Delete all robots",
   });
-  fireEvent.click(confirm);
-  fireEvent.click(confirm);
+  await act(async () => {
+    fireEvent.click(confirm);
+    await Promise.resolve();
+  });
+  await act(async () => {
+    fireEvent.click(confirm);
+    await Promise.resolve();
+  });
   expect(confirm).toBeDisabled();
   expect(within(dialog).getByRole("button", { name: "Cancel" })).toBeDisabled();
   fireEvent.keyDown(dialog, { key: "Escape" });
@@ -332,7 +383,10 @@ test("bulk deletion blocks duplicate clicks and dismissal, supports retry and re
   expect(screen.getByTestId("robot-row-one")).toBeInTheDocument();
   expect(confirm).toBeEnabled();
 
-  fireEvent.click(confirm);
+  await act(async () => {
+    fireEvent.click(confirm);
+    await Promise.resolve();
+  });
   await screen.findByTestId("fleet-empty");
   await waitFor(() => expect(dialog).not.toBeInTheDocument());
   expect(screen.getByTestId("fleet-notification")).toHaveTextContent(
@@ -341,8 +395,37 @@ test("bulk deletion blocks duplicate clicks and dismissal, supports retry and re
   expect(screen.getByTestId("fleet-heading")).toHaveFocus();
   expect(fetcher).toHaveBeenNthCalledWith(2, "/api/robots", {
     method: "DELETE",
+    signal: expect.any(AbortSignal) as AbortSignal,
   });
   expect(fetcher).toHaveBeenNthCalledWith(3, "/api/robots", {
     method: "DELETE",
+    signal: expect.any(AbortSignal) as AbortSignal,
   });
+});
+
+test("an uncertain delete timeout releases the dialog lock and reconciles after closing", async () => {
+  const fetcher = vi
+    .fn()
+    .mockResolvedValueOnce(response([robot]))
+    .mockRejectedValueOnce(new DOMException("Timed out", "TimeoutError"))
+    .mockResolvedValue(response([]));
+  vi.stubGlobal("fetch", fetcher);
+  render(<FleetDashboard />);
+  const dialog = await openDelete();
+  await act(async () => {
+    fireEvent.click(within(dialog).getByTestId("delete-robot-confirm"));
+    await Promise.resolve();
+  });
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "outcome is uncertain",
+  );
+  expect(within(dialog).getByTestId("delete-robot-cancel")).toBeEnabled();
+  expect(fetcher).toHaveBeenCalledTimes(2);
+  fireEvent.click(within(dialog).getByTestId("delete-robot-cancel"));
+  expect(await screen.findByTestId("fleet-empty")).toBeInTheDocument();
+  expect(
+    fetcher.mock.calls.filter(
+      (call: unknown[]) => (call[1] as RequestInit)?.method === "DELETE",
+    ),
+  ).toHaveLength(1);
 });

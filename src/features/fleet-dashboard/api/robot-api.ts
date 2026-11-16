@@ -8,7 +8,19 @@ import {
   type RobotContext,
 } from "@/modules/robots/robot";
 
-const actionRequestTimeoutMs = 5_000;
+const requestTimeoutMs = 5_000;
+
+function requestSignal(signal?: AbortSignal) {
+  const timeout = AbortSignal.timeout(requestTimeoutMs);
+  return signal ? AbortSignal.any([signal, timeout]) : timeout;
+}
+
+export function isRequestTimeout(error: unknown) {
+  return (
+    (error instanceof Error || error instanceof DOMException) &&
+    error.name === "TimeoutError"
+  );
+}
 
 export async function getRobots(
   page: number,
@@ -26,7 +38,7 @@ export async function getRobots(
   }
 
   const response = await fetch(`/api/robots?${params}`, {
-    signal,
+    signal: requestSignal(signal),
     cache: "no-store",
   });
 
@@ -37,6 +49,7 @@ export async function getRobots(
 export async function deleteRobot(id: string): Promise<void> {
   const response = await fetch(`/api/robots/${encodeURIComponent(id)}`, {
     method: "DELETE",
+    signal: requestSignal(),
   });
   if (response.status !== 204) throw new Error("Unable to delete robot.");
 }
@@ -44,6 +57,7 @@ export async function deleteRobot(id: string): Promise<void> {
 export async function createRobot(input: CreateRobotInput): Promise<Robot> {
   const response = await fetch("/api/robots", {
     method: "POST",
+    signal: requestSignal(),
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   });
@@ -56,6 +70,7 @@ export async function createRobots(
 ): Promise<Robot[]> {
   const response = await fetch("/api/robots/batch", {
     method: "POST",
+    signal: requestSignal(),
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ robots }),
   });
@@ -72,9 +87,9 @@ export async function sendRobotAction(
     `/api/robots/${encodeURIComponent(id)}/actions`,
     {
       method: "POST",
+      signal: requestSignal(),
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action }),
-      signal: AbortSignal.timeout(actionRequestTimeoutMs),
     },
   );
   if (response.status !== 202)
@@ -87,7 +102,7 @@ export async function getRobotContext(
 ): Promise<RobotContext | null> {
   const response = await fetch(
     `/api/robots/${encodeURIComponent(id)}/context`,
-    { cache: "no-store", signal },
+    { cache: "no-store", signal: requestSignal(signal) },
   );
   if (response.status === 404) return null;
   if (!response.ok) throw new Error("Unable to refresh robot context.");
@@ -95,6 +110,9 @@ export async function getRobotContext(
 }
 
 export async function deleteAllRobots(): Promise<void> {
-  const response = await fetch("/api/robots", { method: "DELETE" });
+  const response = await fetch("/api/robots", {
+    method: "DELETE",
+    signal: requestSignal(),
+  });
   if (response.status !== 204) throw new Error("Unable to delete all robots.");
 }

@@ -484,3 +484,34 @@ test("delete all clears robots outside the active search and allows adding again
   await addRobot(page);
   expect(await registeredRobots(request)).toHaveLength(1);
 });
+
+test("search debounce releases an unmounted action menu and polling resumes", async ({
+  page,
+  request,
+}) => {
+  const [robot] = await seedFleet(request, 1);
+  await page.clock.install();
+  await page.goto("/");
+  const row = page.getByTestId(`robot-row-${robot.id}`);
+  await expect(row).toBeVisible();
+  await page.clock.pauseAt(new Date(Date.now() + 1000));
+  let requests = 0;
+  page.on("request", (request) => {
+    const url = new URL(request.url());
+    if (url.pathname === "/api/robots" && url.searchParams.has("search"))
+      requests++;
+  });
+  await page.getByRole("textbox", { name: "Search robots" }).fill(robot.name);
+  await row.getByTestId("robot-actions").click();
+  await expect(page.getByRole("menu")).toBeVisible();
+  await page.clock.runFor(1000);
+  await page.clock.resume();
+  await expect(page.getByTestId("fleet-chip-search")).toContainText(robot.name);
+  await expect(row).toBeVisible();
+  await expect(page.getByRole("menu")).toHaveCount(0);
+  const previous = requests;
+  expect(previous).toBeGreaterThan(0);
+  await expect
+    .poll(() => requests, { timeout: 10000 })
+    .toBeGreaterThan(previous);
+});

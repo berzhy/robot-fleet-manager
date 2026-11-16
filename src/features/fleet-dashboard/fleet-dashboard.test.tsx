@@ -2,12 +2,13 @@ import { pageMetadata } from "./test-fixtures";
 import {
   act,
   fireEvent,
-  render,
   screen,
   waitFor,
   within,
 } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
+
+import { render } from "@/query/test-utils";
 import type { Robot, RobotPage } from "@/modules/robots/robot";
 import FleetDashboard from "./fleet-dashboard";
 
@@ -171,4 +172,56 @@ test("changing rows per page resets to the first page and requests the selected 
     expect.anything(),
   );
   expect(screen.getByTestId("fleet-previous-page")).toBeDisabled();
+});
+
+test("switching summary tiles preserves counts while refreshing and updates them on completion", async () => {
+  let finish!: (response: Response) => void;
+  const initial = {
+    ...page([robot]),
+    summary: { all: 10, "needs-attention": 3, offline: 2, "low-battery": 4 },
+  };
+  const fetcher = vi
+    .fn()
+    .mockResolvedValueOnce(Response.json(initial))
+    .mockImplementationOnce(
+      () =>
+        new Promise<Response>((resolve) => {
+          finish = resolve;
+        }),
+    );
+  vi.stubGlobal("fetch", fetcher);
+  render(<FleetDashboard />);
+
+  const tiles = screen.getByRole("group", { name: "Fleet summary filters" });
+  const all = within(tiles).getByRole("button", {
+    name: "All robots",
+    exact: true,
+  });
+  const offline = within(tiles).getByRole("button", {
+    name: "Offline",
+    exact: true,
+  });
+  await waitFor(() => expect(all).toHaveTextContent("10"));
+
+  fireEvent.click(offline);
+
+  expect(tiles).toHaveAttribute("aria-busy", "true");
+  expect(all).toHaveTextContent("10");
+  expect(offline).toHaveTextContent("2");
+  expect(offline).toHaveAttribute("aria-pressed", "true");
+  await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2));
+
+  await act(async () => {
+    finish(
+      Response.json({
+        ...initial,
+        summary: { ...initial.summary, all: 11, offline: 3 },
+      }),
+    );
+    await Promise.resolve();
+  });
+
+  await waitFor(() => expect(tiles).toHaveAttribute("aria-busy", "false"));
+  expect(all).toHaveTextContent("11");
+  expect(offline).toHaveTextContent("3");
 });

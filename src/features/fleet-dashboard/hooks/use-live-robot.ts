@@ -1,86 +1,65 @@
 "use client";
-import { useEffect, useState, useCallback, useRef } from "react";
+
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+
 import type { RobotContext } from "@/modules/robots/robot";
-import { getRobotContext } from "../api/robot-api";
-import { createPollingLoop } from "./polling-loop";
+
+import { robotContextOptions } from "../api/robot-queries";
+import usePageVisibility from "./use-page-visibility";
 
 export default function useLiveRobot(initial: RobotContext, paused = false) {
-  const [snapshot, setSnapshot] = useState(initial);
-  const [revision, setRevision] = useState(0);
-  const reload = useCallback(() => setRevision((value) => value + 1), []);
+  const client = useQueryClient();
 
-  const [interrupted, setInterrupted] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [unverified, setUnverified] = useState(
-    () => typeof document !== "undefined" && document.hidden,
+  const options = useMemo(
+    () => robotContextOptions(initial.robot.id),
+    [initial.robot.id],
   );
+  const count = () =>
+    client.getQueryState(options.queryKey)?.dataUpdateCount ?? 0;
 
-  const request = useRef<ReturnType<typeof createPollingLoop> | undefined>(
-    undefined,
+  // Server-rendered context starts verified; hidden mounts must first revalidate.
+  const [verificationAfter, setVerificationAfter] = useState(() =>
+    typeof document !== "undefined" && document.hidden ? Infinity : -1,
   );
+  const [refreshAfter, setRefreshAfter] = useState<number | null>(null);
 
-  const invalidate = useCallback(() => {
-    request.current?.cancel();
-    setRefreshing(true);
-  }, []);
+  const hidden = usePageVisibility(() => {
+    if (!paused) setVerificationAfter(count());
+    void client.cancelQueries({ queryKey: options.queryKey, exact: true });
+  });
 
-  const [missing, setMissing] = useState(false);
+  const query = useQuery({
+    ...options,
+    initialData: initial,
+    enabled: (q) => !paused && !hidden && q.state.data !== null,
+    refetchInterval: 5000,
+    refetchIntervalInBackground: true,
+    notifyOnChangeProps: "all",
+  });
 
   useEffect(() => {
-    if (paused) return;
+    if (paused || hidden)
+      void client.cancelQueries({ queryKey: options.queryKey, exact: true });
+  }, [client, options.queryKey, paused, hidden]);
 
-    let terminal = false;
-    const polling = createPollingLoop(async (signal, cancelled) => {
-      if (terminal || document.hidden) return false;
+  const missing = query.data === null;
 
-      try {
-        const result = await getRobotContext(initial.robot.id, signal);
-        if (cancelled()) return false;
-
-        setRefreshing(false);
-        if (!result) {
-          terminal = true;
-          setMissing(true);
-          setInterrupted(false);
-          setUnverified(false);
-          return false;
-        }
-
-        setSnapshot(result);
-        setInterrupted(false);
-        setUnverified(false);
-      } catch {
-        if (cancelled()) return false;
-        setRefreshing(false);
-        setInterrupted(true);
-        setUnverified(true);
-      }
-
-      return true;
-    });
-    request.current = polling;
-
-    function visibility() {
-      polling.cancel();
-      setUnverified(true);
-      if (!document.hidden) void polling.start();
-    }
-
-    void polling.start();
-    document.addEventListener("visibilitychange", visibility);
-    return () => {
-      polling.dispose();
-      document.removeEventListener("visibilitychange", visibility);
-    };
-  }, [initial.robot.id, paused, revision]);
+  function cancelRefresh() {
+    setRefreshAfter(count());
+    void client.cancelQueries({ queryKey: options.queryKey, exact: true });
+  }
 
   return {
-    ...snapshot,
-    interrupted,
-    refreshing,
-    unverified,
+    ...(query.data ?? initial),
     missing,
-    reload,
-    invalidate,
+    interrupted: query.isError,
+    refreshing:
+      refreshAfter !== null &&
+      count() <= refreshAfter &&
+      !query.isError &&
+      !missing,
+    unverified: query.isError || count() <= verificationAfter,
+    cancelRefresh,
   };
 }

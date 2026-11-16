@@ -1,125 +1,140 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import type { RobotFilters } from "@/modules/robots/robot-filters";
-import type { RobotPage } from "@/modules/robots/robot";
-import { robotPageSize } from "@/modules/robots/robot";
-import { getRobots } from "../api/robot-api";
-import type { RobotQueryState } from "../types/robot-query-state";
-import { createPollingLoop } from "./polling-loop";
 
-function lastRobotPage(total: number, pageSize: number) {
-  return Math.max(0, Math.ceil(total / pageSize) - 1);
+import {
+  hashKey,
+  useQuery,
+  useQueryClient,
+  type QueryKey,
+} from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+
+import type { RobotFilters } from "@/modules/robots/robot-filters";
+import { robotPageSize, type RobotPage } from "@/modules/robots/robot";
+
+import { robotListOptions } from "../api/robot-queries";
+import type { RobotQueryState } from "../types/robot-query-state";
+import usePageVisibility from "./use-page-visibility";
+
+function lastRobotPage(total: number, size: number) {
+  return Math.max(0, Math.ceil(total / size) - 1);
 }
 
 export default function useRobots(paused = false) {
+  const client = useQueryClient();
+
   const [request, setRequest] = useState<{
     page: number;
     pageSize: number;
     filters: RobotFilters;
-  }>({ page: 0, pageSize: robotPageSize, filters: { view: "all" } });
-  const [status, setStatus] = useState<RobotQueryState["status"]>("loading");
-  const [interrupted, setInterrupted] = useState(false);
-  const [hidden, setHidden] = useState(
-    () => typeof document !== "undefined" && document.hidden,
+  }>({
+    page: 0,
+    pageSize: robotPageSize,
+    filters: { view: "all" },
+  });
+
+  const options = useMemo(
+    () => robotListOptions(request.page, request.pageSize, request.filters),
+    [request],
   );
-  const [snapshot, setSnapshot] = useState<RobotPage | null>(null);
+
+  // Cancellation restores cached success, so only a new response verifies a selection.
+  const count = () =>
+    client.getQueryState(options.queryKey)?.dataUpdateCount ?? 0;
+  const [verificationAfter, setVerificationAfter] = useState(count);
+  const [selectionAfter, setSelectionAfter] = useState(count);
+  const [lastKey, setLastKey] = useState<QueryKey>(options.queryKey);
   const [announcement, setAnnouncement] = useState("");
-  const announceNext = useRef(false);
+  const [announce, setAnnounce] = useState(false);
 
+  const hidden = usePageVisibility(() => {
+    setVerificationAfter(count());
+    void client.cancelQueries({ queryKey: options.queryKey, exact: true });
+  });
+
+  const query = useQuery({
+    ...options,
+    enabled: !paused && !hidden,
+    refetchInterval: 5000,
+    refetchIntervalInBackground: true,
+    notifyOnChangeProps: "all",
+  });
+
+  const currentCount = count();
+  const selected = currentCount > selectionAfter;
+  const snapshot = query.data ?? client.getQueryData<RobotPage>(lastKey);
   const total = snapshot?.total ?? 0;
-  const active = useRef<ReturnType<typeof createPollingLoop> | null>(null);
   const page = Math.min(request.page, lastRobotPage(total, request.pageSize));
-
-  function invalidate() {
-    active.current?.cancel();
-  }
-
-  function setPage(page: number) {
-    invalidate();
-    setStatus("loading");
-    setRequest((previous) => ({ ...previous, page }));
-  }
-
-  function setPageSize(pageSize: number) {
-    invalidate();
-    setStatus("loading");
-    setRequest((previous) => ({ ...previous, page: 0, pageSize }));
-  }
-
-  function setFilters(filters: RobotFilters) {
-    announceNext.current = true;
-    setAnnouncement("");
-    invalidate();
-    setStatus("loading");
-    setRequest((previous) => ({ ...previous, page: 0, filters }));
-  }
-
-  // Refetch at the clamped page; the new request object retriggers
-  // the polling effect below.
-  function reload() {
-    invalidate();
-    setRequest((previous) => ({ ...previous, page }));
-  }
+  const outOfRange = Boolean(
+    selected &&
+    query.data &&
+    request.page > lastRobotPage(query.data.total, request.pageSize),
+  );
 
   useEffect(() => {
-    const polling = createPollingLoop(async (signal, cancelled) => {
-      if (paused || document.hidden) return false;
+    if (paused || hidden)
+      void client.cancelQueries({ queryKey: options.queryKey, exact: true });
+  }, [client, options.queryKey, paused, hidden]);
 
-      try {
-        const result = await getRobots(
-          request.page,
-          request.pageSize,
-          signal,
-          request.filters,
-        );
-        if (cancelled()) return false;
+  if (outOfRange) {
+    setSelectionAfter(
+      client.getQueryState(
+        robotListOptions(page, request.pageSize, request.filters).queryKey,
+      )?.dataUpdateCount ?? 0,
+    );
+    setRequest((previous) => ({ ...previous, page }));
+  } else if (query.data && selected) {
+    if (lastKey !== options.queryKey) setLastKey(options.queryKey);
 
-        const last = lastRobotPage(result.total, result.pageSize);
-        if (request.page > last) {
-          setStatus("loading");
-          setRequest((previous) => ({ ...previous, page: last }));
-          return false;
-        }
-
-        if (announceNext.current) {
-          setAnnouncement(
-            `${result.total} ${result.total === 1 ? "robot" : "robots"} found.`,
-          );
-          announceNext.current = false;
-        }
-
-        setStatus("success");
-        setInterrupted(false);
-        setSnapshot(result);
-        setHidden(false);
-      } catch {
-        if (cancelled()) return false;
-        setInterrupted(true);
-        setStatus((previous) => (previous === "success" ? previous : "error"));
-      }
-
-      return true;
-    });
-    active.current = polling;
-
-    function visibility() {
-      polling.cancel();
-      setHidden(true);
-      if (!document.hidden) void polling.start();
+    if (announce) {
+      setAnnouncement(
+        `${query.data.total} ${query.data.total === 1 ? "robot" : "robots"} found.`,
+      );
+      setAnnounce(false);
     }
+  }
 
-    void polling.start();
-    document.addEventListener("visibilitychange", visibility);
-    return () => {
-      polling.dispose();
-      document.removeEventListener("visibilitychange", visibility);
-    };
-  }, [request, paused]);
+  function cancelRefresh() {
+    void client.cancelQueries({ queryKey: options.queryKey, exact: true });
+  }
 
-  const state: RobotQueryState =
-    status === "success" && snapshot
-      ? { status, robots: snapshot.items }
-      : { status: status === "error" ? "error" : "loading" };
+  function change(next: typeof request) {
+    cancelRefresh();
+
+    const nextKey = robotListOptions(
+      next.page,
+      next.pageSize,
+      next.filters,
+    ).queryKey;
+
+    setSelectionAfter(client.getQueryState(nextKey)?.dataUpdateCount ?? 0);
+    setVerificationAfter(client.getQueryState(nextKey)?.dataUpdateCount ?? 0);
+    setRequest(next);
+
+    if (hashKey(nextKey) === hashKey(options.queryKey) && !paused && !hidden)
+      void query.refetch();
+
+    void client.invalidateQueries({
+      queryKey: nextKey,
+      exact: true,
+      refetchType: "none",
+    });
+  }
+
+  function refresh() {
+    void client.invalidateQueries({
+      queryKey: options.queryKey,
+      exact: true,
+      refetchType: document.hidden ? "none" : "active",
+    });
+  }
+
+  const state: RobotQueryState = outOfRange
+    ? { status: "loading" }
+    : query.isError && !selected
+      ? { status: "error" }
+      : selected && query.data
+        ? { status: "success", robots: query.data.items }
+        : { status: "loading" };
 
   return {
     state,
@@ -127,15 +142,20 @@ export default function useRobots(paused = false) {
     total,
     page,
     pageSize: request.pageSize,
-    setPage,
-    setPageSize,
-    reload,
-    invalidate,
-    interrupted,
-    unverified: interrupted || hidden,
+    setPage: (page: number) => change({ ...request, page }),
+    setPageSize: (pageSize: number) =>
+      change({ ...request, page: 0, pageSize }),
+    setFilters: (filters: RobotFilters) => {
+      setAnnounce(true);
+      setAnnouncement("");
+      change({ ...request, page: 0, filters });
+    },
+    refresh,
+    cancelRefresh,
+    interrupted: query.isError,
+    unverified: query.isError || hidden || currentCount <= verificationAfter,
     verifiedAt: snapshot?.evaluatedAt ?? 0,
     snapshot,
     filters: request.filters,
-    setFilters,
   };
 }

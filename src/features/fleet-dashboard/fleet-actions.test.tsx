@@ -1,12 +1,8 @@
 import { pageMetadata } from "./test-fixtures";
-import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within,
-} from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
+
+import { render } from "@/query/test-utils";
 import type { Robot } from "@/modules/robots/robot";
 import FleetDashboard from "./fleet-dashboard";
 import RobotActions from "./fleet-table/robot-actions";

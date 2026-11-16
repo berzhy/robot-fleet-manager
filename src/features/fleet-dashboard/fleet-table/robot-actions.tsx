@@ -18,7 +18,7 @@ import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
-import { useId, useState } from "react";
+import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
 
 import type { Robot } from "@/modules/robots/robot";
 
@@ -38,8 +38,23 @@ export default function RobotActions({
   onDelete: (robot: Robot, trigger: HTMLButtonElement) => void;
 }) {
   const [anchor, setAnchor] = useState<HTMLButtonElement | null>(null);
+  const notifiedOpen = useRef(false);
+  const notify = useEffectEvent((open: boolean) => onOpenChange?.(open));
+  useEffect(
+    () => () => {
+      if (notifiedOpen.current) notify(false);
+    },
+    [],
+  );
+
+  function reportOpen(open: boolean) {
+    notifiedOpen.current = open;
+    onOpenChange?.(open);
+  }
+
   const id = useId();
   const [openedAt, setOpenedAt] = useState(0);
+
   return (
     <>
       <IconButton
@@ -52,7 +67,7 @@ export default function RobotActions({
         onClick={(event) => {
           setOpenedAt(Date.now());
           setAnchor(event.currentTarget);
-          onOpenChange?.(true);
+          reportOpen(true);
         }}
       >
         <MenuIcon />
@@ -64,7 +79,7 @@ export default function RobotActions({
         open={Boolean(anchor)}
         onClose={() => {
           setAnchor(null);
-          onOpenChange?.(false);
+          reportOpen(false);
         }}
       >
         {robotActions.map((action) => {
@@ -90,7 +105,7 @@ export default function RobotActions({
                   if (reason || !onAction) return;
                   onAction(robot, action);
                   setAnchor(null);
-                  onOpenChange?.(false);
+                  reportOpen(false);
                 }}
               >
                 <ListItemIcon>
@@ -106,7 +121,7 @@ export default function RobotActions({
           onClick={() => {
             if (anchor) onDelete(robot, anchor);
             setAnchor(null);
-            onOpenChange?.(false);
+            reportOpen(false);
           }}
         >
           <ListItemIcon>

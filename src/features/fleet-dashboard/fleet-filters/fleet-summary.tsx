@@ -31,16 +31,19 @@ const explanations = {
 export default function FleetSummary({
   filters,
   summary,
+  updating = false,
   onChange,
 }: {
   filters: RobotFilters;
   summary?: FleetSummary;
+  updating?: boolean;
   onChange: (filters: RobotFilters) => void;
 }) {
   return (
     <Box
       role="group"
       aria-label="Fleet summary filters"
+      aria-busy={updating}
       sx={{
         display: "grid",
         gridTemplateColumns: { xs: "repeat(2, 1fr)", md: "repeat(4, 1fr)" },

@@ -1,13 +1,8 @@
 import { pageMetadata } from "./test-fixtures";
-import {
-  act,
-  fireEvent,
-  render,
-  renderHook,
-  screen,
-  within,
-} from "@testing-library/react";
+import { act, fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
+
+import { renderHook, render } from "@/query/test-utils";
 import type { Robot } from "@/modules/robots/robot";
 import FleetDashboard from "./fleet-dashboard";
 import RobotDetails from "./robot-details/robot-details";
@@ -158,8 +153,8 @@ test("a stale in-flight poll cannot overwrite a mutation refresh", async () => {
   await tick(5000);
 
   act(() => {
-    result.current.invalidate();
-    result.current.reload();
+    result.current.cancelRefresh();
+    result.current.refresh();
   });
   await tick();
 
@@ -230,13 +225,17 @@ test("detail action refresh cancels older polls without relabeling verified data
       )
       .mockRejectedValue(new Error("unavailable")),
   );
-  const { result } = renderHook(() => useLiveRobot(context(50)));
+  const { result, rerender } = renderHook(
+    ({ paused }) => useLiveRobot(context(50), paused),
+    { initialProps: { paused: false } },
+  );
 
   act(() => {
-    result.current.invalidate();
-    result.current.reload();
+    result.current.cancelRefresh();
+    rerender({ paused: true });
   });
 
+  rerender({ paused: false });
   await act(async () => {
     stale(Response.json(context(99)));
     await Promise.resolve();
@@ -511,4 +510,62 @@ test("unmount cancels outstanding fleet and detail requests without restarting p
 
   await tick(10000);
   expect(fetcher).toHaveBeenCalledTimes(2);
+});
+
+test("a debounced search unmounting an open row menu releases the polling pause", async () => {
+  vi.useFakeTimers();
+  const fetcher = vi.fn().mockImplementation(() => Promise.resolve(page()));
+  vi.stubGlobal("fetch", fetcher);
+  render(<FleetDashboard />);
+  await tick();
+  fireEvent.change(screen.getByRole("textbox", { name: /search/i }), {
+    target: { value: "Live" },
+  });
+  const trigger = screen.getByTestId("robot-actions");
+  vi.spyOn(trigger, "getBoundingClientRect").mockReturnValue(
+    new DOMRect(0, 0, 40, 40),
+  );
+  fireEvent.click(trigger);
+  await tick(1000);
+  expect(
+    fetcher.mock.calls.some(([url]) => String(url).includes("search=Live")),
+  ).toBe(true);
+  expect(screen.getByTestId("robot-row-live")).toBeInTheDocument();
+  const requests = fetcher.mock.calls.length;
+  await tick(5000);
+  expect(fetcher.mock.calls.length).toBeGreaterThan(requests);
+});
+
+test("cached fleet remount waits for verification and does not expose cached rows after failure", async () => {
+  vi.useFakeTimers();
+  let rejectRefresh!: (error: Error) => void;
+  const fetcher = vi
+    .fn()
+    .mockResolvedValueOnce(page())
+    .mockImplementationOnce(
+      () =>
+        new Promise<Response>((_resolve, reject) => {
+          rejectRefresh = reject;
+        }),
+    )
+    .mockResolvedValue(page(40));
+  vi.stubGlobal("fetch", fetcher);
+  const view = render(<FleetDashboard />);
+  await tick();
+  expect(screen.getByTestId("robot-row-live")).toBeInTheDocument();
+  view.rerender(<></>);
+  view.rerender(<FleetDashboard />);
+  expect(screen.getByTestId("fleet-loading")).toHaveTextContent(
+    "Loading robots",
+  );
+  expect(screen.queryByTestId("robot-row-live")).not.toBeInTheDocument();
+  await act(async () => {
+    rejectRefresh(new Error("offline"));
+    await Promise.resolve();
+  });
+  expect(screen.getByTestId("fleet-load-error")).toBeInTheDocument();
+  expect(screen.queryByTestId("robot-row-live")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByTestId("fleet-retry"));
+  await tick();
+  expect(screen.getByTestId("robot-row-live")).toHaveTextContent("40%");
 });

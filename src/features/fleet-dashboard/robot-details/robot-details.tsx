@@ -19,7 +19,8 @@ import {
   type RobotAction,
 } from "@/modules/robots/robot-actions";
 import { connectionStatus, reportAge } from "@/modules/telemetry/freshness";
-import { sendRobotAction } from "../api/robot-api";
+import { isRequestTimeout } from "../api/robot-api";
+import useRobotMutations from "../hooks/use-robot-mutations";
 import ActionNotification from "../action-notification";
 import ConnectionStatus from "../connection-status/connection-status";
 import useLiveRobot from "../hooks/use-live-robot";
@@ -37,7 +38,8 @@ import RobotLogs from "./robot-logs";
 export default function RobotDetails(initial: RobotContext) {
   const tabId = useId();
   const [tab, setTab] = useState<"overview" | "logs">("overview");
-  const [pending, setPending] = useState(false);
+  const { command } = useRobotMutations();
+  const pending = command.isPending;
   const inFlight = useRef(false);
   const [notice, setNotice] = useState<{
     severity: "success" | "error";
@@ -51,8 +53,7 @@ export default function RobotDetails(initial: RobotContext) {
     refreshing,
     unverified,
     verifiedAt,
-    reload,
-    invalidate,
+    cancelRefresh,
   } = useLiveRobot(initial, pending);
   const now = useReportClock(pending || refreshing);
   const evaluatedAt = unverified || !now ? verifiedAt : now;
@@ -66,25 +67,24 @@ export default function RobotDetails(initial: RobotContext) {
       actionUnavailable(robot, action, Date.now())
     )
       return;
-    invalidate();
+    cancelRefresh();
     inFlight.current = true;
-    setPending(true);
     setNotice(null);
     try {
-      await sendRobotAction(robot.id, action);
+      await command.mutateAsync({ id: robot.id, action });
       setNotice({
         severity: "success",
         message: `${actionLabels[action]} requested.`,
       });
-    } catch {
+    } catch (error) {
       setNotice({
         severity: "error",
-        message: "Unable to request activity change. Please try again.",
+        message: isRequestTimeout(error)
+          ? "The command timed out. Its outcome is uncertain; checking reported activity."
+          : "Unable to request activity change. Please try again.",
       });
     } finally {
       inFlight.current = false;
-      setPending(false);
-      reload();
     }
   }
   return (

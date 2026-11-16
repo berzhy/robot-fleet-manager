@@ -1,5 +1,4 @@
 import {
-  render,
   screen,
   within,
   fireEvent,
@@ -7,6 +6,8 @@ import {
   act,
 } from "@testing-library/react";
 import { expect, test, vi, afterEach } from "vitest";
+
+import { render } from "@/query/test-utils";
 
 import type { Robot } from "@/modules/robots/robot";
 import RobotDetails from "@/features/fleet-dashboard/robot-details/robot-details";
@@ -31,7 +32,7 @@ const robot: Robot = {
   createdAt: "2026-11-14T12:00:00.000Z",
 };
 
-test("details show fields, missing values, and breadcrumbs", () => {
+test("details show fields, missing values, and breadcrumbs", async () => {
   render(<RobotDetails robot={robot} siteRobots={[]} verifiedAt={0} />);
 
   const details = within(screen.getByTestId("robot-details"));
@@ -63,7 +64,10 @@ test("details show fields, missing values, and breadcrumbs", () => {
   );
   expect(screen.getByRole("tabpanel", { name: "Overview" })).toBeVisible();
 
-  fireEvent.click(screen.getByRole("tab", { name: "Logs" }));
+  await act(async () => {
+    fireEvent.click(screen.getByRole("tab", { name: "Logs" }));
+    await Promise.resolve();
+  });
 
   const logs = screen.getByRole("tabpanel", { name: "Logs" });
   expect(logs).toHaveTextContent(`Initializing ${robot.name}`);
@@ -73,7 +77,10 @@ test("details show fields, missing values, and breadcrumbs", () => {
     screen.queryByRole("region", { name: "Location" }),
   ).not.toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole("tab", { name: "Overview" }));
+  await act(async () => {
+    fireEvent.click(screen.getByRole("tab", { name: "Overview" }));
+    await Promise.resolve();
+  });
 
   expect(screen.getByRole("region", { name: "Location" })).toBeVisible();
 });
@@ -92,7 +99,7 @@ test.each([
   ["unknown", "Start activity", true],
 ] as const)(
   "%s shows one start/stop control with the correct availability",
-  (activity, label, disabled) => {
+  async (activity, label, disabled) => {
     const now = Date.now();
     const onAction = vi.fn();
     render(
@@ -117,7 +124,10 @@ test.each([
     expect(buttons[0]).toHaveAccessibleName(label);
     expect(buttons[0]).toHaveAttribute("aria-disabled", String(disabled));
 
-    fireEvent.click(buttons[0]);
+    await act(async () => {
+      fireEvent.click(buttons[0]);
+      await Promise.resolve();
+    });
 
     if (disabled) expect(onAction).not.toHaveBeenCalled();
     else
@@ -211,14 +221,20 @@ test.each([
     );
     await act(async () => {});
 
-    fireEvent.click(screen.getByRole("tab", { name: "Logs" }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("tab", { name: "Logs" }));
+      await Promise.resolve();
+    });
 
     const logs = screen.getByRole("tabpanel", { name: "Logs" });
     const originalLogs = logs.textContent;
     vi.useFakeTimers();
     const button = screen.getByRole("button", { name: action });
 
-    fireEvent.click(button);
+    await act(async () => {
+      fireEvent.click(button);
+      await Promise.resolve();
+    });
 
     expect(screen.getByTestId("robot-connection")).toHaveTextContent(
       /^Online$/,
@@ -240,7 +256,10 @@ test.each([
     );
     expect(button).toHaveAttribute("aria-disabled", "true");
 
-    fireEvent.click(button);
+    await act(async () => {
+      fireEvent.click(button);
+      await Promise.resolve();
+    });
 
     expect(fetcher).toHaveBeenCalledTimes(3);
 
@@ -297,8 +316,14 @@ test("activity requests are guarded while pending and telemetry confirms the cha
   await waitFor(() => expect(stop).toHaveAttribute("aria-disabled", "false"));
   stop.focus();
 
-  fireEvent.click(stop);
-  fireEvent.click(stop);
+  await act(async () => {
+    fireEvent.click(stop);
+    await Promise.resolve();
+  });
+  await act(async () => {
+    fireEvent.click(stop);
+    await Promise.resolve();
+  });
 
   expect(
     fetcher.mock.calls.filter(
@@ -324,7 +349,10 @@ test("activity requests are guarded while pending and telemetry confirms the cha
     screen.queryByRole("button", { name: "Stop activity" }),
   ).not.toBeInTheDocument();
 
-  fireEvent.click(start);
+  await act(async () => {
+    fireEvent.click(start);
+    await Promise.resolve();
+  });
 
   expect(fetcher).toHaveBeenLastCalledWith(
     "/api/robots/test/actions",
@@ -372,7 +400,10 @@ test("failed action keeps reported activity and explains the failure", async () 
     <RobotDetails robot={online} siteRobots={[]} verifiedAt={Date.now()} />,
   );
 
-  fireEvent.click(screen.getByRole("button", { name: /^Stop activity$/ }));
+  await act(async () => {
+    fireEvent.click(screen.getByRole("button", { name: /^Stop activity$/ }));
+    await Promise.resolve();
+  });
 
   await waitFor(() =>
     expect(screen.getByRole("alert")).toHaveTextContent(

@@ -22,7 +22,7 @@ The interface starts in the standard light theme. A button switches between ligh
 
 The dashboard lists the robots, with tiles for All robots, Needs attention, Offline, and Low battery, plus filters and search. Choosing a tile, a filter, or a search adds a chip above the table, so you can see what the list is showing.
 
-The table polls every 5 seconds. That was enough for this proof of concept.
+The table polls every 5 seconds using TanStack Query, which also manages detail refreshes and invalidation after writes. Updates pause during interactions and while the tab is hidden. Requests time out after 5 seconds; writes are never automatically retried because their outcome may be uncertain.
 
 Each row shows the robot's stable details and its current state, and offers actions. The list shows newest registered first, with pagination enabled. The other columns are not sortable. Those values can be filtered, and sorting by battery is not useful here.
 

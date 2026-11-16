@@ -3,6 +3,8 @@ import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
+import QueryProvider from "@/query/query-provider";
+
 import AppShell from "@/app-shell/app-shell";
 import AppThemeProvider from "@/theme/theme-provider";
 
@@ -32,7 +34,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <InitColorSchemeScript attribute="class" defaultMode="light" />
         <AppRouterCacheProvider options={{ enableCssLayer: true }}>
           <AppThemeProvider>
-            <AppShell>{children}</AppShell>
+            <QueryProvider>
+              <AppShell>{children}</AppShell>
+            </QueryProvider>
           </AppThemeProvider>
         </AppRouterCacheProvider>
       </body>
