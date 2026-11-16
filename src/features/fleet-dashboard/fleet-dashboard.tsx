@@ -8,21 +8,21 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { useEffect, useRef, useState } from "react";
 
-import type { RobotAction } from "@/modules/robots/robot-actions";
 import type { Robot } from "@/modules/robots/robot";
+import type { RobotAction } from "@/modules/robots/robot-actions";
 
+import ActionNotification from "./action-notification";
 import {
   createRobot,
   createRobots,
-  deleteRobot,
   deleteAllRobots,
+  deleteRobot,
   sendRobotAction,
 } from "./api/robot-api";
-import ActionNotification from "./action-notification";
-import AddRobotSplitButton from "./fleet-table/add-robot-split-button";
-import DeleteRobotDialog from "./fleet-table/delete-robot-dialog";
 import FleetFilters from "./fleet-filters/fleet-filters";
 import FleetSummary from "./fleet-filters/fleet-summary";
+import AddRobotSplitButton from "./fleet-table/add-robot-split-button";
+import DeleteRobotDialog from "./fleet-table/delete-robot-dialog";
 import FleetTable from "./fleet-table/fleet-table";
 import useReportClock from "./hooks/use-report-clock";
 import useRobots from "./hooks/use-robots";
