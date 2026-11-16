@@ -8,6 +8,7 @@ export const fleetViews = [
   "low-battery",
 ] as const;
 export const robotFiltersSchema = z.object({
+  search: z.string().trim().min(2).max(100).optional(),
   site: z.string().min(1).max(100).optional(),
   manufacturer: z.string().min(1).max(100).optional(),
   integrationType: z.enum(integrationTypes).optional(),

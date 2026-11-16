@@ -20,6 +20,8 @@ export default function useRobots(paused = false) {
     () => typeof document !== "undefined" && document.hidden,
   );
   const [snapshot, setSnapshot] = useState<RobotPage | null>(null);
+  const [announcement, setAnnouncement] = useState("");
+  const announceNext = useRef(false);
   const total = snapshot?.total ?? 0;
   const active = useRef<AbortController | null>(null);
   const page = Math.min(request.page, lastRobotPage(total, request.pageSize));
@@ -37,6 +39,8 @@ export default function useRobots(paused = false) {
     setRequest((previous) => ({ ...previous, page: 0, pageSize }));
   }
   function setFilters(filters: RobotFilters) {
+    announceNext.current = true;
+    setAnnouncement("");
     invalidate();
     setState({ status: "loading" });
     setRequest((previous) => ({ ...previous, page: 0, filters }));
@@ -70,6 +74,12 @@ export default function useRobots(paused = false) {
           setRequest((previous) => ({ ...previous, page: last }));
           return;
         }
+        if (announceNext.current) {
+          setAnnouncement(
+            `${result.total} ${result.total === 1 ? "robot" : "robots"} found.`,
+          );
+          announceNext.current = false;
+        }
         setState({ status: "success", robots: result.items });
         setInterrupted(false);
         setSnapshot(result);
@@ -99,6 +109,7 @@ export default function useRobots(paused = false) {
   }, [request, paused]);
   return {
     state,
+    announcement,
     total,
     page,
     pageSize: request.pageSize,

@@ -3,9 +3,15 @@ import "server-only";
 import { and, count, desc, eq, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 
+import {
+  formatRobotType,
+  formatIntegrationType,
+} from "@/modules/robots/robot-labels";
 import type { RobotFilters } from "@/modules/robots/robot-filters";
 import {
   robotPageSize,
+  robotTypes,
+  integrationTypes,
   type Robot,
   type RobotPage,
 } from "@/modules/robots/robot";
@@ -57,7 +63,36 @@ export function listRobots(
     offline,
     "low-battery": lowBattery,
   };
+  const search = filters.search;
+  const query = search?.toLowerCase() ?? "";
+  const pattern =
+    search === undefined ? undefined : `%${search.replace(/[\\%_]/g, "\\$&")}%`;
+  const searchScope =
+    pattern === undefined
+      ? undefined
+      : or(
+          ...[
+            robots.name,
+            robots.id,
+            robots.manufacturer,
+            robots.site,
+            latestTelemetry.area,
+            robots.type,
+            robots.integrationType,
+          ].map((column) => sql`${column} like ${pattern} escape '\\'`),
+          ...robotTypes
+            .filter((type) =>
+              formatRobotType(type).toLowerCase().includes(query),
+            )
+            .map((type) => eq(robots.type, type)),
+          ...integrationTypes
+            .filter((type) =>
+              formatIntegrationType(type).toLowerCase().includes(query),
+            )
+            .map((type) => eq(robots.integrationType, type)),
+        );
   const scope = and(
+    searchScope,
     filters.type === undefined ? undefined : eq(robots.type, filters.type),
     filters.site === undefined ? undefined : eq(robots.site, filters.site),
     filters.manufacturer === undefined

@@ -26,6 +26,7 @@ import useRobots from "./hooks/use-robots";
 import { generateRobotInput } from "./utils/generate-robot-input";
 
 export default function FleetDashboard() {
+  const [search, setSearch] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const addButtonRef = useRef<HTMLButtonElement>(null);
@@ -50,6 +51,7 @@ export default function FleetDashboard() {
   const now = useReportClock(paused);
   const {
     state,
+    announcement,
     total,
     page,
     pageSize,
@@ -263,7 +265,7 @@ export default function FleetDashboard() {
           whiteSpace: "nowrap",
         }}
       >
-        {state.status === "loading" ? "Loading robots" : ""}
+        {state.status === "loading" ? "Loading robots" : announcement}
       </Box>
       {interrupted && state.status === "success" && (
         <Alert data-testid="fleet-refresh-warning" severity="warning">
@@ -273,14 +275,20 @@ export default function FleetDashboard() {
       )}
       <FleetFilters
         filters={filters}
+        search={search}
+        onSearchChange={setSearch}
         onChange={setFilters}
         onOpenChange={setFilterOpen}
         summary={state.status === "success" ? snapshot?.summary : undefined}
         options={snapshot?.filterOptions}
       />
       <FleetTable
+        search={filters.search}
         fleetTotal={snapshot?.fleetTotal}
-        onClearFilters={() => setFilters({ view: "all" })}
+        onClearFilters={() => {
+          setSearch("");
+          setFilters({ view: "all" });
+        }}
         headingRef={headingRef}
         now={now}
         verifiedAt={verifiedAt}

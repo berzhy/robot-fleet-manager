@@ -119,18 +119,26 @@ test("filter changes cancel old scope requests and reset page while retaining pa
   );
   act(() => result.current.setPage(2));
   const oldSignal = vi.mocked(getRobots).mock.lastCall![2];
-  act(() => result.current.setFilters({ view: "offline", site: "Berlin" }));
+  act(() =>
+    result.current.setFilters({
+      view: "offline",
+      site: "Berlin",
+      search: "Boston",
+    }),
+  );
   await waitFor(() => expect(result.current.state.status).toBe("success"));
   expect(oldSignal?.aborted).toBe(true);
   expect(getRobots).toHaveBeenLastCalledWith(0, 10, expect.any(AbortSignal), {
     view: "offline",
     site: "Berlin",
+    search: "Boston",
   });
   await act(async () => {
     stale({ ...response, total: 999 });
     await Promise.resolve();
   });
   expect(result.current.total).toBe(30);
+  expect(result.current.announcement).toBe("30 robots found.");
 });
 
 test("zero matching results correct a later page and preserve filters", async () => {
@@ -157,4 +165,27 @@ test("zero matching results correct a later page and preserve filters", async ()
   expect(getRobots).toHaveBeenLastCalledWith(0, 20, expect.any(AbortSignal), {
     view: "low-battery",
   });
+});
+
+test("announces explicit search results but keeps background refreshes quiet", async () => {
+  const response = {
+    items: [],
+    total: 2,
+    page: 0,
+    pageSize: 20,
+    ...pageMetadata(2),
+  };
+  vi.mocked(getRobots).mockResolvedValue(response);
+  const { result } = renderHook(() => useRobots());
+  await waitFor(() => expect(result.current.state.status).toBe("success"));
+  expect(result.current.announcement).toBe("");
+  act(() => result.current.setFilters({ view: "all", search: "Boston" }));
+  await waitFor(() =>
+    expect(result.current.announcement).toBe("2 robots found."),
+  );
+  vi.mocked(getRobots).mockResolvedValue({ ...response, total: 1 });
+  act(() => result.current.reload());
+  await waitFor(() => expect(result.current.total).toBe(1));
+  expect(result.current.announcement).toBe("2 robots found.");
+  expect(result.current.filters.search).toBe("Boston");
 });

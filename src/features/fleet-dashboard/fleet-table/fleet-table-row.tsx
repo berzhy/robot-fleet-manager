@@ -9,6 +9,7 @@ import NextLink from "next/link";
 import type { Robot } from "@/modules/robots/robot";
 import { connectionStatus, reportAge } from "@/modules/telemetry/freshness";
 import ConnectionStatus from "../connection-status/connection-status";
+import SearchHighlight from "./search-highlight";
 import RobotActions from "./robot-actions";
 import {
   formatActivity,
@@ -19,6 +20,7 @@ import {
 } from "../utils/robot-formatters";
 
 export default function FleetTableRow({
+  search,
   connectionAt,
   now,
   verifiedAt,
@@ -30,6 +32,7 @@ export default function FleetTableRow({
   onDelete,
   adding,
 }: {
+  search?: string;
   adding: boolean;
   connectionAt?: number;
   now: number;
@@ -59,14 +62,14 @@ export default function FleetTableRow({
     >
       <TableCell component="th" scope="row">
         <Typography data-testid="robot-name" variant="body2">
-          {robot.name}
+          <SearchHighlight text={robot.name} search={search} />
         </Typography>
         <Typography
           data-testid="robot-manufacturer"
           variant="body2"
           color="textSecondary"
         >
-          {robot.manufacturer}
+          <SearchHighlight text={robot.manufacturer} search={search} />
         </Typography>
         <Link
           data-testid="robot-link"
@@ -78,7 +81,7 @@ export default function FleetTableRow({
         />
       </TableCell>
       <TableCell data-testid="robot-type">
-        {formatRobotType(robot.type)}
+        <SearchHighlight text={formatRobotType(robot.type)} search={search} />
       </TableCell>
       <TableCell>
         <time data-testid="robot-added-at" dateTime={robot.createdAt}>
@@ -86,14 +89,14 @@ export default function FleetTableRow({
         </time>
       </TableCell>
       <TableCell>
-        {robot.site}
+        <SearchHighlight text={robot.site} search={search} />
         {robot.area && (
           <Typography
             data-testid="robot-area"
             variant="body2"
             color="textSecondary"
           >
-            {robot.area}
+            <SearchHighlight text={robot.area} search={search} />
           </Typography>
         )}
       </TableCell>
@@ -123,7 +126,10 @@ export default function FleetTableRow({
         {formatBattery(robot.batteryPercent)}
       </TableCell>
       <TableCell data-testid="robot-integration">
-        {formatIntegrationType(robot.integrationType)}
+        <SearchHighlight
+          text={formatIntegrationType(robot.integrationType)}
+          search={search}
+        />
       </TableCell>
       <TableCell align="right" sx={{ position: "relative" }}>
         <RobotActions

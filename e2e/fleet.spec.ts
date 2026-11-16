@@ -324,3 +324,53 @@ test("deleting the last filtered page corrects pagination and retains filters", 
   ).toBeVisible();
   await expect(page.getByTestId("fleet-notification")).toContainText("deleted");
 });
+
+test("search combines with filters and tiles, clears through chips and recovers from no matches", async ({
+  page,
+  request,
+}) => {
+  const robots = await seedFleet(request, 2);
+  await sendProblem(request, robots[0], true);
+  await page.goto("/");
+  await chooseFilter(page, "Location", "Munich");
+  await page
+    .getByRole("button", { name: "Needs attention", exact: true })
+    .click();
+  const search = page.getByRole("textbox", { name: "Search robots" });
+  await search.fill("ROS 2");
+  await expect(page.getByTestId("fleet-chip-search")).toHaveText(
+    "Search: ROS 2",
+  );
+  await expect(page.getByTestId(`robot-row-${robots[0].id}`)).toBeVisible();
+  await expect(page.getByTestId(`robot-row-${robots[1].id}`)).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "All robots", exact: true }),
+  ).toContainText("2");
+  await expect(page.getByTestId("fleet-loading")).toHaveText("1 robot found.");
+  await expect(
+    page
+      .getByTestId(`robot-row-${robots[0].id}`)
+      .getByTestId("robot-integration")
+      .locator("mark"),
+  ).toHaveText("ROS 2");
+  await expect(search).toBeFocused();
+  await search.fill("no-such-robot");
+  await expect(page.getByText("No robots match these filters.")).toBeVisible();
+  await page.getByTestId("fleet-chip-search").focus();
+  await page.keyboard.press("Delete");
+  await expect(search).toHaveValue("");
+  await expect(page.getByTestId(`robot-row-${robots[0].id}`)).toBeVisible();
+  await expect(page.getByTestId("fleet-chip-site")).toBeVisible();
+  await expect(page.locator("tbody mark")).toHaveCount(0);
+  await search.fill("no-such-robot");
+  await expect(page.getByText("No robots match these filters.")).toBeVisible();
+  await page
+    .getByRole("button", { name: "Clear filters", exact: true })
+    .last()
+    .click();
+  await expect(search).toHaveValue("");
+  await expect(page.getByTestId(`robot-row-${robots[1].id}`)).toBeVisible();
+  await page.setViewportSize({ width: 650, height: 900 });
+  await expect(search).toBeVisible();
+  await page.screenshot({ path: "/tmp/fleet-search-narrow.png" });
+});

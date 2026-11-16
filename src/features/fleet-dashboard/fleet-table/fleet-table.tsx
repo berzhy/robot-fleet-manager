@@ -45,6 +45,7 @@ const columns = [
 const rowHeight = 70;
 
 export default function FleetTable({
+  search,
   fleetTotal,
   onClearFilters,
   headingRef,
@@ -64,6 +65,7 @@ export default function FleetTable({
   onAdd,
   adding,
 }: {
+  search?: string;
   fleetTotal?: number;
   onClearFilters?: () => void;
   headingRef?: RefObject<HTMLHeadingElement | null>;
@@ -177,6 +179,7 @@ export default function FleetTable({
               <FleetTableRow
                 key={robot.id}
                 robot={robot}
+                search={search}
                 now={now}
                 connectionAt={verifiedAt}
                 verifiedAt={verifiedAt}

@@ -118,3 +118,25 @@ test("encodes combined filter values in the list request", async () => {
     integrationType: "ros2",
   });
 });
+
+test("encodes literal search text together with other filters", async () => {
+  const fetcher = vi.fn().mockResolvedValue(
+    Response.json({
+      items: [],
+      total: 0,
+      page: 0,
+      pageSize: 20,
+      ...pageMetadata(),
+    }),
+  );
+  vi.stubGlobal("fetch", fetcher);
+  await getRobots(0, 20, undefined, {
+    view: "offline",
+    search: "Robot %_&",
+    site: "Munich",
+  });
+  const url = new URL(fetcher.mock.calls[0][0] as string, "http://localhost");
+  expect(url.searchParams.get("search")).toBe("Robot %_&");
+  expect(url.searchParams.get("site")).toBe("Munich");
+  expect(url.searchParams.get("view")).toBe("offline");
+});

@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
-import { expect, test, vi } from "vitest";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, expect, test, vi } from "vitest";
 import { useState } from "react";
 import type { RobotFilters } from "@/modules/robots/robot-filters";
 import FleetFilters from "./fleet-filters";
@@ -10,6 +10,8 @@ test("dropdowns, tiles and removable chips share one selection", () => {
     const [filters, setFilters] = useState<RobotFilters>({ view: "all" });
     return (
       <FleetFilters
+        search=""
+        onSearchChange={vi.fn()}
         filters={filters}
         onChange={setFilters}
         onOpenChange={open}
@@ -57,6 +59,8 @@ test("selecting the active tile does not restart its query", () => {
   const change = vi.fn();
   render(
     <FleetFilters
+      search=""
+      onSearchChange={vi.fn()}
       filters={{ view: "all" }}
       onChange={change}
       onOpenChange={vi.fn()}
@@ -76,6 +80,8 @@ test("type selection creates a removable chip without clearing other filters", (
     });
     return (
       <FleetFilters
+        search=""
+        onSearchChange={vi.fn()}
         filters={filters}
         onChange={setFilters}
         onOpenChange={vi.fn()}
@@ -96,4 +102,85 @@ test("type selection creates a removable chip without clearing other filters", (
   expect(screen.getByRole("combobox", { name: "Type" })).toHaveTextContent(
     "All types",
   );
+});
+
+afterEach(() => vi.useRealTimers());
+function SearchControls() {
+  const [filters, setFilters] = useState<RobotFilters>({
+    view: "all",
+    site: "Munich",
+  });
+  const [search, setSearch] = useState("");
+  return (
+    <FleetFilters
+      filters={filters}
+      search={search}
+      onSearchChange={setSearch}
+      onChange={setFilters}
+      onOpenChange={vi.fn()}
+      options={{ sites: ["Munich"], manufacturers: [] }}
+    />
+  );
+}
+test("search waits for two characters and debounce, supports composition and clears immediately", async () => {
+  vi.useFakeTimers();
+  render(<SearchControls />);
+  const field = screen.getByRole("textbox", { name: "Search robots" });
+  fireEvent.change(field, { target: { value: "r" } });
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(300);
+  });
+  expect(screen.getByText("Enter at least 2 characters")).toBeVisible();
+  expect(screen.queryByTestId("fleet-chip-search")).not.toBeInTheDocument();
+  fireEvent.change(field, { target: { value: " robot " } });
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(299);
+  });
+  expect(screen.queryByTestId("fleet-chip-search")).not.toBeInTheDocument();
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(1);
+  });
+  expect(screen.getByText("Search: robot")).toBeVisible();
+  fireEvent.compositionStart(field);
+  fireEvent.change(field, { target: { value: "Inspection" } });
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(500);
+  });
+  expect(screen.getByText("Search: robot")).toBeVisible();
+  fireEvent.compositionEnd(field);
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(300);
+  });
+  expect(screen.getByText("Search: Inspection")).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Clear search" }));
+  expect(field).toHaveValue("");
+  expect(screen.queryByTestId("fleet-chip-search")).not.toBeInTheDocument();
+  expect(screen.getByText("Location: Munich")).toBeVisible();
+});
+test("chip removal and Clear filters cancel pending search", async () => {
+  vi.useFakeTimers();
+  render(<SearchControls />);
+  const field = screen.getByRole("textbox", { name: "Search robots" });
+  fireEvent.change(field, { target: { value: "Robot" } });
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(300);
+  });
+  fireEvent.change(field, { target: { value: "Another" } });
+  const chip = screen.getByTestId("fleet-chip-search");
+  fireEvent.keyDown(chip, { key: "Delete" });
+  fireEvent.keyUp(chip, { key: "Delete" });
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(500);
+  });
+  expect(field).toHaveValue("");
+  expect(screen.getByTestId("fleet-chip-site")).toHaveFocus();
+  expect(screen.queryByTestId("fleet-chip-search")).not.toBeInTheDocument();
+  fireEvent.change(field, { target: { value: "Robot" } });
+  fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(500);
+  });
+  expect(field).toHaveValue("");
+  expect(screen.queryByTestId("fleet-chip-search")).not.toBeInTheDocument();
+  expect(screen.queryByText("Location: Munich")).not.toBeInTheDocument();
 });

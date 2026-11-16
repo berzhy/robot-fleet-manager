@@ -56,9 +56,14 @@ export function robotHandlers(database: () => FleetDatabase) {
         );
       const filters = robotFiltersSchema.safeParse(
         Object.fromEntries(
-          ["site", "manufacturer", "integrationType", "type", "view"].flatMap(
-            (key) => (params.has(key) ? [[key, params.get(key)]] : []),
-          ),
+          [
+            "search",
+            "site",
+            "manufacturer",
+            "integrationType",
+            "type",
+            "view",
+          ].flatMap((key) => (params.has(key) ? [[key, params.get(key)]] : [])),
         ),
       );
       if (!filters.success)

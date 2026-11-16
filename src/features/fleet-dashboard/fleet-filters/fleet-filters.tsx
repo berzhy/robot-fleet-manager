@@ -8,7 +8,11 @@ import ToggleButton from "@mui/material/ToggleButton";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import Skeleton from "@mui/material/Skeleton";
-import { useRef } from "react";
+import IconButton from "@mui/material/IconButton";
+import InputAdornment from "@mui/material/InputAdornment";
+import SearchIcon from "@mui/icons-material/Search";
+import CloseIcon from "@mui/icons-material/Close";
+import { useEffect, useEffectEvent, useState, useRef } from "react";
 import { integrationTypes, robotTypes } from "@/modules/robots/robot";
 import {
   fleetViews,
@@ -45,17 +49,38 @@ const explanations = {
 };
 export default function FleetFilters({
   filters,
+  search,
+  onSearchChange,
   summary,
   options,
   onChange,
   onOpenChange,
 }: {
   filters: RobotFilters;
+  search: string;
+  onSearchChange: (value: string) => void;
   summary?: FleetSummary;
   options?: FilterOptions;
   onChange: (filters: RobotFilters) => void;
   onOpenChange: (open: boolean) => void;
 }) {
+  const [composing, setComposing] = useState(false);
+  const applySearch = useEffectEvent((value: string) => {
+    const normalized = value.trim();
+    const applied = normalized.length >= 2 ? normalized : undefined;
+    if (applied !== filters.search) onChange({ ...filters, search: applied });
+  });
+  useEffect(() => {
+    if (composing) return;
+    const timer = setTimeout(() => applySearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search, composing]);
+  function clearSearch() {
+    container.current?.querySelector<HTMLElement>("#fleet-search")?.focus();
+    onSearchChange("");
+    if (filters.search !== undefined)
+      onChange({ ...filters, search: undefined });
+  }
   const container = useRef<HTMLDivElement>(null);
   const fields = [
     { key: "site", label: "Location", options: options?.sites ?? [] },
@@ -84,6 +109,8 @@ export default function FleetFilters({
         : [];
     },
   );
+  if (filters.search)
+    chips.unshift({ key: "search", label: `Search: ${filters.search}` });
   if (filters.view !== "all")
     chips.push({
       key: "view",
@@ -98,9 +125,14 @@ export default function FleetFilters({
     const next = (button.closest('[role="button"]') ?? button)
       .nextElementSibling;
     const field =
-      key === "view"
-        ? container.current?.querySelector<HTMLElement>('[data-view="all"]')
-        : container.current?.querySelector<HTMLElement>(`#fleet-filter-${key}`);
+      key === "search"
+        ? container.current?.querySelector<HTMLElement>("#fleet-search")
+        : key === "view"
+          ? container.current?.querySelector<HTMLElement>('[data-view="all"]')
+          : container.current?.querySelector<HTMLElement>(
+              `#fleet-filter-${key}`,
+            );
+    if (key === "search") onSearchChange("");
     onChange({ ...filters, [key]: key === "view" ? "all" : undefined });
     if (next instanceof HTMLElement && next.getAttribute("role") === "button")
       next.focus();
@@ -153,6 +185,44 @@ export default function FleetFilters({
         useFlexGap
         sx={{ flexWrap: "wrap", gap: 2, pt: 2 }}
       >
+        <TextField
+          id="fleet-search"
+          label="Search robots"
+          variant="standard"
+          value={search}
+          helperText={
+            search.trim().length === 1 ? "Enter at least 2 characters" : " "
+          }
+          onChange={(event) => {
+            const value = event.target.value;
+            onSearchChange(value);
+            if (!value) clearSearch();
+          }}
+          onCompositionStart={() => setComposing(true)}
+          onCompositionEnd={() => setComposing(false)}
+          sx={{ minWidth: 240 }}
+          slotProps={{
+            htmlInput: { maxLength: 100 },
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+              endAdornment: search ? (
+                <InputAdornment position="end">
+                  <IconButton
+                    size="small"
+                    aria-label="Clear search"
+                    onClick={clearSearch}
+                  >
+                    <CloseIcon />
+                  </IconButton>
+                </InputAdornment>
+              ) : null,
+            },
+          }}
+        />
         {fields.map((field) => (
           <TextField
             key={field.key}
@@ -219,6 +289,7 @@ export default function FleetFilters({
           ))}
           <Button
             onClick={() => {
+              onSearchChange("");
               onChange({ view: "all" });
               container.current
                 ?.querySelector<HTMLElement>('[data-view="all"]')

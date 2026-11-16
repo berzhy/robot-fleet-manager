@@ -581,3 +581,76 @@ test("type narrows rows and all tile counts with the other filters", () => {
     ).status,
   ).toBe(400);
 });
+
+test("search matches metadata and displayed labels before pagination and scopes tile counts", () => {
+  const matching = Array.from({ length: 12 }, () =>
+    createRobot(db, { ...input, name: "Survey unit", integrationType: "ros2" }),
+  );
+  const robot = matching[0];
+  db.insert(latestTelemetry)
+    .values({
+      robotId: robot.id,
+      activity: "needs-attention",
+      problemCode: "path-blocked",
+      batteryPercent: 80,
+      area: "Loading bay",
+      observedAt: new Date().toISOString(),
+      receivedAt: new Date().toISOString(),
+    })
+    .run();
+  createRobot(db, {
+    ...input,
+    name: "Other",
+    site: "Berlin",
+    type: "delivery",
+  });
+  for (const search of [
+    "SURVEY",
+    robot.id,
+    "Maker",
+    "Munich",
+    "Inspection robot",
+    "ROS 2",
+    "ros2",
+    "Loading bay",
+  ]) {
+    const result = listRobots(db, 0, 10, {
+      view: "needs-attention",
+      site: "Munich",
+      search,
+    });
+    expect(result.items.map((item) => item.id)).toEqual([robot.id]);
+    expect(result.summary.all).toBe(
+      search === robot.id || search === "Loading bay" ? 1 : 12,
+    );
+    expect(result.summary["needs-attention"]).toBe(1);
+    expect(result.fleetTotal).toBe(13);
+    expect(result.filterOptions.sites).toEqual(["Berlin", "Munich"]);
+  }
+  expect(
+    listRobots(db, 1, 10, { view: "all", search: "survey" }),
+  ).toMatchObject({ total: 12, items: [expect.anything(), expect.anything()] });
+  expect(listRobots(db, 0, 10, { view: "all", search: "missing" }).total).toBe(
+    0,
+  );
+});
+test("search treats SQL wildcards and escapes literally and validates trimmed input", async () => {
+  createRobot(db, { ...input, name: "100%_unit\\dock" });
+  createRobot(db, { ...input, name: "100XXunitXdock" });
+  for (const search of ["%_", "unit\\dock"])
+    expect(listRobots(db, 0, 20, { view: "all", search }).total).toBe(1);
+  const handlers = robotHandlers(() => db);
+  for (const search of ["a", " ", "a".repeat(101)])
+    expect(
+      handlers.list(
+        new Request(
+          `http://localhost/api/robots?search=${encodeURIComponent(search)}`,
+        ),
+      ).status,
+    ).toBe(400);
+  const response = handlers.list(
+    new Request("http://localhost/api/robots?search=%20%20100%25%20%20"),
+  );
+  expect(response.status).toBe(200);
+  expect(await response.json()).toMatchObject({ total: 1 });
+});
