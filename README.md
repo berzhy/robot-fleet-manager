@@ -6,10 +6,13 @@
 
 ## Intro
 
-Hi, I had to build a useful user interface for the enigneering challenge. I tried to stick to the tech stack you are using (e.g. using Next.js, MUI, with a standard theme for now).
+Hi, I had to build a useful user interface for the engineering challenge. I tried to stick to the tech stack you're using (Next.js, MUI, with a standard theme for now).
 
 A small feature set makes the frontend easy, and there is little interface to show. As the product grows, the interface gets more complex, and the structure of the application has to change with it. I wanted enough real behaviour to plan that structure, and to have some interface decisions worth showing.
-I spent the time on the interface. The simulator and the API were written with more help from AI, and in normal work I would treat those files to the same standard. Hope we can discuss more this week.
+
+Given the time available, I focused on the interface, its behaviour, and the overall structure, making pragmatic decisions along the way. I used AI extensively throughout the implementation to move quickly and explore ideas. In a production setting, I'd spend more time reviewing the implementation, evaluating trade-offs, and refining the code.
+
+Hope we can discuss more this week!
 
 ## Interface
 
