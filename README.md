@@ -6,10 +6,10 @@
 
 ## Intro
 
-Hi, I had to build a useful user interface for the enigneering challenge. I tried to stick to the tech stack you are using (e.g. using Next.js, MUI, with a standard theme for now). Hope we can discuss more this week.
+Hi, I had to build a useful user interface for the enigneering challenge. I tried to stick to the tech stack you are using (e.g. using Next.js, MUI, with a standard theme for now).
 
 A small feature set makes the frontend easy, and there is little interface to show. As the product grows, the interface gets more complex, and the structure of the application has to change with it. I wanted enough real behaviour to plan that structure, and to have some interface decisions worth showing.
-Time was very short, so parts of this are very AI-written, especially the simulator and the API. I have spent less time in those files than in the interface. In normal work I try keeping uniformly good quality of my code.
+I spent the time on the interface. The simulator and the API were written with more help from AI, and in normal work I would treat those files to the same standard. Hope we can discuss more this week.
 
 ## Interface
 
@@ -59,3 +59,5 @@ The simulator is a separate process. It does not open the database. About once a
 - `npm run test:e2e` runs Playwright user journeys against its own temporary database, starting each test with an empty fleet. Local runs use visible Chrome; CI runs headless. Failure traces are saved in `test-results/`.
 - `npm run lint` runs ESLint with the Next.js config, type-checked TypeScript, and the recommended accessibility rules.
 - `npm run knip` flags unused files, exports, and dependencies.
+
+CI runs these commands on every push.
