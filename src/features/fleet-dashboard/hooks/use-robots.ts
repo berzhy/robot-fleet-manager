@@ -5,6 +5,7 @@ import type { RobotPage } from "@/modules/robots/robot";
 import { robotPageSize } from "@/modules/robots/robot";
 import { getRobots } from "../api/robot-api";
 import type { RobotQueryState } from "../types/robot-query-state";
+import { createPollingLoop } from "./polling-loop";
 function lastRobotPage(total: number, pageSize: number) {
   return Math.max(0, Math.ceil(total / pageSize) - 1);
 }
@@ -23,10 +24,10 @@ export default function useRobots(paused = false) {
   const [announcement, setAnnouncement] = useState("");
   const announceNext = useRef(false);
   const total = snapshot?.total ?? 0;
-  const active = useRef<AbortController | null>(null);
+  const active = useRef<ReturnType<typeof createPollingLoop> | null>(null);
   const page = Math.min(request.page, lastRobotPage(total, request.pageSize));
   function invalidate() {
-    active.current?.abort();
+    active.current?.cancel();
   }
   function setPage(page: number) {
     invalidate();
@@ -50,29 +51,21 @@ export default function useRobots(paused = false) {
     setRequest((previous) => ({ ...previous, page }));
   }
   useEffect(() => {
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    let disposed = false;
-    function stop() {
-      clearTimeout(timer);
-      active.current?.abort();
-    }
-    async function poll() {
-      if (disposed || paused || document.hidden) return;
-      const controller = new AbortController();
-      active.current = controller;
+    const polling = createPollingLoop(async (signal, cancelled) => {
+      if (paused || document.hidden) return false;
       try {
         const result = await getRobots(
           request.page,
           request.pageSize,
-          AbortSignal.any([controller.signal, AbortSignal.timeout(5000)]),
+          signal,
           request.filters,
         );
-        if (controller.signal.aborted || disposed) return;
+        if (cancelled()) return false;
         const last = lastRobotPage(result.total, result.pageSize);
         if (request.page > last) {
           setStatus("loading");
           setRequest((previous) => ({ ...previous, page: last }));
-          return;
+          return false;
         }
         if (announceNext.current) {
           setAnnouncement(
@@ -85,23 +78,22 @@ export default function useRobots(paused = false) {
         setSnapshot(result);
         setHidden(false);
       } catch {
-        if (controller.signal.aborted || disposed) return;
+        if (cancelled()) return false;
         setInterrupted(true);
         setStatus((previous) => (previous === "success" ? previous : "error"));
       }
-      if (!disposed && !controller.signal.aborted)
-        timer = setTimeout(() => void poll(), 5000);
-    }
+      return true;
+    });
+    active.current = polling;
     function visibility() {
-      stop();
+      polling.cancel();
       setHidden(true);
-      if (!document.hidden) void poll();
+      if (!document.hidden) void polling.start();
     }
-    void poll();
+    void polling.start();
     document.addEventListener("visibilitychange", visibility);
     return () => {
-      disposed = true;
-      stop();
+      polling.dispose();
       document.removeEventListener("visibilitychange", visibility);
     };
   }, [request, paused]);

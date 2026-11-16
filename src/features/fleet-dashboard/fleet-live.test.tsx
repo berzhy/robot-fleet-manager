@@ -432,3 +432,31 @@ test("fleet and detail retain snapshots after a request timeout and recover on t
   expect(result.current.fleet.interrupted).toBe(false);
   expect(result.current.detail.interrupted).toBe(false);
 });
+
+test("unmount cancels outstanding fleet and detail requests without restarting polling", async () => {
+  vi.useFakeTimers();
+  const signals: AbortSignal[] = [];
+  const fetcher = vi.fn(
+    (_url: string, init?: RequestInit) =>
+      new Promise<Response>((_resolve, reject) => {
+        const signal = init!.signal!;
+        signals.push(signal);
+        signal.addEventListener(
+          "abort",
+          () => reject(new DOMException("Request cancelled", "AbortError")),
+          { once: true },
+        );
+      }),
+  );
+  vi.stubGlobal("fetch", fetcher);
+  const { unmount } = renderHook(() => ({
+    fleet: useRobots(),
+    detail: useLiveRobot({ robot, siteRobots: [], verifiedAt: Date.now() }),
+  }));
+  expect(signals).toHaveLength(2);
+  expect(signals.every((signal) => !signal.aborted)).toBe(true);
+  unmount();
+  expect(signals.every((signal) => signal.aborted)).toBe(true);
+  await tick(10000);
+  expect(fetcher).toHaveBeenCalledTimes(2);
+});

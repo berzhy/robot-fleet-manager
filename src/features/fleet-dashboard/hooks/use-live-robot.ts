@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import type { RobotContext } from "@/modules/robots/robot";
 import { getRobotContext } from "../api/robot-api";
+import { createPollingLoop } from "./polling-loop";
 export default function useLiveRobot(initial: RobotContext, paused = false) {
   const [snapshot, setSnapshot] = useState(initial);
   const [revision, setRevision] = useState(0);
@@ -11,63 +12,51 @@ export default function useLiveRobot(initial: RobotContext, paused = false) {
   const [unverified, setUnverified] = useState(
     () => typeof document !== "undefined" && document.hidden,
   );
-  const request = useRef<AbortController | undefined>(undefined);
+  const request = useRef<ReturnType<typeof createPollingLoop> | undefined>(
+    undefined,
+  );
   const invalidate = useCallback(() => {
-    request.current?.abort();
+    request.current?.cancel();
     setRefreshing(true);
   }, []);
   const [missing, setMissing] = useState(false);
   useEffect(() => {
     if (paused) return;
-    let disposed = false;
     let terminal = false;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    let controller: AbortController | undefined;
-    function stop() {
-      clearTimeout(timer);
-      controller?.abort();
-    }
-    async function poll() {
-      if (disposed || terminal || document.hidden) return;
-      const current = new AbortController();
-      controller = current;
-      request.current = current;
+    const polling = createPollingLoop(async (signal, cancelled) => {
+      if (terminal || document.hidden) return false;
       try {
-        const result = await getRobotContext(
-          initial.robot.id,
-          AbortSignal.any([current.signal, AbortSignal.timeout(5000)]),
-        );
-        if (disposed || current.signal.aborted) return;
+        const result = await getRobotContext(initial.robot.id, signal);
+        if (cancelled()) return false;
         setRefreshing(false);
         if (!result) {
           terminal = true;
           setMissing(true);
           setInterrupted(false);
           setUnverified(false);
-          return;
+          return false;
         }
         setSnapshot(result);
         setInterrupted(false);
         setUnverified(false);
       } catch {
-        if (disposed || current.signal.aborted) return;
+        if (cancelled()) return false;
         setRefreshing(false);
         setInterrupted(true);
         setUnverified(true);
       }
-      if (!disposed && !current.signal.aborted)
-        timer = setTimeout(() => void poll(), 5000);
-    }
+      return true;
+    });
+    request.current = polling;
     function visibility() {
-      stop();
+      polling.cancel();
       setUnverified(true);
-      if (!document.hidden) void poll();
+      if (!document.hidden) void polling.start();
     }
-    void poll();
+    void polling.start();
     document.addEventListener("visibilitychange", visibility);
     return () => {
-      disposed = true;
-      stop();
+      polling.dispose();
       document.removeEventListener("visibilitychange", visibility);
     };
   }, [initial.robot.id, paused, revision]);
