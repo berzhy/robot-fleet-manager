@@ -3,21 +3,9 @@ import "server-only";
 import { and, count, desc, eq, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 
-import {
-  formatRobotType,
-  formatIntegrationType,
-  formatActivity,
-} from "@/modules/robots/robot-labels";
-import {
-  robotProblemCodes,
-  robotProblemDetails,
-} from "@/modules/robots/robot-problems";
 import type { RobotFilters } from "@/modules/robots/robot-filters";
 import {
   robotPageSize,
-  robotTypes,
-  robotActivities,
-  integrationTypes,
   type Robot,
   type RobotPage,
 } from "@/modules/robots/robot";
@@ -33,6 +21,7 @@ import {
 
 import type { FleetDatabase } from "../db/database";
 import { latestTelemetry, robots } from "../db/schema";
+import { robotSearchCondition } from "./robot-search";
 
 const selection = {
   controlTarget: robots.controlTarget,
@@ -81,79 +70,10 @@ export function listRobots(
     offline,
     "low-battery": lowBattery,
   };
-  const search = filters.search;
-  const query = search?.toLowerCase() ?? "";
-  const pattern =
-    search === undefined ? undefined : `%${search.replace(/[\\%_]/g, "\\$&")}%`;
-  const batterySearch = /^(\d{1,3})%?$/.exec(query);
-  const batteryValue =
-    batterySearch && Number(batterySearch[1]) <= 100
-      ? Number(batterySearch[1])
-      : undefined;
-  const connectionSearches = (
-    [
-      ["Online", sql`${latestTelemetry.receivedAt} >= ${onlineCutoff}`],
-      [
-        "Delayed",
-        and(
-          sql`${latestTelemetry.receivedAt} < ${onlineCutoff}`,
-          sql`${latestTelemetry.receivedAt} >= ${delayedCutoff}`,
-        ),
-      ],
-      ["Offline", offline],
-      ["Unknown", sql`${latestTelemetry.receivedAt} is null`],
-    ] as const
-  )
-    .filter(([label]) => label.toLowerCase().includes(query))
-    .map(([, condition]) => condition);
-  const searchScope =
-    pattern === undefined
-      ? undefined
-      : or(
-          ...[
-            robots.name,
-            robots.manufacturer,
-            robots.site,
-            latestTelemetry.area,
-            robots.type,
-            robots.integrationType,
-            latestTelemetry.problemCode,
-            sql`coalesce(${latestTelemetry.activity}, 'unknown')`,
-          ].map((column) => sql`${column} like ${pattern} escape '\\'`),
-          ...(query.length >= 8
-            ? [sql`${robots.id} like ${pattern} escape '\\'`]
-            : []),
-          ...robotTypes
-            .filter((type) =>
-              formatRobotType(type).toLowerCase().includes(query),
-            )
-            .map((type) => eq(robots.type, type)),
-          ...integrationTypes
-            .filter((type) =>
-              formatIntegrationType(type).toLowerCase().includes(query),
-            )
-            .map((type) => eq(robots.integrationType, type)),
-          ...robotActivities
-            .filter((activity) =>
-              formatActivity(activity).toLowerCase().includes(query),
-            )
-            .map((activity) =>
-              activity === "unknown"
-                ? sql`${latestTelemetry.activity} is null`
-                : eq(latestTelemetry.activity, activity),
-            ),
-          ...robotProblemCodes
-            .filter((code) =>
-              robotProblemDetails[code].label.toLowerCase().includes(query),
-            )
-            .map((code) => eq(latestTelemetry.problemCode, code)),
-          ...connectionSearches,
-          ...(batteryValue === undefined
-            ? []
-            : [
-                sql`round(${latestTelemetry.batteryPercent}) = ${batteryValue}`,
-              ]),
-        );
+  const searchScope = robotSearchCondition(filters.search, {
+    onlineCutoff,
+    delayedCutoff,
+  });
   const scope = and(
     searchScope,
     filters.type === undefined ? undefined : eq(robots.type, filters.type),
