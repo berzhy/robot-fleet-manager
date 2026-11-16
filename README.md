@@ -1,7 +1,7 @@
 # README
 
 ```
-> Claude make a robot orchestaration dashboard, make it nice, and make it look NOT like an AI slop.  :)
+> Claude make a robot orchestaration dashboard, make it nice, and NO "AI slop"!  :)
 ```
 
 ## Intro
