@@ -1,143 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# README
 
-## Getting Started
+```
+> Claude make a robot orchestaration dashboard, make it nice, and make it look not like an AI slop.
+```
 
-Use Node.js 26 and npm. Initialize the local database before starting:
+(nah, not really)
+
+## Intro
+
+Hi, I had to build a useful user interface for the enigneering challenge. I tried to stick to the tech stack you are using (e.g. using Next.js, MUI, with a standard theme for now).
+
+A small feature set makes the frontend easy, and there is little interface to show. As the product grows, the interface gets harder, and the structure of the application has to change with it. I wanted enough real behaviour to plan that structure, and to have some interface decisions worth showing.
+Time was very short, so parts of this are AI-written, especially the simulator and the API. I have spent less time in those files than in the interface. In normal work I review that code before I keep it.
+
+## Interface
+
+Integrations are out of scope.
+
+The dashboard lists the robots, with summary tiles, filters, and search. Choosing a tile, a filter, or a search adds a chip above the table, so you can see what the list is showing.
+
+The table polls every 5 seconds. That was enough for this proof of concept.
+
+Each row shows the robot's stable details and its current state, and offers actions.
+
+The app starts empty. You can auto-magically(POC) create 1, 10, or 100 generated robots. The simulator picks each one up and starts tracking it.
+
+It is possible to delete individual robot or drop all of them via the action in the split button.
+
+Clicking the robot row will open details page about that robot. That includes commands, positioning, model data, logs.
+
+## How to run
+
+Use Node.js 26 and npm. From this directory:
 
 ```bash
 npm ci
-npm run db:migrate
+npm run db:setup
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). SQLite persists the fleet in `data/fleet.sqlite`; set `DATABASE_PATH` to use another file. Run commands from the project root. Migrations are explicit and never run during requests or builds.
+Open http://localhost:3000. The fleet is stored in `data/fleet.sqlite`. Set `DATABASE_PATH` if you want a different file. A new database is empty. Nothing is seeded on startup, and the schema is created only when you run that command.
 
-A new database starts empty. Newly added robots have unknown telemetry until their first report arrives. Use the primary **Add robot** split button to add one robot, or its dropdown to add 10 or 100. The dropdown also offers **Delete all robots**, with confirmation that it includes robots hidden by filters. The empty-state button adds one. Bulk additions use one transaction and succeed or roll back together. Metadata is generated without a form, including one of four required types: Cleaning robot, Security robot, Delivery robot, or Inspection robot. Generated manufacturer/type pairs use Samsung and iRobot for cleaning, LG for delivery, Ascento for security, and Boston Dynamics for inspection. The table groups manufacturer beneath the robot name and shows Type in its own column. Integration metadata is required: `ros2` (ROS 2), `vda5050` (VDA5050), or `vendor-api` (Vendor API), shown in the Integration column and details. Generated integrations are illustrative demo metadata, assigned independently of manufacturer; these labels do not claim vendor compatibility or implemented connectors. All telemetry still arrives through the simulator HTTP API. The Registered column shows registration time, with newest robots first. Addition preserves the current page, so the new robot may be on another page. The table reloads automatically after creation or deletion; Retry is available if loading fails. Pagination defaults to 10 rows, with 10, 20, and 50 available in the native Rows per page selector. Changing the size returns to the first page. Rows open details with breadcrumbs. The trailing Actions menu supports deletion with confirmation, a pending state, and success/error notifications.
-
-```bash
-npm run db:generate  # Generate a migration after changing the schema
-npm run db:migrate
-```
-
-During this POC, schema changes may replace migration history and discard development data. When that happens, stop the app and simulator, remove the configured SQLite file and its `-wal` and `-shm` sidecars, then run `npm run db:migrate` before restarting. Migrations run explicitly; the application does not populate or reset the fleet on startup.
-
-## Robot API
-
-- `GET /api/robots?page=0&pageSize=10`: `{ items, total, page, pageSize, summary, fleetTotal, filterOptions, evaluatedAt }`, ordered by creation time descending, then ID descending.
-- `GET /api/robots/:id`: one robot, or 404.
-- `GET /api/robots/:id/context`: `{ robot, siteRobots, verifiedAt }` from one database snapshot; peers contain ID, name, reported area, and receipt time, excluding the selected robot. Returns 404 if missing.
-- `POST /api/robots/batch`: accept `{ robots: [...] }` with 1–100 metadata records; return 201 with `{ items: [...] }`. All records are created in one transaction.
-- `POST /api/robots`: create metadata from `name`, `manufacturer`, `site`, `type`, and `integrationType`; returns 201 with unknown telemetry.
-- `DELETE /api/robots`: permanently remove the entire fleet and its latest telemetry atomically; returns 204, including when already empty. Filters do not limit this operation.
-- `DELETE /api/robots/:id`: permanently remove a robot and its latest telemetry; returns 204, or 404.
+Rows stay on unknown telemetry until a report arrives. In a second terminal:
 
 ```bash
-curl -X POST http://localhost:3000/api/robots -H 'Content-Type: application/json' -d '{"name":"Dara","manufacturer":"Boston Dynamics","site":"Hamburg","type":"inspection","integrationType":"vendor-api"}'
+npm run simulator
 ```
 
-Name, manufacturer, and site are trimmed, required, and limited to 100 characters. Type is required and must be `cleaning`, `security`, `delivery`, or `inspection`; there is no unknown type. Errors use `{ error: { code, message } }`. The API is intended for local development or a single Node server with persistent disk. Authentication, a creation form, and telemetry history are deferred. Local SQLite is not a shared database for disposable serverless instances.
+Leave it running while you use the dashboard, and stop it with Ctrl+C. Run one simulator. If the app is not at http://localhost:3000, set `SIMULATOR_API_URL`.
 
-Run `npm test` for browser component tests and Node database/API tests. Database tests use isolated temporary files and real migrations. Run `npm run build`, `npm run lint`, `npm run format:check`, and `npm run knip` for the remaining checks.
+## Simulator
 
-Run `npm run test:e2e` for the Playwright browser journey. Local runs open the installed Google Chrome; CI runs headless with Playwright's Chromium (`npx playwright install --with-deps chromium`). The tests start their own server on port 3100 with a temporary database and send deterministic telemetry through the API. The development server and simulator on port 3000 can stay running. Use `npm run test:e2e -- --repeat-each=2` to check repeated runs.
-
-## Project organization
-
-Application code lives under `src/`, while configuration remains at the project root:
-
-```text
-src/
-  app/                         # Thin Next.js routes, metadata, and route boundaries
-    (fleet-dashboard)/         # Groups overview and details without changing URLs
-  assets/                      # Images imported by components
-  app-shell/                   # Responsive navigation, main content area, and viewport layout
-  theme/                       # Theme configuration, provider, and toggle
-  features/
-    fleet-dashboard/
-      fleet-dashboard.tsx      # Feature entry component
-      fleet-table/             # Table entry, rows, skeletons, and empty/error states
-      robot-details/           # Details entry and presentation
-      api/                     # Browser HTTP requests
-      hooks/                   # React request lifecycle
-      types/                   # UI request state
-      utils/                   # Feature-specific formatting helpers
-    skills/                    # Work-in-progress screen
-    integrations/              # Work-in-progress screen
-  shared/work-in-progress/     # Shared placeholder presentation
-  modules/robots/              # Shared robot contracts and input validation
-  modules/telemetry/           # Report validation and freshness rules
-  simulator/                   # Standalone HTTP producer and simulation behaviour
-  server/
-    db/                        # SQLite connection and Drizzle schema
-    robots/                    # Operations and HTTP response handling
-    telemetry/                 # Latest-report ingestion
-scripts/                       # Database migration and simulator commands
-drizzle/                       # Versioned SQL migrations
-data/                          # Ignored local SQLite database
-```
-
-Component images live in `src/assets/` and use static imports through Next.js Image. Reserve root `public/` for files requiring a fixed public URL; the favicon follows the `src/app/favicon.ico` convention.
-
-Group code by feature, then by responsibility. A feature or composed component folder has a matching entry file, such as `fleet-table/fleet-table.tsx`. Tests live beside their subjects. Use direct imports; `@/` resolves to `src/`.
-
-Skills and Integrations live beside `fleet-dashboard` under `features/`; future zones such as producers and admin follow the same pattern. Add matching domain contracts in `modules/` and backend operations in `server/` only when needed. Modules contain shared domain code; features contain frontend screens. Use focused shared UI/utilities only when multiple features need them.
-
-Browser code calls feature API functions, which request thin Next.js HTTP routes. Routes call server operations with a database connection. Server-rendered details call those same operations directly. Server entry points are marked `server-only`; database factories remain usable by scripts and tests. Metadata and latest telemetry are separate tables. The separate simulator writes through the ingestion API. Robot controls store a latest target and revision separately from observed telemetry. The simulator applies new revisions and reports acknowledgment through telemetry.
-
-The dashboard route is `src/app/(fleet-dashboard)/page.tsx`; its screen implementation is `src/features/fleet-dashboard/fleet-dashboard.tsx`.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-Material UI is configured with the Next.js App Router style cache and a shared theme in `src/theme/theme.ts`. It uses Geist and defaults to light mode. The theme button switches modes and saves the selection locally. It appears at the bottom of the desktop sidebar and in the mobile header. See [decisions.md](./decisions.md) for the current product direction and open questions.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Simulation and live updates
-
-Run `npm run db:migrate`, then `npm run dev`. In a second terminal run `npm run simulator`. Set `SIMULATOR_API_URL` if the app is not at `http://localhost:3000`. Run exactly one simulator against a fleet; stop it with Ctrl+C. The simulator uses HTTP and does not access SQLite directly.
-
-The simulator discovers additions, deletions, and changed controls through one registry snapshot per loop. It reports roughly once a second in batches of at most 100. New robots first report Idle at Base with a deterministic 22–100% starting battery, then start after seven seconds. Work drains 0.1 percentage points per second; at 10% the robot returns for ten seconds before charging at 0.5 percentage points per second to 90%. Automatic charging ends with a seven-second idle delay before work resumes. Idle and blocked robots retain battery for this accelerated demo.
-
-The row menu offers Start activity, Stop activity, Return to base, Retry activity, and Delete. Unavailable actions explain why in a tooltip. Manual Stop holds Idle in place; manual Return holds at Base after charging if needed. Start releases either hold on the next simulator tick. Operational requests require recent Online telemetry; server-side validation handles stale menus. Notifications confirm requests, while telemetry confirms activity. Delete only removes the simulated robot; it is not a physical stop command.
-
-About 20% of robots, chosen deterministically by ID, encounter Path blocked, Position lost, or Sensor obstructed after 2–10 accumulated working minutes. Charging and idle periods do not reset that timer. Needs attention shows the reason; Retry clears the simulated problem and resumes work with a new interval. Other robots keep cycling. One problem is active per robot; its cause survives simulator restarts. Fault frequency stays the same across all three causes. Hardware failures and administrative availability remain deferred.
-
-`POST /api/robots/:robotId/actions` accepts `{ action: "start" | "stop" | "return-to-base" | "retry" }`, returning 202 for a recorded request, 400 for invalid input, 404 for a missing robot, or 409 when unavailable. Each robot stores only its latest work/stop/base target and revision; latest intent wins. Registry snapshots carry these fields; telemetry includes `appliedControlRevision` and nullable `problemCode` (`path-blocked`, `position-lost`, or `sensor-obstructed`). There is no command history or progress UI.
-
-Restart restores activity, battery, area, the active problem, and manual intent from persisted telemetry and controls. Short countdowns and fault scheduling restart; downtime is not simulated. Known local state and applied revisions survive request failures while the process runs. Each elapsed simulation step is capped at five seconds to prevent catch-up jumps. About 20% of robots have staggered, deterministic 60-second telemetry outages every three minutes. Newly discovered robots get an initial report before any simulated outage. Their simulation keeps running during the gap; reporting resumes automatically, so connection freshness progresses through Delayed and Offline without changing activity or adding a problem code. Offline robots count toward Needs attention. Use one simulator process. These are local POC guarantees, not an exactly-once hardware command protocol.
-
-- `GET /api/robots/registry`: `{ items: Robot[] }`, a complete snapshot for this small local simulator. UI pagination continues to use the existing list endpoint.
-- `POST /api/telemetry/batch`: `{ reports: [...] }`, 1–100 records containing `robotId`, `activity`, `batteryPercent`, nullable `area`, and ISO `observedAt`. Returns 204. Invalid batches return 400 without writes; unknown/deleted IDs and non-newer observations are ignored. Times are normalized to UTC; reports over five seconds ahead are rejected.
-
-Only latest telemetry is stored. `lastTelemetryAt` is observation time; `lastReceivedAt` is server receipt time. Connection is derived: Online up to 10 seconds, Delayed through 15 seconds, Offline thereafter, Unknown before the first report. Offline means no recent reports, not powered off or disabled. Old telemetry remains visible as last known.
-
-Dashboard and detail views poll quietly every five seconds, retaining rows during refresh. Failed background requests show a warning and unverified connection labels until recovery. Hidden tabs stop polling and refresh on return. Row menus, filter dropdowns, delete dialogs, and mutations pause dashboard updates without shifting the layout to preserve interaction focus. Addition/deletion refetch the current page, correcting it if it no longer exists; new records may shift page composition.
-
-This targets one local Node server with persistent SQLite. There is no guaranteed real-time latency, history, authentication, SSE/WebSockets, broker, or command queue. Filters run before pagination, and live membership is recomputed on every refresh.
-
-Online robots show a stable connection label; report age is shown only for Delayed and Offline robots. The simulator still produces telemetry approximately once a second.
-
-## Fleet filters
-
-Four tiles select All robots, Needs attention, Offline, or Low battery. Search, Location (assigned site), and Type sit in the table toolbar; Manufacturer and Integration live behind **More filters**, whose label counts its active criteria. All of them combine with the tile using AND, applied criteria appear as removable chips above the table, and a context line shows the selected view's total within the matching scope (for example `3 of 12 matching robots · Newest first`). Removing an operational chip selects All robots and preserves dropdowns; Clear filters resets all selections. Filter changes return to page one; refresh and mutations preserve filters and correct invalid pages. Added robots may fall outside the selected filters.
-
-The list API accepts optional `site`, `manufacturer`, `integrationType` (`ros2`, `vda5050`, `vendor-api`), `type` (`cleaning`, `security`, `delivery`, `inspection`), and `view` (`all`, `needs-attention`, `offline`, `low-battery`) query parameters. Summary counts respect dropdowns but ignore the tile. Dropdown options describe the full fleet. Rows, counts and dashboard connection classification share the response evaluation time; report-age text may continue ticking. Failed background refresh retains that snapshot.
-
-Offline means more than 15 seconds since receipt; no reports means Unknown. Low battery means a last-reported level ≤15%, including Returning but excluding Charging. Needs attention includes Offline, a reported problem, or critical battery (≤10%, excluding Charging); robots are counted once per tile. Categories overlap. Search narrows this same scope, including tile counts. It matches name, ID, manufacturer, type, integration, site, area, activity, problem, connection and battery using case-insensitive literal substrings, including displayed labels; a bare number or percentage (for example `80%`) matches that rounded battery level. It applies after a 300 ms pause at two or more characters (maximum 100); shorter input means no search. Search resets pagination, combines with other filters, and can be removed through its chip or Clear filters. The API accepts an optional `search` query parameter.
-
-## Robot detail visuals
-
-Details combine existing activity controls with an illustrative robot profile and a shared SVG location schematic. Peer markers represent actual robots assigned to the same site; positions within reported areas are fixed demo slots, not measured coordinates. Up to twelve peers appear per area with overflow counts. Chargers are static symbols without occupancy data. Missing areas stay unknown; stale reports remain last known. Four generated illustrations represent robot categories rather than verified manufacturer models. No map interaction or sensor telemetry is implemented.
-
-Robot details use Overview and Logs tabs below the shared status and controls. Logs show a static, read-only startup fixture with robot metadata and fixed timestamps. They are not persisted history and do not change with telemetry or action requests.
-
-## Navigation
-
-The shared app shell uses a 100px sidebar with labels beneath their icons on desktop (900px and above) and a compact header with a temporary navigation drawer on smaller screens. Fleet (`/`, including robot details), Skills (`/skills`), and Integrations (`/integrations`) share this navigation. Skills and Integrations are placeholder screens using the shared work-in-progress component and illustration; they have no backend yet. The main content and fleet table retain their own scrolling. A keyboard skip link goes directly to the main content.
+The simulator is a separate process. It does not open the database. About once a second it loads the fleet over HTTP, picks up robots you add, and posts their telemetry back. Robots start Idle at Base, go to work, return when the battery is low, and charge. The row menu can start, stop, send a robot home, or retry. About one robot in five runs into a problem, and about one in five periodically stops reporting so the dashboard can show Offline. Only the latest report and the latest command are stored. Run one simulator. This is a local stand-in so the interface has something live to show.
