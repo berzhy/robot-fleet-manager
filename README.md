@@ -52,3 +52,10 @@ Leave it running while you use the dashboard, and stop it with Ctrl+C. Run one s
 ## Simulator
 
 The simulator is a separate process. It does not open the database. About once a second it loads the fleet over HTTP, picks up robots you add, and posts their telemetry back. Robots start Idle at Base, go to work, return when the battery is low, and charge. The row menu can start, stop, send a robot home, or retry. About one robot in five runs into a problem, and about one in five periodically stops reporting so the dashboard can show Offline. Only the latest report and the latest command are stored. Run one simulator. This is a local stand-in so the interface has something live to show.
+
+## Checks
+
+- `npm test` runs the Vitest unit tests: interface components in jsdom, and the server and simulator in Node.
+- `npm run test:e2e` runs the Playwright browser journey against its own temporary database.
+- `npm run lint` runs ESLint with the Next.js config, type-checked TypeScript, and the recommended accessibility rules.
+- `npm run knip` flags unused files, exports, and dependencies.
