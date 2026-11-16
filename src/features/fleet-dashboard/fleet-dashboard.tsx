@@ -61,7 +61,6 @@ export default function FleetDashboard() {
     setPage,
     setPageSize,
     refresh,
-    cancelRefresh,
     interrupted,
     unverified,
     verifiedAt,
@@ -95,7 +94,6 @@ export default function FleetDashboard() {
     if (inFlightRef.current || deleteTarget || state.status === "loading")
       return;
 
-    cancelRefresh();
     inFlightRef.current = true;
     setNotification(null);
     addFocusRef.current = trigger;
@@ -131,7 +129,6 @@ export default function FleetDashboard() {
     if (inFlightRef.current) return;
 
     inFlightRef.current = true;
-    cancelRefresh();
     setNotification(null);
 
     try {
@@ -161,7 +158,6 @@ export default function FleetDashboard() {
 
   function requestDelete(robot: Robot, trigger: HTMLButtonElement) {
     if (inFlightRef.current) return;
-    cancelRefresh();
     setNotification(null);
     returnFocusRef.current = trigger;
     setDeleteTarget({ robot, open: true });
@@ -169,7 +165,6 @@ export default function FleetDashboard() {
 
   function requestDeleteAll() {
     if (inFlightRef.current || deleteTarget) return;
-    cancelRefresh();
     setNotification(null);
     returnFocusRef.current = addButtonRef.current;
     setDeleteTarget({ robot: null, open: true });
@@ -184,7 +179,6 @@ export default function FleetDashboard() {
     if (!deleteTarget?.open || inFlightRef.current) return;
 
     setNotification(null);
-    cancelRefresh();
     inFlightRef.current = true;
 
     try {

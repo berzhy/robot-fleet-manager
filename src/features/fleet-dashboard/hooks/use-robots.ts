@@ -69,10 +69,6 @@ export default function useRobots(paused = false) {
     setAnnounce(false);
   }
 
-  function cancelRefresh() {
-    void client.cancelQueries({ queryKey: options.queryKey, exact: true });
-  }
-
   function refresh() {
     void client.invalidateQueries({
       queryKey: options.queryKey,
@@ -105,7 +101,6 @@ export default function useRobots(paused = false) {
       setRequest((previous) => ({ ...previous, page: 0, filters }));
     },
     refresh,
-    cancelRefresh,
     interrupted: query.isError,
     unverified: query.isError,
     verifiedAt: snapshot?.evaluatedAt ?? 0,
