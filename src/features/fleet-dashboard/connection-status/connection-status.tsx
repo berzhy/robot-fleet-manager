@@ -22,16 +22,7 @@ export function ConnectionIndicator({ status }: { status: Status }) {
     <Icon
       fontSize="inherit"
       aria-hidden="true"
-      sx={[
-        { color: colors[status] },
-        (theme) =>
-          theme.applyStyles(
-            "light",
-            status === "Online"
-              ? { color: (theme.vars ?? theme).palette.success.light }
-              : {},
-          ),
-      ]}
+      sx={{ color: colors[status] }}
     />
   );
 }

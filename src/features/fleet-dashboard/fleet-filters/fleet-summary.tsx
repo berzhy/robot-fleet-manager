@@ -62,19 +62,7 @@ export default function FleetSummary({
               if (view !== filters.view) onChange({ ...filters, view });
             }}
             aria-label={labels[view]}
-            sx={{
-              py: 1.25,
-              bgcolor: "background.default",
-              "&.Mui-selected": {
-                bgcolor: "primary.main",
-                color: "primary.contrastText",
-                borderColor: "primary.main",
-              },
-              "&.Mui-selected:hover": {
-                bgcolor: "primary.dark",
-                borderColor: "primary.dark",
-              },
-            }}
+            sx={{ py: 1.25 }}
           >
             <Stack
               direction="row"
