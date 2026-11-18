@@ -1,34 +1,37 @@
 "use client";
 
+import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
-import { type ReactNode, useId, useRef } from "react";
-
-import type { Robot } from "@/modules/robots/robot";
+import { useId, useRef } from "react";
 
 export default function DeleteRobotDialog({
-  robot,
+  robotName,
   open,
   pending,
+  error,
+  onClearError,
   onCancel,
   onConfirm,
   onExited,
-  children,
 }: {
-  children?: ReactNode;
-  robot: Robot | null;
+  robotName?: string;
   open: boolean;
   pending: boolean;
+  error?: string;
+  onClearError: () => void;
   onCancel: () => void;
   onConfirm: () => void;
   onExited: () => void;
 }) {
   const id = useId();
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const deletingOne = robotName !== undefined;
+
   return (
     <Dialog
       open={open}
@@ -44,17 +47,32 @@ export default function DeleteRobotDialog({
       }}
     >
       <DialogTitle id={`${id}-title`}>
-        {robot ? "Delete robot?" : "Delete all robots?"}
+        {deletingOne ? "Delete robot?" : "Delete all robots?"}
       </DialogTitle>
       <DialogContent>
         <DialogContentText
           data-testid="delete-robot-description"
           id={`${id}-description`}
         >
-          {robot
-            ? `Delete “${robot.name}”? This cannot be undone.`
+          {deletingOne
+            ? `Delete “${robotName}”? This cannot be undone.`
             : "Delete all robots in the fleet, including those hidden by filters? This cannot be undone."}
         </DialogContentText>
+        {error && (
+          <Alert
+            data-testid="fleet-notification"
+            severity="error"
+            onClose={onClearError}
+            slotProps={{
+              closeButton: () => ({
+                "data-testid": "fleet-notification-close",
+              }),
+            }}
+            sx={{ mt: 2 }}
+          >
+            {error}
+          </Alert>
+        )}
       </DialogContent>
       <DialogActions>
         <Button
@@ -72,10 +90,9 @@ export default function DeleteRobotDialog({
           loading={pending}
           onClick={onConfirm}
         >
-          {robot ? "Delete" : "Delete all robots"}
+          {deletingOne ? "Delete" : "Delete all robots"}
         </Button>
       </DialogActions>
-      {children}
     </Dialog>
   );
 }

@@ -309,7 +309,66 @@ test("combines dropdowns and tiles, removes chips and retries a failed filter re
   await expect(rows).toHaveCount(6);
 });
 
-test("live filtered recovery restores focus after the action menu closes", async ({
+for (const filter of ["Location", "Manufacturer"] as const) {
+  test(`${filter} keeps keyboard focus when a poll removes the focused option`, async ({
+    page,
+    request,
+  }) => {
+    const created = await request.post("/api/robots/batch", {
+      data: {
+        robots: ["Atlas", "Bishop"].map((name) => ({
+          name,
+          manufacturer: name,
+          site: name,
+          type: "inspection",
+          integrationType: "ros2",
+        })),
+      },
+    });
+    expect(created.status()).toBe(201);
+    const { items } = (await created.json()) as { items: Robot[] };
+    const [atlas] = items;
+
+    await page.goto("/");
+    if (filter === "Manufacturer")
+      await page.getByRole("button", { name: "More filters" }).click();
+
+    const select = page.getByRole("combobox", { name: filter });
+    await select.click();
+    await page.keyboard.press("ArrowDown");
+    const listbox = page.getByRole("listbox");
+    const atlasOption = listbox.getByRole("option", {
+      name: "Atlas",
+      exact: true,
+    });
+    const bishopOption = listbox.getByRole("option", {
+      name: "Bishop",
+      exact: true,
+    });
+    await expect(atlasOption).toBeFocused();
+
+    const response = await request.delete(`/api/robots/${atlas.id}`);
+    expect(response.status()).toBe(204);
+    await expect(page.getByTestId(`robot-row-${atlas.id}`)).toHaveCount(0, {
+      timeout: 15000,
+    });
+    await expect(atlasOption).toBeFocused();
+    await page.keyboard.press("ArrowDown");
+    await expect(bishopOption).toBeFocused();
+
+    await page.keyboard.press("Escape");
+    await expect(listbox).toBeHidden();
+    await select.click();
+    await expect(listbox).toBeVisible();
+    await expect(atlasOption).toHaveCount(0);
+    await bishopOption.click();
+    await expect(
+      page.getByText(`${filter}: Bishop`, { exact: true }),
+    ).toBeVisible();
+  });
+}
+
+test("live filtered recovery closes the action menu and restores focus", async ({
   page,
   request,
 }) => {
@@ -324,13 +383,11 @@ test("live filtered recovery restores focus after the action menu closes", async
   await expect(row).toBeVisible();
 
   await row.getByTestId("robot-actions").click();
-  await sendProblem(request, robot, false);
   await expect(page.getByRole("menu")).toBeVisible();
-  await expect(row).toBeVisible();
 
-  await page.keyboard.press("Escape");
-  await expect(page.getByRole("menu")).toHaveCount(0);
+  await sendProblem(request, robot, false);
   await expect(row).toHaveCount(0, { timeout: 15000 });
+  await expect(page.getByRole("menu")).toHaveCount(0);
   await expect(page.getByTestId("fleet-heading")).toBeFocused();
   await expect(
     page.getByRole("button", {
@@ -339,6 +396,40 @@ test("live filtered recovery restores focus after the action menu closes", async
       pressed: true,
     }),
   ).toContainText("0");
+});
+
+test("delete confirmation keeps the selected robot after it leaves the filtered results", async ({
+  page,
+  request,
+}) => {
+  const [robot, otherRobot] = await seedFleet(request, 2);
+  await sendProblem(request, robot, true);
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Needs attention", exact: true })
+    .click();
+
+  const row = page.getByTestId(`robot-row-${robot.id}`);
+  await row.getByRole("button", { name: `Actions for ${robot.name}` }).click();
+  await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
+
+  const dialog = page.getByRole("dialog", { name: "Delete robot?" });
+  await expect(dialog.getByRole("button", { name: "Cancel" })).toBeFocused();
+  await sendProblem(request, robot, false);
+  await expect(row).toHaveCount(0, { timeout: 15000 });
+  await expect(dialog).toContainText(`Delete “${robot.name}”?`);
+  await expect(dialog.getByRole("button", { name: "Cancel" })).toBeFocused();
+
+  const deletion = page.waitForResponse(
+    (response) => response.request().method() === "DELETE",
+  );
+  await dialog.getByRole("button", { name: "Delete" }).click();
+  const deleted = await deletion;
+  expect(new URL(deleted.url()).pathname).toBe(`/api/robots/${robot.id}`);
+  expect(deleted.status()).toBe(204);
+  await expect(dialog).toBeHidden();
+  await expect(page.getByTestId("fleet-heading")).toBeFocused();
+  await expect(await request.get(`/api/robots/${otherRobot.id}`)).toBeOK();
 });
 
 test("deleting the last filtered page corrects pagination and retains filters", async ({
@@ -485,7 +576,7 @@ test("delete all clears robots outside the active search and allows adding again
   expect(await registeredRobots(request)).toHaveLength(1);
 });
 
-test("search debounce releases an unmounted action menu and polling resumes", async ({
+test("search debounce closes an unmounted action menu and the new view keeps polling", async ({
   page,
   request,
 }) => {

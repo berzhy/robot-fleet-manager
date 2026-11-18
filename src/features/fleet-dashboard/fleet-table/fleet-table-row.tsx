@@ -1,6 +1,5 @@
 "use client";
-import { robotProblemDetails } from "@/modules/robots/robot-problems";
-import type { RobotAction } from "@/modules/robots/robot-actions";
+
 import Box from "@mui/material/Box";
 import Link from "@mui/material/Link";
 import Stack from "@mui/material/Stack";
@@ -9,9 +8,13 @@ import TableRow from "@mui/material/TableRow";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
+import type { FocusEventHandler } from "react";
 
+import type { RobotAction } from "@/modules/robots/robot-actions";
+import { robotProblemDetails } from "@/modules/robots/robot-problems";
 import type { Robot } from "@/modules/robots/robot";
-import { connectionStatus, reportAge } from "@/modules/telemetry/freshness";
+import { connectionStatus } from "@/modules/telemetry/freshness";
+
 import { ConnectionIndicator } from "../connection-status/connection-status";
 import SearchHighlight from "./search-highlight";
 import RobotActions from "./robot-actions";
@@ -21,15 +24,14 @@ import {
   formatIntegrationType,
   formatBattery,
   formatAddedParts,
+  formatRobotTimestamp,
 } from "../utils/robot-formatters";
 
 export default function FleetTableRow({
   search,
-  connectionAt,
-  now,
-  verifiedAt,
+  evaluatedAt,
   unverified,
-  onMenuOpenChange,
+  onFocusCapture,
   robot,
   rowHeight,
   onAction,
@@ -38,25 +40,22 @@ export default function FleetTableRow({
 }: {
   search?: string;
   adding: boolean;
-  connectionAt?: number;
-  now: number;
-  verifiedAt: number;
+  evaluatedAt: number;
   unverified: boolean;
-  onMenuOpenChange?: (open: boolean) => void;
+  onFocusCapture: FocusEventHandler<HTMLTableRowElement>;
   robot: Robot;
   rowHeight: number;
   onAction?: (robot: Robot, action: RobotAction) => void;
   onDelete: (robot: Robot, trigger: HTMLButtonElement) => void;
 }) {
-  const connection = connectionStatus(
-    robot.lastReceivedAt,
-    connectionAt ?? (unverified || !now ? verifiedAt : now),
-  );
-  const showReportAge = connection === "Delayed" || connection === "Offline";
+  const connection = connectionStatus(robot.lastReceivedAt, evaluatedAt);
+  const showLastReport = connection === "Delayed" || connection === "Offline";
   const registered = formatAddedParts(robot.createdAt);
+
   return (
     <TableRow
       data-testid={`robot-row-${robot.id}`}
+      onFocusCapture={onFocusCapture}
       hover
       sx={{
         position: "relative",
@@ -123,13 +122,16 @@ export default function FleetTableRow({
           <SearchHighlight text={connection} search={search} />
           {unverified ? " (unverified)" : ""}
         </Typography>
-        {showReportAge && (
+        {showLastReport && robot.lastReceivedAt && (
           <Typography
-            data-testid="robot-report-age"
+            data-testid="robot-last-report"
             variant="body2"
             color="textSecondary"
           >
-            {reportAge(robot.lastReceivedAt, now || verifiedAt)}
+            Last report{" "}
+            <time dateTime={robot.lastReceivedAt}>
+              {formatRobotTimestamp(robot.lastReceivedAt)}
+            </time>
           </Typography>
         )}
       </TableCell>
@@ -183,9 +185,9 @@ export default function FleetTableRow({
       </TableCell>
       <TableCell align="right" sx={{ position: "relative" }}>
         <RobotActions
-          onOpenChange={onMenuOpenChange}
           disabled={adding}
           robot={robot}
+          evaluatedAt={evaluatedAt}
           unverified={unverified}
           onDelete={onDelete}
           onAction={onAction}

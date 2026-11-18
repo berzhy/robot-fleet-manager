@@ -44,9 +44,11 @@ async function openMenu() {
 
 test("disabled actions explain their reason on keyboard focus and cannot execute", async () => {
   const onAction = vi.fn();
+  const evaluatedAt = Date.now();
   render(
     <RobotActions
-      robot={{ ...robot, lastReceivedAt: new Date().toISOString() }}
+      robot={{ ...robot, lastReceivedAt: new Date(evaluatedAt).toISOString() }}
+      evaluatedAt={evaluatedAt}
       disabled={false}
       onDelete={vi.fn()}
       onAction={onAction}

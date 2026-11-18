@@ -1,23 +1,25 @@
-import { useId } from "react";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
+import { useId } from "react";
+
 import type { Robot } from "@/modules/robots/robot";
 import {
   actionLabels,
   actionUnavailable,
   type RobotAction,
 } from "@/modules/robots/robot-actions";
+
 export default function ActivityControls({
   robot,
-  now,
+  evaluatedAt,
   unverified,
   pending,
   onAction,
 }: {
   robot: Robot;
-  now: number;
+  evaluatedAt: number;
   unverified: boolean;
   pending: boolean;
   onAction: (action: RobotAction) => void;
@@ -28,6 +30,7 @@ export default function ActivityControls({
       ? "stop"
       : "start";
   const actions: RobotAction[] = [activityAction, "retry", "return-to-base"];
+
   return (
     <Stack
       direction="row"
@@ -42,7 +45,7 @@ export default function ActivityControls({
           ? "An activity request is in progress"
           : unverified
             ? "Waiting for verified robot data"
-            : actionUnavailable(robot, action, now);
+            : actionUnavailable(robot, action, evaluatedAt);
         return (
           <Tooltip
             key={action === "start" || action === "stop" ? "activity" : action}

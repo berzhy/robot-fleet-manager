@@ -6,7 +6,6 @@ import FleetFilters from "./fleet-filters";
 import FleetSummary from "./fleet-summary";
 
 test("dropdowns, tiles and removable chips share one selection", () => {
-  const open = vi.fn();
   function Controls() {
     const [filters, setFilters] = useState<RobotFilters>({ view: "all" });
     return (
@@ -26,7 +25,6 @@ test("dropdowns, tiles and removable chips share one selection", () => {
           onSearchChange={vi.fn()}
           filters={filters}
           onChange={setFilters}
-          onOpenChange={open}
           options={{ sites: ["Munich", "Berlin"], manufacturers: ["Maker"] }}
         />
       </>
@@ -37,8 +35,7 @@ test("dropdowns, tiles and removable chips share one selection", () => {
   fireEvent.mouseDown(screen.getByRole("combobox", { name: "Location" }));
   fireEvent.click(screen.getByRole("option", { name: "Munich" }));
 
-  expect(open).toHaveBeenCalledWith(true);
-  expect(open).toHaveBeenCalledWith(false);
+  expect(screen.getByText("Location: Munich")).toBeVisible();
 
   fireEvent.click(
     screen.getByRole("button", { name: "Needs attention", pressed: false }),
@@ -97,7 +94,6 @@ test("type selection creates a removable chip without clearing other filters", (
         onSearchChange={vi.fn()}
         filters={filters}
         onChange={setFilters}
-        onOpenChange={vi.fn()}
         options={{ sites: ["Munich"], manufacturers: [] }}
       />
     );
@@ -135,7 +131,6 @@ function SearchControls() {
       search={search}
       onSearchChange={setSearch}
       onChange={setFilters}
-      onOpenChange={vi.fn()}
       options={{ sites: ["Munich"], manufacturers: [] }}
     />
   );
@@ -233,7 +228,6 @@ test("selecting in more filters closes it, applies immediately and counts active
         onSearchChange={vi.fn()}
         filters={filters}
         onChange={setFilters}
-        onOpenChange={vi.fn()}
         options={{ sites: ["Munich"], manufacturers: ["Maker"] }}
       />
     );

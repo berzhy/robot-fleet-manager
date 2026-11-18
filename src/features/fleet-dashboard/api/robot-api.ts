@@ -46,12 +46,33 @@ export async function getRobots(
   return response.json() as Promise<RobotPage>;
 }
 
-export async function deleteRobot(id: string): Promise<void> {
+export async function deleteRobot(id: string) {
   const response = await fetch(`/api/robots/${encodeURIComponent(id)}`, {
     method: "DELETE",
     signal: requestSignal(),
   });
-  if (response.status !== 204) throw new Error("Unable to delete robot.");
+  if (response.status === 204) return "deleted";
+
+  if (response.status === 404) {
+    const body: unknown = await response.json().catch((error: unknown) => {
+      if (error instanceof SyntaxError) return null;
+      throw error;
+    });
+    const error =
+      typeof body === "object" && body !== null && "error" in body
+        ? body.error
+        : null;
+
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "NOT_FOUND"
+    )
+      return "already-removed";
+  }
+
+  throw new Error("Unable to delete robot.");
 }
 
 export async function createRobot(input: CreateRobotInput): Promise<Robot> {

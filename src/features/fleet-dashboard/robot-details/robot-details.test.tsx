@@ -110,7 +110,7 @@ test.each([
           batteryPercent: 80,
           lastReceivedAt: new Date(now).toISOString(),
         }}
-        now={now}
+        evaluatedAt={now}
         unverified={false}
         pending={false}
         onAction={onAction}
