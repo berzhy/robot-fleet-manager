@@ -11,7 +11,8 @@ export default defineConfig({
     ...devices["Desktop Chrome"],
     baseURL: origin,
     channel: process.env.CI ? undefined : "chrome",
-    headless: !!process.env.CI,
+    // Headless unless `npm run test:e2e:browser` sets this. CI never opens a window.
+    headless: !!process.env.CI || process.env.PLAYWRIGHT_HEADED !== "1",
     trace: { mode: "retain-on-failure", screenshots: false },
   },
   webServer: {

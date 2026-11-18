@@ -12,6 +12,7 @@
     "knip": "knip",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:e2e:browser": "PLAYWRIGHT_HEADED=1 playwright test",
     "test:watch": "vitest",
     "db:setup": "tsx scripts/setup-database.ts",
     "simulator": "tsx scripts/simulate.ts"
