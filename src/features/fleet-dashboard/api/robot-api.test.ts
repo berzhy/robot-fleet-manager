@@ -43,20 +43,30 @@ test("requests a server page with cancellation and rejects HTTP failures", async
   await expect(getRobots(0)).rejects.toThrow("Unable to load robots.");
 });
 
-test("deletes an encoded robot id, accepts an empty 204 and rejects failures", async () => {
+test("deletes an encoded robot id and distinguishes an already removed robot from a failed request", async () => {
   const fetcher = vi
     .fn()
     .mockResolvedValueOnce(new Response(null, { status: 204 }))
+    .mockResolvedValueOnce(
+      Response.json({ error: { code: "NOT_FOUND" } }, { status: 404 }),
+    )
+    .mockResolvedValueOnce(
+      Response.json({ error: { code: "UNEXPECTED" } }, { status: 404 }),
+    )
     .mockResolvedValueOnce(new Response(null, { status: 404 }));
   vi.stubGlobal("fetch", fetcher);
 
-  await expect(dataDeleteRobot("robot/id")).resolves.toBeUndefined();
+  await expect(dataDeleteRobot("robot/id")).resolves.toBe("deleted");
   expect(fetcher).toHaveBeenCalledWith("/api/robots/robot%2Fid", {
     method: "DELETE",
     signal: expect.any(AbortSignal) as AbortSignal,
   });
 
-  await expect(dataDeleteRobot("missing")).rejects.toThrow(
+  await expect(dataDeleteRobot("missing")).resolves.toBe("already-removed");
+  await expect(dataDeleteRobot("other")).rejects.toThrow(
+    "Unable to delete robot.",
+  );
+  await expect(dataDeleteRobot("unrecognized")).rejects.toThrow(
     "Unable to delete robot.",
   );
 });

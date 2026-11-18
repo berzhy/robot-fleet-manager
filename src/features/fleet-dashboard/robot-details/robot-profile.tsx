@@ -10,7 +10,7 @@ import type { Robot } from "@/modules/robots/robot";
 import {
   formatRobotType,
   formatIntegrationType,
-  formatAdded,
+  formatRobotTimestamp,
 } from "../utils/robot-formatters";
 const illustrations = { cleaning, delivery, security, inspection };
 export default function RobotProfile({ robot }: { robot: Robot }) {
@@ -19,7 +19,7 @@ export default function RobotProfile({ robot }: { robot: Robot }) {
     ["Type", formatRobotType(robot.type)],
     ["Integration", formatIntegrationType(robot.integrationType)],
     ["ID", robot.id],
-    ["Registered", formatAdded(robot.createdAt)],
+    ["Registered", formatRobotTimestamp(robot.createdAt)],
   ];
   return (
     <Paper

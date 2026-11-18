@@ -9,7 +9,10 @@ import Typography from "@mui/material/Typography";
 import { useEffect, useRef, useState } from "react";
 
 import type { Robot } from "@/modules/robots/robot";
-import type { RobotAction } from "@/modules/robots/robot-actions";
+import {
+  actionUnavailable,
+  type RobotAction,
+} from "@/modules/robots/robot-actions";
 
 import ActionNotification from "./action-notification";
 import { isRequestTimeout } from "./api/robot-api";
@@ -19,39 +22,32 @@ import FleetSummary from "./fleet-filters/fleet-summary";
 import AddRobotSplitButton from "./fleet-table/add-robot-split-button";
 import DeleteRobotDialog from "./fleet-table/delete-robot-dialog";
 import FleetTable from "./fleet-table/fleet-table";
-import useReportClock from "./hooks/use-report-clock";
 import useRobots from "./hooks/use-robots";
 import { generateRobotInput } from "./utils/generate-robot-input";
 import { formatResultCount } from "./utils/robot-formatters";
 
+type DeleteTarget =
+  { kind: "robot"; id: string; name: string } | { kind: "all" };
+
 export default function FleetDashboard() {
   const [search, setSearch] = useState("");
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
+
   const addButtonRef = useRef<HTMLButtonElement>(null);
   const addFocusRef = useRef<HTMLElement | null>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const inFlightRef = useRef(false);
+
   const { add, remove, command } = useRobotMutations();
   const adding = add.isPending;
   const acting = command.isPending;
   const deleting = remove.isPending;
 
-  const headingRef = useRef<HTMLHeadingElement>(null);
-  const returnFocusRef = useRef<HTMLElement | null>(null);
-  const inFlightRef = useRef(false);
-
-  const [deleteTarget, setDeleteTarget] = useState<{
-    robot: Robot | null;
+  const [confirmation, setConfirmation] = useState<{
+    target: DeleteTarget;
+    trigger: HTMLButtonElement | null;
     open: boolean;
   } | null>(null);
 
-  const paused =
-    acting ||
-    adding ||
-    deleting ||
-    menuOpen ||
-    filterOpen ||
-    Boolean(deleteTarget);
-  const now = useReportClock(paused);
   const {
     state,
     announcement,
@@ -63,11 +59,11 @@ export default function FleetDashboard() {
     refresh,
     interrupted,
     unverified,
-    verifiedAt,
+    verifiedAt: evaluatedAt,
     snapshot,
     filters,
     setFilters,
-  } = useRobots(paused);
+  } = useRobots(adding || acting || deleting);
 
   const [notification, setNotification] = useState<{
     severity: "success" | "error";
@@ -80,7 +76,7 @@ export default function FleetDashboard() {
     if (
       inFlightRef.current ||
       adding ||
-      deleteTarget ||
+      confirmation ||
       state.status === "loading" ||
       !addFocusRef.current
     )
@@ -88,10 +84,10 @@ export default function FleetDashboard() {
     const target = addFocusRef.current;
     addFocusRef.current = null;
     (target.isConnected ? target : addButtonRef.current)?.focus();
-  }, [adding, deleteTarget, state.status]);
+  }, [adding, confirmation, state.status]);
 
   async function addRobot(trigger: HTMLButtonElement, count: 1 | 10 | 100 = 1) {
-    if (inFlightRef.current || deleteTarget || state.status === "loading")
+    if (inFlightRef.current || confirmation || state.status === "loading")
       return;
 
     inFlightRef.current = true;
@@ -128,6 +124,15 @@ export default function FleetDashboard() {
   async function actOnRobot(robot: Robot, action: RobotAction) {
     if (inFlightRef.current) return;
 
+    const reason = actionUnavailable(robot, action, Date.now());
+    if (reason) {
+      setNotification({
+        severity: "error",
+        message: `${reason}. Check the latest report before trying again.`,
+      });
+      return;
+    }
+
     inFlightRef.current = true;
     setNotification(null);
 
@@ -156,49 +161,49 @@ export default function FleetDashboard() {
     }
   }
 
-  function requestDelete(robot: Robot, trigger: HTMLButtonElement) {
-    if (inFlightRef.current) return;
-    setNotification(null);
-    returnFocusRef.current = trigger;
-    setDeleteTarget({ robot, open: true });
-  }
+  function requestDelete(target: DeleteTarget, trigger: HTMLButtonElement) {
+    if (inFlightRef.current || confirmation) return;
 
-  function requestDeleteAll() {
-    if (inFlightRef.current || deleteTarget) return;
     setNotification(null);
-    returnFocusRef.current = addButtonRef.current;
-    setDeleteTarget({ robot: null, open: true });
+    setConfirmation({ target, trigger, open: true });
   }
 
   function closeDeleteDialog() {
-    if (inFlightRef.current) return;
-    setDeleteTarget((target) => (target ? { ...target, open: false } : null));
+    if (!confirmation?.open || inFlightRef.current) return;
+
+    setNotification(null);
+    setConfirmation({ ...confirmation, open: false });
   }
 
   async function confirmDelete() {
-    if (!deleteTarget?.open || inFlightRef.current) return;
+    if (!confirmation?.open || inFlightRef.current) return;
 
+    const { target } = confirmation;
     setNotification(null);
     inFlightRef.current = true;
 
     try {
-      await remove.mutateAsync(deleteTarget.robot?.id ?? null);
+      const result = await remove.mutateAsync(
+        target.kind === "robot" ? target.id : null,
+      );
 
-      setNotification({
-        severity: "success",
-        message: deleteTarget.robot
-          ? `“${deleteTarget.robot.name}” deleted.`
-          : "All robots deleted.",
-      });
-      returnFocusRef.current = headingRef.current;
-      setDeleteTarget({ ...deleteTarget, open: false });
+      let message = "All robots deleted.";
+      if (target.kind === "robot") {
+        message =
+          result === "already-removed"
+            ? `“${target.name}” was already removed.`
+            : `“${target.name}” deleted.`;
+      }
+
+      setNotification({ severity: "success", message });
+      setConfirmation({ ...confirmation, open: false, trigger: null });
     } catch (error) {
       setNotification({
         severity: "error",
         message: isRequestTimeout(error)
-          ? "The delete request timed out. Its outcome is uncertain; close this dialog to refresh the fleet before trying again."
-          : deleteTarget.robot
-            ? `Unable to delete “${deleteTarget.robot.name}”. Please try again.`
+          ? "The delete request timed out. Its outcome is uncertain. Checking the fleet."
+          : target.kind === "robot"
+            ? `Unable to delete “${target.name}”. Please try again.`
             : "Unable to delete all robots. Please try again.",
       });
     } finally {
@@ -207,13 +212,12 @@ export default function FleetDashboard() {
   }
 
   function finishDialogClose() {
-    setDeleteTarget(null);
-    const target = returnFocusRef.current;
-    if (target === addButtonRef.current) {
-      addFocusRef.current = target;
-      return;
-    }
-    (target?.isConnected ? target : headingRef.current)?.focus();
+    const trigger = confirmation?.trigger;
+    (trigger?.isConnected && !trigger.disabled
+      ? trigger
+      : headingRef.current
+    )?.focus();
+    setConfirmation(null);
   }
 
   const notice = notification && (
@@ -247,11 +251,11 @@ export default function FleetDashboard() {
           Fleet dashboard
         </Typography>
         <AddRobotSplitButton
-          onDeleteAll={requestDeleteAll}
+          onDeleteAll={(trigger) => requestDelete({ kind: "all" }, trigger)}
           buttonRef={addButtonRef}
           loading={adding}
           disabled={
-            acting || state.status === "loading" || Boolean(deleteTarget)
+            acting || state.status === "loading" || Boolean(confirmation?.open)
           }
           onAdd={(trigger, count) => void addRobot(trigger, count)}
         />
@@ -300,7 +304,6 @@ export default function FleetDashboard() {
               search={search}
               onSearchChange={setSearch}
               onChange={setFilters}
-              onOpenChange={setFilterOpen}
               options={snapshot?.filterOptions}
             />
           </Stack>
@@ -315,11 +318,9 @@ export default function FleetDashboard() {
           setSearch("");
           setFilters({ ...filters, search: undefined });
         }}
-        headingRef={headingRef}
-        now={now}
-        verifiedAt={verifiedAt}
+        headingRef={confirmation ? undefined : headingRef}
+        evaluatedAt={evaluatedAt}
         unverified={unverified}
-        onMenuOpenChange={setMenuOpen}
         state={state}
         total={total}
         page={page}
@@ -328,23 +329,33 @@ export default function FleetDashboard() {
         onPageChange={setPage}
         onRetry={refresh}
         onAction={(robot, action) => void actOnRobot(robot, action)}
-        onDelete={requestDelete}
+        onDelete={({ id, name }, trigger) =>
+          requestDelete({ kind: "robot", id, name }, trigger)
+        }
         onAdd={(trigger) => void addRobot(trigger)}
         adding={adding || acting}
       />
-      {deleteTarget && (
+      {confirmation && (
         <DeleteRobotDialog
-          robot={deleteTarget.robot}
-          open={deleteTarget.open}
+          robotName={
+            confirmation.target.kind === "robot"
+              ? confirmation.target.name
+              : undefined
+          }
+          open={confirmation.open}
           pending={deleting}
+          error={
+            notification?.severity === "error"
+              ? notification.message
+              : undefined
+          }
+          onClearError={() => setNotification(null)}
           onCancel={closeDeleteDialog}
           onConfirm={() => void confirmDelete()}
           onExited={finishDialogClose}
-        >
-          {notification?.severity === "error" ? notice : null}
-        </DeleteRobotDialog>
+        />
       )}
-      {(notification?.severity === "success" || !deleteTarget) && (
+      {(notification?.severity === "success" || !confirmation) && (
         <Portal>{notice}</Portal>
       )}
     </Stack>

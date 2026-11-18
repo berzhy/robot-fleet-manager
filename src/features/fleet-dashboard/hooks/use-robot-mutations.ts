@@ -31,7 +31,7 @@ export default function useRobotMutations() {
 
   const remove = useMutation({
     ...lifecycle,
-    mutationFn: (id: string | null) =>
+    mutationFn: async (id: string | null) =>
       id === null ? deleteAllRobots() : deleteRobot(id),
   });
 

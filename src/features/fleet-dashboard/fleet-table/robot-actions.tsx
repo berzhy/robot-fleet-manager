@@ -1,59 +1,44 @@
 "use client";
 
-import PlayArrowIcon from "@mui/icons-material/PlayArrow";
-import StopIcon from "@mui/icons-material/Stop";
+import DeleteIcon from "@mui/icons-material/Delete";
 import HomeIcon from "@mui/icons-material/Home";
+import MenuIcon from "@mui/icons-material/Menu";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import ReplayIcon from "@mui/icons-material/Replay";
+import StopIcon from "@mui/icons-material/Stop";
+import IconButton from "@mui/material/IconButton";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import ListItemText from "@mui/material/ListItemText";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
 import Tooltip from "@mui/material/Tooltip";
+import { useId, useState } from "react";
+
 import {
   actionLabels,
   actionUnavailable,
   robotActions,
   type RobotAction,
 } from "@/modules/robots/robot-actions";
-import DeleteIcon from "@mui/icons-material/Delete";
-import MenuIcon from "@mui/icons-material/Menu";
-import IconButton from "@mui/material/IconButton";
-import ListItemIcon from "@mui/material/ListItemIcon";
-import ListItemText from "@mui/material/ListItemText";
-import Menu from "@mui/material/Menu";
-import MenuItem from "@mui/material/MenuItem";
-import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
-
 import type { Robot } from "@/modules/robots/robot";
 
 export default function RobotActions({
-  onOpenChange,
   robot,
+  evaluatedAt,
   onAction,
   unverified = false,
   onDelete,
   disabled,
 }: {
-  onOpenChange?: (open: boolean) => void;
   disabled: boolean;
   robot: Robot;
+  evaluatedAt: number;
   onAction?: (robot: Robot, action: RobotAction) => void;
   unverified?: boolean;
   onDelete: (robot: Robot, trigger: HTMLButtonElement) => void;
 }) {
   const [anchor, setAnchor] = useState<HTMLButtonElement | null>(null);
-  const notifiedOpen = useRef(false);
-  const notify = useEffectEvent((open: boolean) => onOpenChange?.(open));
-  useEffect(
-    () => () => {
-      if (notifiedOpen.current) notify(false);
-    },
-    [],
-  );
-
-  function reportOpen(open: boolean) {
-    notifiedOpen.current = open;
-    onOpenChange?.(open);
-  }
-
   const id = useId();
-  const [openedAt, setOpenedAt] = useState(0);
 
   return (
     <>
@@ -64,11 +49,7 @@ export default function RobotActions({
         aria-haspopup="menu"
         aria-controls={anchor ? id : undefined}
         aria-expanded={anchor ? true : undefined}
-        onClick={(event) => {
-          setOpenedAt(Date.now());
-          setAnchor(event.currentTarget);
-          reportOpen(true);
-        }}
+        onClick={(event) => setAnchor(event.currentTarget)}
       >
         <MenuIcon />
       </IconButton>
@@ -77,15 +58,12 @@ export default function RobotActions({
         slotProps={{ list: { disabledItemsFocusable: true } }}
         anchorEl={anchor}
         open={Boolean(anchor)}
-        onClose={() => {
-          setAnchor(null);
-          reportOpen(false);
-        }}
+        onClose={() => setAnchor(null)}
       >
         {robotActions.map((action) => {
           const reason = unverified
             ? "Refresh robot connection before requesting an action"
-            : actionUnavailable(robot, action, openedAt);
+            : actionUnavailable(robot, action, evaluatedAt);
           const Icon = {
             start: PlayArrowIcon,
             stop: StopIcon,
@@ -105,7 +83,6 @@ export default function RobotActions({
                   if (reason || !onAction) return;
                   onAction(robot, action);
                   setAnchor(null);
-                  reportOpen(false);
                 }}
               >
                 <ListItemIcon>
@@ -121,7 +98,6 @@ export default function RobotActions({
           onClick={() => {
             if (anchor) onDelete(robot, anchor);
             setAnchor(null);
-            reportOpen(false);
           }}
         >
           <ListItemIcon>

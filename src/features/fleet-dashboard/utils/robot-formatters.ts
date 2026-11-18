@@ -10,13 +10,14 @@ export {
   formatActivity,
 } from "@/modules/robots/robot-labels";
 
-const addedFormatter = new Intl.DateTimeFormat("en-GB", {
+const timestampFormatter = new Intl.DateTimeFormat("en-GB", {
   dateStyle: "medium",
   timeStyle: "long",
   timeZone: "Europe/Berlin",
 });
-export function formatAdded(createdAt: string) {
-  return addedFormatter.format(new Date(createdAt));
+
+export function formatRobotTimestamp(timestamp: string) {
+  return timestampFormatter.format(new Date(timestamp));
 }
 
 const addedDateFormatter = new Intl.DateTimeFormat("en-GB", {

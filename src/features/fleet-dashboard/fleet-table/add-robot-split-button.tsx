@@ -22,7 +22,7 @@ export default function AddRobotSplitButton({
   buttonRef: Ref<HTMLButtonElement>;
   loading: boolean;
   disabled: boolean;
-  onDeleteAll: () => void;
+  onDeleteAll: (trigger: HTMLButtonElement) => void;
   onAdd: (trigger: HTMLButtonElement, count: 1 | 10 | 100) => void;
 }) {
   const [anchor, setAnchor] = useState<HTMLButtonElement | null>(null);
@@ -74,7 +74,7 @@ export default function AddRobotSplitButton({
         <Divider />
         <MenuItem
           onClick={() => {
-            onDeleteAll();
+            if (anchor) onDeleteAll(anchor);
             setAnchor(null);
           }}
         >

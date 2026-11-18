@@ -32,7 +32,7 @@ test("map limits peer markers without losing counts and separates unknown areas"
     <LocationMap
       robot={{ ...robot, area: "Lobby" }}
       peers={[...peers, { ...peers[0], id: "unknown", area: "Unmapped" }]}
-      now={Date.now()}
+      evaluatedAt={Date.now()}
       unverified={false}
     />,
   );

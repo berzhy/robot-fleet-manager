@@ -111,16 +111,21 @@ test("menu targets the robot, cancellation sends no DELETE and restores focus", 
 
 test("pending deletion blocks duplicate submission and dismissal; failure permits retry", async () => {
   let resolve!: (value: Response) => void;
+  let deleted = false;
   const fetcher = vi
-    .fn()
+    .fn((_: string, init?: RequestInit) => {
+      if (init?.method === "DELETE") {
+        deleted = true;
+        return Promise.resolve(new Response(null, { status: 204 }));
+      }
+      return Promise.resolve(response(deleted ? [] : [robot]));
+    })
     .mockResolvedValueOnce(response([robot]))
     .mockReturnValueOnce(
       new Promise((r) => {
         resolve = r;
       }),
-    )
-    .mockResolvedValueOnce(new Response(null, { status: 204 }))
-    .mockResolvedValueOnce(response([]));
+    );
   vi.stubGlobal("fetch", fetcher);
   render(<FleetDashboard />);
 
@@ -178,19 +183,20 @@ test("pending deletion blocks duplicate submission and dismissal; failure permit
     fireEvent.click(confirm);
     await Promise.resolve();
   });
-  expect(fetcher).toHaveBeenCalledTimes(4);
   await waitFor(() =>
     expect(screen.queryByTestId("delete-robot-dialog")).not.toBeInTheDocument(),
   );
   expect(screen.getByTestId("fleet-heading")).toHaveFocus();
-  expect(fetcher).toHaveBeenNthCalledWith(2, "/api/robots/one", {
-    method: "DELETE",
-    signal: expect.any(AbortSignal) as AbortSignal,
-  });
-  expect(fetcher).toHaveBeenNthCalledWith(3, "/api/robots/one", {
-    method: "DELETE",
-    signal: expect.any(AbortSignal) as AbortSignal,
-  });
+  const deleteCall = [
+    "/api/robots/one",
+    {
+      method: "DELETE",
+      signal: expect.any(AbortSignal) as AbortSignal,
+    },
+  ];
+  expect(
+    fetcher.mock.calls.filter(([, init]) => init?.method === "DELETE"),
+  ).toEqual([deleteCall, deleteCall]);
   const notice = screen.getByTestId("fleet-notification");
   const close = within(notice).getByTestId("fleet-notification-close");
   expect(close).toHaveAccessibleName("Close");
@@ -204,13 +210,18 @@ test("pending deletion blocks duplicate submission and dismissal; failure permit
 });
 
 test("successful deletion stays successful when the table refresh fails", async () => {
+  let finishRefresh!: (value: Response) => void;
   vi.stubGlobal(
     "fetch",
     vi
       .fn()
       .mockResolvedValueOnce(response([robot]))
       .mockResolvedValueOnce(new Response(null, { status: 204 }))
-      .mockResolvedValueOnce(new Response(null, { status: 500 })),
+      .mockReturnValueOnce(
+        new Promise<Response>((resolve) => {
+          finishRefresh = resolve;
+        }),
+      ),
   );
   render(<FleetDashboard />);
 
@@ -224,12 +235,41 @@ test("successful deletion stays successful when the table refresh fails", async 
       "“Atlas” deleted.",
     ),
   );
-  expect(await screen.findByTestId("fleet-refresh-warning")).toHaveTextContent(
-    "Live updates interrupted",
-  );
   await waitFor(() =>
     expect(screen.queryByTestId("delete-robot-dialog")).not.toBeInTheDocument(),
   );
+  expect(screen.getByTestId("robot-row-one")).toBeInTheDocument();
+  expect(screen.getByTestId("fleet-heading")).toHaveFocus();
+
+  act(() => finishRefresh(new Response(null, { status: 500 })));
+  expect(await screen.findByTestId("fleet-refresh-warning")).toHaveTextContent(
+    "Live updates interrupted",
+  );
+  expect(screen.getByTestId("fleet-notification")).toHaveTextContent(
+    "“Atlas” deleted.",
+  );
+});
+
+test("an already removed robot closes confirmation and refreshes the fleet", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi
+      .fn()
+      .mockResolvedValueOnce(response([robot]))
+      .mockResolvedValueOnce(
+        Response.json({ error: { code: "NOT_FOUND" } }, { status: 404 }),
+      )
+      .mockResolvedValueOnce(response([])),
+  );
+  render(<FleetDashboard />);
+
+  const dialog = await openDelete();
+  fireEvent.click(within(dialog).getByRole("button", { name: "Delete" }));
+
+  expect(await screen.findByText("“Atlas” was already removed.")).toBeVisible();
+  expect(await screen.findByTestId("fleet-empty")).toBeInTheDocument();
+  await waitFor(() => expect(dialog).not.toBeInTheDocument());
+  expect(screen.getByTestId("fleet-heading")).toHaveFocus();
 });
 
 test("deleting the last robot on a page requests the previous page", async () => {
@@ -334,7 +374,7 @@ test("bulk deletion explains fleet-wide scope and cancellation makes no DELETE r
   });
   await waitFor(() => expect(dialog).not.toBeInTheDocument());
   await waitFor(() =>
-    expect(screen.getByTestId("fleet-add-robot")).toHaveFocus(),
+    expect(screen.getByTestId("fleet-add-options")).toHaveFocus(),
   );
   expect(
     fetcher.mock.calls.some(
@@ -345,16 +385,21 @@ test("bulk deletion explains fleet-wide scope and cancellation makes no DELETE r
 
 test("bulk deletion blocks duplicate clicks and dismissal, supports retry and refreshes to empty", async () => {
   let resolve!: (value: Response) => void;
+  let deleted = false;
   const fetcher = vi
-    .fn()
+    .fn((_: string, init?: RequestInit) => {
+      if (init?.method === "DELETE") {
+        deleted = true;
+        return Promise.resolve(new Response(null, { status: 204 }));
+      }
+      return Promise.resolve(response(deleted ? [] : [robot]));
+    })
     .mockResolvedValueOnce(response([robot]))
     .mockReturnValueOnce(
       new Promise<Response>((r) => {
         resolve = r;
       }),
-    )
-    .mockResolvedValueOnce(new Response(null, { status: 204 }))
-    .mockResolvedValueOnce(response([]));
+    );
   vi.stubGlobal("fetch", fetcher);
   render(<FleetDashboard />);
 
@@ -393,22 +438,24 @@ test("bulk deletion blocks duplicate clicks and dismissal, supports retry and re
     "All robots deleted.",
   );
   expect(screen.getByTestId("fleet-heading")).toHaveFocus();
-  expect(fetcher).toHaveBeenNthCalledWith(2, "/api/robots", {
-    method: "DELETE",
-    signal: expect.any(AbortSignal) as AbortSignal,
-  });
-  expect(fetcher).toHaveBeenNthCalledWith(3, "/api/robots", {
-    method: "DELETE",
-    signal: expect.any(AbortSignal) as AbortSignal,
-  });
+  const deleteCall = [
+    "/api/robots",
+    {
+      method: "DELETE",
+      signal: expect.any(AbortSignal) as AbortSignal,
+    },
+  ];
+  expect(
+    fetcher.mock.calls.filter(([, init]) => init?.method === "DELETE"),
+  ).toEqual([deleteCall, deleteCall]);
 });
 
-test("an uncertain delete timeout releases the dialog lock and reconciles after closing", async () => {
+test("an uncertain delete timeout refreshes the fleet with the dialog still open", async () => {
   const fetcher = vi
     .fn()
     .mockResolvedValueOnce(response([robot]))
     .mockRejectedValueOnce(new DOMException("Timed out", "TimeoutError"))
-    .mockResolvedValue(response([]));
+    .mockImplementation(() => Promise.resolve(response([])));
   vi.stubGlobal("fetch", fetcher);
   render(<FleetDashboard />);
   const dialog = await openDelete();
@@ -420,9 +467,15 @@ test("an uncertain delete timeout releases the dialog lock and reconciles after 
     "outcome is uncertain",
   );
   expect(within(dialog).getByTestId("delete-robot-cancel")).toBeEnabled();
-  expect(fetcher).toHaveBeenCalledTimes(2);
-  fireEvent.click(within(dialog).getByTestId("delete-robot-cancel"));
   expect(await screen.findByTestId("fleet-empty")).toBeInTheDocument();
+  expect(dialog).toBeInTheDocument();
+  expect(within(dialog).getByRole("alert")).toHaveTextContent(
+    "outcome is uncertain",
+  );
+
+  fireEvent.click(within(dialog).getByTestId("delete-robot-cancel"));
+  await waitFor(() => expect(dialog).not.toBeInTheDocument());
+  expect(screen.getByTestId("fleet-heading")).toHaveFocus();
   expect(
     fetcher.mock.calls.filter(
       (call: unknown[]) => (call[1] as RequestInit)?.method === "DELETE",

@@ -1,6 +1,5 @@
 "use client";
-import { robotProblemDetails } from "@/modules/robots/robot-problems";
-import { useId, useRef, useState } from "react";
+
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Breadcrumbs from "@mui/material/Breadcrumbs";
@@ -12,22 +11,26 @@ import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
-import type { RobotContext } from "@/modules/robots/robot";
+import { useId, useRef, useState } from "react";
+
 import {
   actionLabels,
   actionUnavailable,
   type RobotAction,
 } from "@/modules/robots/robot-actions";
-import { connectionStatus, reportAge } from "@/modules/telemetry/freshness";
-import { isRequestTimeout } from "../api/robot-api";
-import useRobotMutations from "../hooks/use-robot-mutations";
+import { robotProblemDetails } from "@/modules/robots/robot-problems";
+import type { RobotContext } from "@/modules/robots/robot";
+import { connectionStatus } from "@/modules/telemetry/freshness";
+
 import ActionNotification from "../action-notification";
+import { isRequestTimeout } from "../api/robot-api";
 import ConnectionStatus from "../connection-status/connection-status";
 import useLiveRobot from "../hooks/use-live-robot";
-import useReportClock from "../hooks/use-report-clock";
+import useRobotMutations from "../hooks/use-robot-mutations";
 import {
   formatActivity,
   formatBattery,
+  formatRobotTimestamp,
   formatRobotType,
 } from "../utils/robot-formatters";
 import ActivityControls from "./activity-controls";
@@ -52,20 +55,25 @@ export default function RobotDetails(initial: RobotContext) {
     interrupted,
     refreshing,
     unverified,
-    verifiedAt,
+    verifiedAt: evaluatedAt,
   } = useLiveRobot(initial, pending);
-  const now = useReportClock(pending || refreshing);
-  const evaluatedAt = unverified || !now ? verifiedAt : now;
+
   const connection = connectionStatus(robot.lastReceivedAt, evaluatedAt);
   const stale = connection === "Delayed" || connection === "Offline";
+  const waitingForVerification = unverified || refreshing || !evaluatedAt;
+
   async function act(action: RobotAction) {
-    if (
-      inFlight.current ||
-      refreshing ||
-      unverified ||
-      actionUnavailable(robot, action, Date.now())
-    )
+    if (inFlight.current || waitingForVerification) return;
+
+    const reason = actionUnavailable(robot, action, Date.now());
+    if (reason) {
+      setNotice({
+        severity: "error",
+        message: `${reason}. Check the latest report before trying again.`,
+      });
       return;
+    }
+
     inFlight.current = true;
     setNotice(null);
     try {
@@ -140,7 +148,7 @@ export default function RobotDetails(initial: RobotContext) {
                       status={
                         robot.lastReceivedAt === null
                           ? "Unknown"
-                          : verifiedAt
+                          : evaluatedAt
                             ? connection
                             : "Checking"
                       }
@@ -189,16 +197,24 @@ export default function RobotDetails(initial: RobotContext) {
                   {robotProblemDetails[robot.problemCode].guidance}
                 </Alert>
               )}
-              {stale && (
+              {stale && robot.lastReceivedAt && (
                 <Typography variant="body2" color="text.secondary">
-                  Telemetry values are last known.{" "}
-                  {reportAge(robot.lastReceivedAt, evaluatedAt)}.
+                  Telemetry values are last known. Last report{" "}
+                  <time dateTime={robot.lastReceivedAt}>
+                    {formatRobotTimestamp(robot.lastReceivedAt)}
+                  </time>
+                  .
+                </Typography>
+              )}
+              {!robot.lastReceivedAt && (
+                <Typography variant="body2" color="text.secondary">
+                  No reports yet.
                 </Typography>
               )}
               <ActivityControls
                 robot={robot}
-                now={evaluatedAt}
-                unverified={unverified || refreshing || !verifiedAt}
+                evaluatedAt={evaluatedAt}
+                unverified={waitingForVerification}
                 pending={pending}
                 onAction={(action) => void act(action)}
               />
@@ -243,7 +259,7 @@ export default function RobotDetails(initial: RobotContext) {
               <LocationMap
                 robot={robot}
                 peers={siteRobots}
-                now={evaluatedAt}
+                evaluatedAt={evaluatedAt}
                 unverified={unverified}
               />
               <RobotProfile robot={robot} />

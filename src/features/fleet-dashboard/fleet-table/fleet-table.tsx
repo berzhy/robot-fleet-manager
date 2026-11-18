@@ -53,10 +53,8 @@ export default function FleetTable({
   onClearFilters,
   onClearSearch,
   headingRef,
-  now = 0,
-  verifiedAt = now,
+  evaluatedAt = 0,
   unverified = false,
-  onMenuOpenChange,
   state,
   page,
   pageSize,
@@ -76,10 +74,8 @@ export default function FleetTable({
   onClearFilters?: () => void;
   onClearSearch?: () => void;
   headingRef?: RefObject<HTMLHeadingElement | null>;
-  now?: number;
-  verifiedAt?: number;
+  evaluatedAt?: number;
   unverified?: boolean;
-  onMenuOpenChange?: (open: boolean) => void;
   onAdd: (trigger: HTMLButtonElement) => void;
   adding: boolean;
   state: RobotQueryState;
@@ -94,14 +90,19 @@ export default function FleetTable({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLTableSectionElement>(null);
-  const focusedRowElement = useRef<HTMLElement | null>(null);
+
+  // Focus events from the portalled menu follow the React tree to its row.
+  const focusedRowElement = useRef<HTMLTableRowElement | null>(null);
+
   useLayoutEffect(() => {
-    const focused = focusedRowElement.current;
-    if (focused && !focused.isConnected) {
+    const row = focusedRowElement.current;
+    if (!row || row.isConnected) return;
+
+    focusedRowElement.current = null;
+    if (row.ownerDocument.activeElement === row.ownerDocument.body)
       headingRef?.current?.focus();
-      focusedRowElement.current = null;
-    }
   });
+
   const items = state.status === "success" ? state.robots : [];
   return (
     <Paper
@@ -119,11 +120,6 @@ export default function FleetTable({
       )}
       <TableContainer
         ref={containerRef}
-        onFocusCapture={(event) => {
-          focusedRowElement.current = event.target.closest("tbody tr")
-            ? event.target
-            : null;
-        }}
         onBlurCapture={(event) => {
           if (
             event.relatedTarget instanceof HTMLElement &&
@@ -191,11 +187,11 @@ export default function FleetTable({
                 key={robot.id}
                 robot={robot}
                 search={search}
-                now={now}
-                connectionAt={verifiedAt}
-                verifiedAt={verifiedAt}
+                evaluatedAt={evaluatedAt}
                 unverified={unverified}
-                onMenuOpenChange={onMenuOpenChange}
+                onFocusCapture={(event) => {
+                  focusedRowElement.current = event.currentTarget;
+                }}
                 adding={adding}
                 onDelete={onDelete}
                 onAction={onAction}

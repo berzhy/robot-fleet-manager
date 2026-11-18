@@ -3,9 +3,11 @@ import Divider from "@mui/material/Divider";
 import Stack from "@mui/material/Stack";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
+
 import type { Robot, SiteRobot } from "@/modules/robots/robot";
-import FacilityPlan, { facilityDetails } from "./facility-plan";
 import { connectionStatus } from "@/modules/telemetry/freshness";
+
+import FacilityPlan, { facilityDetails } from "./facility-plan";
 
 const markerLimit = 12;
 const zones = [
@@ -15,25 +17,27 @@ const zones = [
   { name: "Base", x: 612, y: 448, peersX: 484, peersY: 448 },
   { name: "Area unknown", x: 470, y: 560, peersX: 556, peersY: 556 },
 ];
+
 function areaName(area: string | null) {
   return zones.some((zone) => zone.name === area) ? area : "Area unknown";
 }
+
 export default function LocationMap({
   robot,
   peers,
-  now,
+  evaluatedAt,
   unverified,
 }: {
   robot: Robot;
   peers: SiteRobot[];
-  now: number;
+  evaluatedAt: number;
   unverified: boolean;
 }) {
   const selectedArea = areaName(robot.area);
   const stale =
     unverified ||
     ["Delayed", "Offline"].includes(
-      connectionStatus(robot.lastReceivedAt, now),
+      connectionStatus(robot.lastReceivedAt, evaluatedAt),
     );
   const groups = zones.map((zone) => ({
     ...zone,
@@ -119,7 +123,8 @@ export default function LocationMap({
                   fill: (theme.vars ?? theme).palette.text.secondary,
                   opacity:
                     unverified ||
-                    connectionStatus(peer.lastReceivedAt, now) !== "Online"
+                    connectionStatus(peer.lastReceivedAt, evaluatedAt) !==
+                      "Online"
                       ? 0.35
                       : 0.8,
                 })}

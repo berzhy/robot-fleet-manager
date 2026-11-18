@@ -40,34 +40,23 @@ export default function FleetFilters({
   onSearchChange,
   options,
   onChange,
-  onOpenChange,
 }: {
   filters: RobotFilters;
   search: string;
   onSearchChange: (value: string) => void;
   options?: FilterOptions;
   onChange: (filters: RobotFilters) => void;
-  onOpenChange: (open: boolean) => void;
 }) {
   const [composing, setComposing] = useState(false);
   const [moreAnchor, setMoreAnchor] = useState<HTMLElement | null>(null);
-  const [openSelect, setOpenSelect] = useState<string | null>(null);
-  const openSelectRef = useRef<string | null>(null);
+  const [openFilter, setOpenFilter] = useState<{
+    key: keyof RobotFilters;
+    options: readonly string[];
+  } | null>(null);
+
   const container = useRef<HTMLDivElement>(null);
   const moreButtonRef = useRef<HTMLButtonElement>(null);
   const popoverId = useId();
-
-  const anyOpen = moreAnchor !== null || openSelect !== null;
-  const notifyOpen = useEffectEvent((open: boolean) => onOpenChange(open));
-  useEffect(() => {
-    notifyOpen(anyOpen);
-  }, [anyOpen]);
-  useEffect(() => () => notifyOpen(false), []);
-
-  function setSelectOpen(key: string | null) {
-    openSelectRef.current = key;
-    setOpenSelect(key);
-  }
 
   const applySearch = useEffectEvent((value: string) => {
     const normalized = value.trim();
@@ -85,6 +74,11 @@ export default function FleetFilters({
     onSearchChange("");
     if (filters.search !== undefined)
       onChange({ ...filters, search: undefined });
+  }
+
+  function closeMoreFilters() {
+    setMoreAnchor(null);
+    setOpenFilter(null);
   }
 
   const primaryFields = [
@@ -160,23 +154,30 @@ export default function FleetFilters({
     sx?: { minWidth?: number; maxWidth?: number; flex?: string },
     inPopover = false,
   ) {
+    // Keep a focused option mounted even if the next poll removes it.
+    const openOptions =
+      openFilter?.key === field.key ? openFilter.options : undefined;
+    const displayedOptions = openOptions ?? field.options;
+    const selected = filters[field.key];
+
     return (
       <TextField
         key={field.key}
         select
         size="small"
         variant="standard"
-        disabled={!options}
+        disabled={!options && !openOptions}
         id={`fleet-filter-${field.key}`}
         label={field.label}
-        value={filters[field.key] ?? ""}
+        value={selected ?? ""}
         sx={sx}
         slotProps={{
           inputLabel: { shrink: true },
           select: {
             displayEmpty: true,
-            onOpen: () => setSelectOpen(field.key),
-            onClose: () => setSelectOpen(null),
+            onOpen: () =>
+              setOpenFilter({ key: field.key, options: displayedOptions }),
+            onClose: () => setOpenFilter(null),
           },
         }}
         onChange={(event) => {
@@ -184,10 +185,7 @@ export default function FleetFilters({
             ...filters,
             [field.key]: event.target.value || undefined,
           });
-          if (inPopover) {
-            setSelectOpen(null);
-            setMoreAnchor(null);
-          }
+          if (inPopover) closeMoreFilters();
         }}
       >
         <MenuItem value="">
@@ -201,10 +199,7 @@ export default function FleetFilters({
                 : "integrations"}
         </MenuItem>
         {[
-          ...new Set([
-            ...field.options,
-            ...(filters[field.key] ? [filters[field.key]!] : []),
-          ]),
+          ...new Set([...displayedOptions, ...(selected ? [selected] : [])]),
         ].map((value) => (
           <MenuItem key={value} value={value}>
             {formatFilterValue(field.key, value)}
@@ -312,10 +307,7 @@ export default function FleetFilters({
             id={popoverId}
             open={moreAnchor !== null}
             anchorEl={moreAnchor}
-            onClose={(_event, reason) => {
-              if (reason === "escapeKeyDown" && openSelectRef.current) return;
-              setMoreAnchor(null);
-            }}
+            onClose={closeMoreFilters}
             anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
             transformOrigin={{ vertical: "top", horizontal: "left" }}
             aria-labelledby={`${popoverId}-title`}
@@ -336,7 +328,7 @@ export default function FleetFilters({
                 <IconButton
                   size="small"
                   aria-label="Close more filters"
-                  onClick={() => setMoreAnchor(null)}
+                  onClick={closeMoreFilters}
                 >
                   <CloseIcon />
                 </IconButton>

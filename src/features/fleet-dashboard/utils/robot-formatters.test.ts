@@ -3,7 +3,7 @@ import { expect, test } from "vitest";
 import {
   formatActivity,
   formatBattery,
-  formatAdded,
+  formatRobotTimestamp,
   formatAddedParts,
   formatResultCount,
 } from "./robot-formatters";
@@ -20,10 +20,10 @@ test("activity formatting includes charging and unknown states", () => {
 });
 
 test("Registered uses a consistent Berlin date and time across server and browser locales", () => {
-  expect(formatAdded("2026-11-14T12:34:56.000Z")).toBe(
+  expect(formatRobotTimestamp("2026-11-14T12:34:56.000Z")).toBe(
     "14 Nov 2026, 13:34:56 CET",
   );
-  expect(formatAdded("2026-07-14T12:34:56.000Z")).toBe(
+  expect(formatRobotTimestamp("2026-07-14T12:34:56.000Z")).toBe(
     "14 Jul 2026, 14:34:56 CEST",
   );
 });
@@ -32,7 +32,7 @@ test("Registered parts split the same Berlin date and time for two-line display"
   const parts = formatAddedParts("2026-11-14T12:34:56.000Z");
   expect(parts).toEqual({ date: "14 Nov 2026", time: "13:34:56 CET" });
   expect(`${parts.date}, ${parts.time}`).toBe(
-    formatAdded("2026-11-14T12:34:56.000Z"),
+    formatRobotTimestamp("2026-11-14T12:34:56.000Z"),
   );
 });
 

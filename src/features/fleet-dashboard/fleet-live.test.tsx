@@ -119,7 +119,7 @@ test("quiet polling preserves DOM and focus, retains failed data, and recovers",
   await tick();
 
   const row = within(screen.getByTestId("robot-row-live"));
-  expect(row.queryByTestId("robot-report-age")).not.toBeInTheDocument();
+  expect(row.queryByTestId("robot-last-report")).not.toBeInTheDocument();
   const link = row.getByTestId("robot-link");
   link.focus();
 
@@ -144,13 +144,14 @@ test("quiet polling preserves DOM and focus, retains failed data, and recovers",
   expect(row.getByTestId("robot-battery")).toHaveTextContent("48%");
 });
 
-test("visibility and open action menus suspend polling and resume immediately", async () => {
+test("an open action menu receives fleet updates while a hidden tab stops polling", async () => {
   vi.useFakeTimers();
-  vi.setSystemTime(new Date(robot.lastReceivedAt!));
-  vi.stubGlobal(
-    "fetch",
-    vi.fn().mockImplementation(() => Promise.resolve(page())),
-  );
+  vi.setSystemTime(new Date(Date.parse(robot.lastReceivedAt!) + 10000));
+  const fetcher = vi
+    .fn()
+    .mockImplementationOnce(() => Promise.resolve(page()))
+    .mockImplementation(() => Promise.resolve(page(49)));
+  vi.stubGlobal("fetch", fetcher);
   render(<FleetDashboard />);
   await tick();
 
@@ -163,27 +164,68 @@ test("visibility and open action menus suspend polling and resume immediately", 
 
   fireEvent.click(trigger);
   expect(connection).toHaveTextContent(/^Online$/);
-  expect(connection).not.toHaveTextContent(/unverified/);
+  const stop = screen.getByRole("menuitem", { name: "Stop activity" });
+  expect(stop).not.toHaveAttribute("aria-disabled", "true");
 
-  await tick(20000);
-  expect(connection).toHaveTextContent(/^Online$/);
-  expect(connection).not.toHaveTextContent("Delayed");
-  expect(connection).not.toHaveTextContent("Offline");
-  expect(fetch).toHaveBeenCalledTimes(1);
-  expect(screen.queryByText("Updates paused")).not.toBeInTheDocument();
-
-  fireEvent.keyDown(screen.getByRole("menu"), { key: "Escape" });
-  await tick(300);
-  expect(fetch).toHaveBeenCalledTimes(2);
+  await tick(5000);
+  expect(connection).toHaveTextContent(/^Delayed$/);
+  expect(row.getByTestId("robot-battery")).toHaveTextContent("49%");
+  expect(screen.getByRole("menu")).toBeVisible();
+  expect(stop).toHaveAttribute("aria-disabled", "true");
 
   setPageVisibility(true);
   await tick(5000);
-  expect(fetch).toHaveBeenCalledTimes(2);
+  expect(fetcher).toHaveBeenCalledTimes(2);
 
   setPageVisibility(false);
   await tick();
-  expect(fetch).toHaveBeenCalledTimes(3);
+  expect(fetcher).toHaveBeenCalledTimes(3);
 });
+
+test.each(["fleet", "detail"] as const)(
+  "%s blocks a command when the report expires between polls",
+  async (surface) => {
+    vi.useFakeTimers();
+    const evaluatedAt = Date.parse(robot.lastReceivedAt!) + 9_500;
+    vi.setSystemTime(new Date(evaluatedAt));
+    const { fetcher } = liveResponses();
+    vi.stubGlobal("fetch", fetcher);
+
+    render(
+      surface === "fleet" ? (
+        <FleetDashboard />
+      ) : (
+        <RobotDetails robot={robot} siteRobots={[]} verifiedAt={evaluatedAt} />
+      ),
+    );
+    await tick();
+
+    if (surface === "fleet") {
+      const trigger = screen.getByRole("button", {
+        name: `Actions for ${robot.name}`,
+      });
+      vi.spyOn(trigger, "getBoundingClientRect").mockReturnValue(
+        new DOMRect(0, 0, 40, 40),
+      );
+      fireEvent.click(trigger);
+    }
+
+    const stop = screen.getByRole(surface === "fleet" ? "menuitem" : "button", {
+      name: "Stop activity",
+    });
+    expect(stop).not.toHaveAttribute("aria-disabled", "true");
+    await tick(600);
+    fireEvent.click(stop);
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Robot must be online");
+    expect(screen.getByTestId("robot-connection")).toHaveTextContent(
+      /^Online$/,
+    );
+    expect(fetcher.mock.calls.some(([, init]) => init?.method === "POST")).toBe(
+      false,
+    );
+  },
+);
 
 test("a stale in-flight poll cannot overwrite an explicit refresh", async () => {
   vi.useFakeTimers();
@@ -222,7 +264,7 @@ test("a stale in-flight poll cannot overwrite an explicit refresh", async () => 
   expect(result.current.interrupted).toBe(false);
 });
 
-test("detail refreshes quietly and stops when its robot is deleted", async () => {
+test("detail refreshes while Logs is selected and stops when its robot is deleted", async () => {
   vi.useFakeTimers();
   vi.stubGlobal(
     "fetch",
@@ -235,6 +277,15 @@ test("detail refreshes quietly and stops when its robot is deleted", async () =>
           verifiedAt: Date.now(),
         }),
       )
+      .mockImplementationOnce(() =>
+        Promise.resolve(
+          Response.json({
+            robot: { ...robot, batteryPercent: 42 },
+            siteRobots: [],
+            verifiedAt: Date.now(),
+          }),
+        ),
+      )
       .mockResolvedValueOnce(new Response(null, { status: 404 })),
   );
   render(<RobotDetails robot={robot} siteRobots={[]} verifiedAt={0} />);
@@ -244,6 +295,12 @@ test("detail refreshes quietly and stops when its robot is deleted", async () =>
     within(screen.getByTestId("robot-details")).getByTestId("robot-battery"),
   ).toHaveTextContent("45%");
 
+  const logs = screen.getByRole("tab", { name: "Logs" });
+  fireEvent.click(logs);
+  await tick(5000);
+  expect(logs).toHaveAttribute("aria-selected", "true");
+  expect(screen.getByTestId("robot-battery")).toHaveTextContent("42%");
+
   await tick(5000);
   expect(screen.getByTestId("robot-unavailable")).toHaveTextContent(
     "Robot is no longer available.",
@@ -252,7 +309,7 @@ test("detail refreshes quietly and stops when its robot is deleted", async () =>
   setPageVisibility(true);
   setPageVisibility(false);
   await tick(10000);
-  expect(fetch).toHaveBeenCalledTimes(2);
+  expect(fetch).toHaveBeenCalledTimes(3);
 });
 
 test("detail action refresh cancels older polls without relabeling verified data", async () => {
@@ -369,11 +426,23 @@ test("connection classification stays on the last fleet snapshot between refresh
 
   const row = within(screen.getByTestId("robot-row-live"));
   expect(row.getByTestId("robot-connection")).toHaveTextContent(/^Online$/);
-  expect(row.queryByTestId("robot-report-age")).not.toBeInTheDocument();
+  expect(row.queryByTestId("robot-last-report")).not.toBeInTheDocument();
 
   await tick(1000);
   expect(row.getByTestId("robot-connection")).toHaveTextContent(/^Online$/);
-  expect(row.queryByTestId("robot-report-age")).not.toBeInTheDocument();
+
+  await tick(4000);
+  expect(row.getByTestId("robot-connection")).toHaveTextContent(/^Delayed$/);
+  const report = row.getByTestId("robot-last-report");
+  expect(report).toHaveTextContent("Last report 1 Jan 2026, 01:00:00 CET");
+  expect(report.querySelector("time")).toHaveAttribute(
+    "datetime",
+    robot.lastReceivedAt,
+  );
+
+  await tick(5000);
+  expect(row.getByTestId("robot-connection")).toHaveTextContent(/^Offline$/);
+  expect(report).toHaveTextContent("Last report 1 Jan 2026, 01:00:00 CET");
 });
 
 test("a confirmed detail deletion clears an earlier refresh warning", async () => {
@@ -414,25 +483,25 @@ test("failed initial detail refresh keeps server-verified connection information
   expect(screen.queryByText("Checking")).not.toBeInTheDocument();
 });
 
-test("filter dropdowns pause polling without hiding the current snapshot", async () => {
+test("filter dropdowns remain usable while fleet data updates", async () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date(robot.lastReceivedAt!));
-  const fetcher = vi.fn().mockImplementation(() => Promise.resolve(page()));
+  const fetcher = vi
+    .fn()
+    .mockImplementationOnce(() => Promise.resolve(page()))
+    .mockImplementation(() => Promise.resolve(page(49)));
   vi.stubGlobal("fetch", fetcher);
   render(<FleetDashboard />);
   await tick();
 
   fireEvent.mouseDown(screen.getByRole("combobox", { name: "Location" }));
-  await tick(20000);
-  expect(fetcher).toHaveBeenCalledTimes(1);
-  expect(screen.getByTestId("robot-row-live")).toBeInTheDocument();
-
-  fireEvent.keyDown(screen.getByRole("listbox"), { key: "Escape" });
-  await tick(300);
-  expect(fetcher).toHaveBeenCalledTimes(2);
+  await tick(5000);
+  expect(screen.getByTestId("robot-battery")).toHaveTextContent("49%");
+  fireEvent.click(screen.getByRole("option", { name: "Munich" }));
+  expect(screen.getByText("Location: Munich")).toBeVisible();
 });
 
-test("closing a secondary select keeps polling paused while More filters is open", async () => {
+test("Escape closes a secondary select before More filters while polling continues", async () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date(robot.lastReceivedAt!));
   const fetcher = vi.fn().mockImplementation(() => Promise.resolve(page()));
@@ -442,19 +511,24 @@ test("closing a secondary select keeps polling paused while More filters is open
 
   fireEvent.click(screen.getByRole("button", { name: /More filters/ }));
   fireEvent.mouseDown(screen.getByRole("combobox", { name: "Manufacturer" }));
-  await tick(20000);
-  expect(fetcher).toHaveBeenCalledTimes(1);
+  await tick(5000);
+  expect(fetcher).toHaveBeenCalledTimes(2);
 
   fireEvent.keyDown(screen.getByRole("listbox"), { key: "Escape" });
-  await tick(20000);
-  expect(fetcher).toHaveBeenCalledTimes(1);
+  await tick(5000);
+  expect(fetcher).toHaveBeenCalledTimes(3);
+  expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
   expect(
     screen.getByRole("button", { name: "Close more filters" }),
   ).toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole("button", { name: "Close more filters" }));
+  fireEvent.keyDown(screen.getByRole("combobox", { name: "Manufacturer" }), {
+    key: "Escape",
+  });
   await tick(300);
-  expect(fetcher).toHaveBeenCalledTimes(2);
+  expect(
+    screen.queryByRole("button", { name: "Close more filters" }),
+  ).not.toBeInTheDocument();
 });
 
 test("paused fleet retains cached data across visibility changes and refreshes on resume", async () => {
@@ -607,7 +681,7 @@ test("unmount cancels outstanding fleet and detail requests without restarting p
   expect(fetcher).toHaveBeenCalledTimes(2);
 });
 
-test("a debounced search unmounting an open row menu releases the polling pause", async () => {
+test("the fleet keeps polling when a debounced search unmounts a row menu", async () => {
   vi.useFakeTimers();
   const fetcher = vi.fn().mockImplementation(() => Promise.resolve(page()));
   vi.stubGlobal("fetch", fetcher);
