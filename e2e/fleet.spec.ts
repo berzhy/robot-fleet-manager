@@ -336,24 +336,35 @@ for (const filter of ["Location", "Manufacturer"] as const) {
     const select = page.getByRole("combobox", { name: filter });
     await select.click();
     await page.keyboard.press("ArrowDown");
-    const focused = page.getByRole("option", { name: "Atlas", exact: true });
-    await expect(focused).toBeFocused();
+    const listbox = page.getByRole("listbox");
+    const atlasOption = listbox.getByRole("option", {
+      name: "Atlas",
+      exact: true,
+    });
+    const bishopOption = listbox.getByRole("option", {
+      name: "Bishop",
+      exact: true,
+    });
+    await expect(atlasOption).toBeFocused();
 
     const response = await request.delete(`/api/robots/${atlas.id}`);
     expect(response.status()).toBe(204);
     await expect(page.getByTestId(`robot-row-${atlas.id}`)).toHaveCount(0, {
       timeout: 15000,
     });
-    await expect(focused).toBeFocused();
+    await expect(atlasOption).toBeFocused();
     await page.keyboard.press("ArrowDown");
-    await expect(
-      page.getByRole("option", { name: "Bishop", exact: true }),
-    ).toBeFocused();
+    await expect(bishopOption).toBeFocused();
 
     await page.keyboard.press("Escape");
-    await expect(page.getByRole("listbox")).toBeHidden();
+    await expect(listbox).toBeHidden();
     await select.click();
-    await expect(focused).toHaveCount(0);
+    await expect(listbox).toBeVisible();
+    await expect(atlasOption).toHaveCount(0);
+    await bishopOption.click();
+    await expect(
+      page.getByText(`${filter}: Bishop`, { exact: true }),
+    ).toBeVisible();
   });
 }
 

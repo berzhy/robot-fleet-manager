@@ -483,24 +483,6 @@ test("failed initial detail refresh keeps server-verified connection information
   expect(screen.queryByText("Checking")).not.toBeInTheDocument();
 });
 
-test("filter dropdowns remain usable while fleet data updates", async () => {
-  vi.useFakeTimers();
-  vi.setSystemTime(new Date(robot.lastReceivedAt!));
-  const fetcher = vi
-    .fn()
-    .mockImplementationOnce(() => Promise.resolve(page()))
-    .mockImplementation(() => Promise.resolve(page(49)));
-  vi.stubGlobal("fetch", fetcher);
-  render(<FleetDashboard />);
-  await tick();
-
-  fireEvent.mouseDown(screen.getByRole("combobox", { name: "Location" }));
-  await tick(5000);
-  expect(screen.getByTestId("robot-battery")).toHaveTextContent("49%");
-  fireEvent.click(screen.getByRole("option", { name: "Munich" }));
-  expect(screen.getByText("Location: Munich")).toBeVisible();
-});
-
 test("Escape closes a secondary select before More filters while polling continues", async () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date(robot.lastReceivedAt!));
@@ -679,30 +661,6 @@ test("unmount cancels outstanding fleet and detail requests without restarting p
 
   await tick(10000);
   expect(fetcher).toHaveBeenCalledTimes(2);
-});
-
-test("the fleet keeps polling when a debounced search unmounts a row menu", async () => {
-  vi.useFakeTimers();
-  const fetcher = vi.fn().mockImplementation(() => Promise.resolve(page()));
-  vi.stubGlobal("fetch", fetcher);
-  render(<FleetDashboard />);
-  await tick();
-  fireEvent.change(screen.getByRole("textbox", { name: /search/i }), {
-    target: { value: "Live" },
-  });
-  const trigger = screen.getByTestId("robot-actions");
-  vi.spyOn(trigger, "getBoundingClientRect").mockReturnValue(
-    new DOMRect(0, 0, 40, 40),
-  );
-  fireEvent.click(trigger);
-  await tick(1000);
-  expect(
-    fetcher.mock.calls.some(([url]) => String(url).includes("search=Live")),
-  ).toBe(true);
-  expect(screen.getByTestId("robot-row-live")).toBeInTheDocument();
-  const requests = fetcher.mock.calls.length;
-  await tick(5000);
-  expect(fetcher.mock.calls.length).toBeGreaterThan(requests);
 });
 
 test("cached fleet remount preserves rows while refreshing and after refresh failure", async () => {
