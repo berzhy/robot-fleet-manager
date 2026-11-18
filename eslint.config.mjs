@@ -1,3 +1,4 @@
+import query from "@tanstack/eslint-plugin-query";
 import { defineConfig, globalIgnores } from "eslint/config";
 import jsxA11y from "eslint-plugin-jsx-a11y";
 import nextVitals from "eslint-config-next/core-web-vitals";
@@ -22,6 +23,10 @@ const eslintConfig = defineConfig([
         tsconfigRootDir: import.meta.dirname,
       },
     },
+  },
+  {
+    files: ["src/**"],
+    extends: [query.configs["flat/recommended"]],
   },
   prettier,
   // Override default ignores of eslint-config-next.
