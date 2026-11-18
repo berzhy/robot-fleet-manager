@@ -186,7 +186,7 @@ test("pending deletion blocks duplicate submission and dismissal; failure permit
   await waitFor(() =>
     expect(screen.queryByTestId("delete-robot-dialog")).not.toBeInTheDocument(),
   );
-  expect(screen.getByTestId("fleet-heading")).toHaveFocus();
+  expect(screen.getByRole("textbox", { name: "Search robots" })).toHaveFocus();
   const deleteCall = [
     "/api/robots/one",
     {
@@ -239,7 +239,7 @@ test("successful deletion stays successful when the table refresh fails", async 
     expect(screen.queryByTestId("delete-robot-dialog")).not.toBeInTheDocument(),
   );
   expect(screen.getByTestId("robot-row-one")).toBeInTheDocument();
-  expect(screen.getByTestId("fleet-heading")).toHaveFocus();
+  expect(screen.getByRole("textbox", { name: "Search robots" })).toHaveFocus();
 
   act(() => finishRefresh(new Response(null, { status: 500 })));
   expect(await screen.findByTestId("fleet-refresh-warning")).toHaveTextContent(
@@ -269,7 +269,7 @@ test("an already removed robot closes confirmation and refreshes the fleet", asy
   expect(await screen.findByText("“Atlas” was already removed.")).toBeVisible();
   expect(await screen.findByTestId("fleet-empty")).toBeInTheDocument();
   await waitFor(() => expect(dialog).not.toBeInTheDocument());
-  expect(screen.getByTestId("fleet-heading")).toHaveFocus();
+  expect(screen.getByRole("textbox", { name: "Search robots" })).toHaveFocus();
 });
 
 test("deleting the last robot on a page requests the previous page", async () => {
@@ -437,7 +437,7 @@ test("bulk deletion blocks duplicate clicks and dismissal, supports retry and re
   expect(screen.getByTestId("fleet-notification")).toHaveTextContent(
     "All robots deleted.",
   );
-  expect(screen.getByTestId("fleet-heading")).toHaveFocus();
+  expect(screen.getByRole("textbox", { name: "Search robots" })).toHaveFocus();
   const deleteCall = [
     "/api/robots",
     {
@@ -475,7 +475,7 @@ test("an uncertain delete timeout refreshes the fleet with the dialog still open
 
   fireEvent.click(within(dialog).getByTestId("delete-robot-cancel"));
   await waitFor(() => expect(dialog).not.toBeInTheDocument());
-  expect(screen.getByTestId("fleet-heading")).toHaveFocus();
+  expect(screen.getByRole("textbox", { name: "Search robots" })).toHaveFocus();
   expect(
     fetcher.mock.calls.filter(
       (call: unknown[]) => (call[1] as RequestInit)?.method === "DELETE",

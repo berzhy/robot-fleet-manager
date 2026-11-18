@@ -1,12 +1,10 @@
 "use client";
-import type { RobotAction } from "@/modules/robots/robot-actions";
 
-import Button from "@mui/material/Button";
-import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import type { IconButtonProps } from "@mui/material/IconButton";
-import Skeleton from "@mui/material/Skeleton";
 import Paper from "@mui/material/Paper";
+import Skeleton from "@mui/material/Skeleton";
 import Stack from "@mui/material/Stack";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -15,15 +13,17 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TablePagination from "@mui/material/TablePagination";
 import TableRow from "@mui/material/TableRow";
+import Typography from "@mui/material/Typography";
 import {
-  useRef,
   useLayoutEffect,
-  type ReactNode,
-  type RefObject,
+  useRef,
   type HTMLAttributes,
+  type ReactNode,
 } from "react";
 
 import { robotPageSizes, type Robot } from "@/modules/robots/robot";
+import type { RobotAction } from "@/modules/robots/robot-actions";
+
 import type { RobotQueryState } from "../types/robot-query-state";
 import FleetTableRow from "./fleet-table-row";
 import FleetTableSkeleton from "./fleet-table-skeleton";
@@ -52,7 +52,7 @@ export default function FleetTable({
   fleetTotal,
   onClearFilters,
   onClearSearch,
-  headingRef,
+  onRowFocusLost,
   evaluatedAt = 0,
   unverified = false,
   state,
@@ -73,7 +73,7 @@ export default function FleetTable({
   fleetTotal?: number;
   onClearFilters?: () => void;
   onClearSearch?: () => void;
-  headingRef?: RefObject<HTMLHeadingElement | null>;
+  onRowFocusLost?: () => void;
   evaluatedAt?: number;
   unverified?: boolean;
   onAdd: (trigger: HTMLButtonElement) => void;
@@ -88,9 +88,6 @@ export default function FleetTable({
   onAction?: (robot: Robot, action: RobotAction) => void;
   onDelete: (robot: Robot, trigger: HTMLButtonElement) => void;
 }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const headerRef = useRef<HTMLTableSectionElement>(null);
-
   // Focus events from the portalled menu follow the React tree to its row.
   const focusedRowElement = useRef<HTMLTableRowElement | null>(null);
 
@@ -99,11 +96,16 @@ export default function FleetTable({
     if (!row || row.isConnected) return;
 
     focusedRowElement.current = null;
-    if (row.ownerDocument.activeElement === row.ownerDocument.body)
-      headingRef?.current?.focus();
+
+    // Avoid stealing focus if another control has already received it.
+    if (row.ownerDocument.activeElement === row.ownerDocument.body) {
+      onRowFocusLost?.();
+    }
   });
 
   const items = state.status === "success" ? state.robots : [];
+  const isLoading = state.status === "loading";
+
   return (
     <Paper
       elevation={2}
@@ -119,7 +121,6 @@ export default function FleetTable({
         <Box sx={{ flexShrink: 0, px: 2, pt: 2, pb: 2.5 }}>{toolbar}</Box>
       )}
       <TableContainer
-        ref={containerRef}
         onBlurCapture={(event) => {
           if (
             event.relatedTarget instanceof HTMLElement &&
@@ -127,13 +128,14 @@ export default function FleetTable({
           )
             focusedRowElement.current = null;
         }}
-        aria-busy={state.status === "loading"}
+        aria-busy={isLoading}
         sx={{
           display: "flex",
           flexDirection: "column",
           flex: 1,
           minHeight: 0,
-          overflow: "auto",
+          overflowX: "auto",
+          overflowY: isLoading ? "hidden" : "auto",
           overscrollBehaviorY: "none",
         }}
       >
@@ -157,7 +159,7 @@ export default function FleetTable({
               />
             ))}
           </colgroup>
-          <TableHead ref={headerRef}>
+          <TableHead>
             <TableRow>
               {columns.map((column) => (
                 <TableCell
@@ -174,11 +176,10 @@ export default function FleetTable({
             </TableRow>
           </TableHead>
           <TableBody>
-            {state.status === "loading" && (
+            {isLoading && (
               <FleetTableSkeleton
-                containerRef={containerRef}
-                headerRef={headerRef}
                 columnCount={columns.length}
+                rowCount={pageSize}
                 rowHeight={rowHeight}
               />
             )}

@@ -1,8 +1,8 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 
-import type { Robot } from "@/modules/robots/robot";
 import FleetTable from "@/features/fleet-dashboard/fleet-table/fleet-table";
+import { robotPageSizes, type Robot } from "@/modules/robots/robot";
 
 const robot: Robot = {
   problemCode: null,
@@ -22,6 +22,37 @@ const robot: Robot = {
   lastReceivedAt: null,
   createdAt: "2026-11-14T12:00:00.000Z",
 };
+
+test.each(robotPageSizes)("loading renders %i decorative rows", (pageSize) => {
+  const props = {
+    page: 0,
+    pageSize,
+    onPageSizeChange: () => {},
+    onPageChange: () => {},
+    onRetry: () => {},
+    onAdd: () => {},
+    adding: false,
+    onDelete: () => {},
+  };
+  const { rerender } = render(
+    <FleetTable {...props} total={0} state={{ status: "loading" }} />,
+  );
+
+  const table = screen.getByRole("table", { name: "Robot fleet" });
+  expect(table.querySelectorAll("tbody > tr")).toHaveLength(pageSize);
+  expect(within(table).getAllByRole("row")).toHaveLength(1);
+
+  rerender(
+    <FleetTable
+      {...props}
+      total={1}
+      state={{ status: "success", robots: [robot] }}
+    />,
+  );
+
+  expect(table.querySelectorAll("tbody > tr")).toHaveLength(1);
+  expect(within(table).getByRole("link", { name: robot.name })).toBeVisible();
+});
 
 test("table renders the supplied server page without slicing or sorting", () => {
   const onPageChange = vi.fn();

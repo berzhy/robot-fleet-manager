@@ -29,12 +29,15 @@ import { formatResultCount } from "./utils/robot-formatters";
 type DeleteTarget =
   { kind: "robot"; id: string; name: string } | { kind: "all" };
 
+function focusFleetSearch() {
+  document.getElementById("fleet-search")?.focus();
+}
+
 export default function FleetDashboard() {
   const [search, setSearch] = useState("");
 
   const addButtonRef = useRef<HTMLButtonElement>(null);
   const addFocusRef = useRef<HTMLElement | null>(null);
-  const headingRef = useRef<HTMLHeadingElement>(null);
   const inFlightRef = useRef(false);
 
   const { add, remove, command } = useRobotMutations();
@@ -213,10 +216,12 @@ export default function FleetDashboard() {
 
   function finishDialogClose() {
     const trigger = confirmation?.trigger;
-    (trigger?.isConnected && !trigger.disabled
-      ? trigger
-      : headingRef.current
-    )?.focus();
+    if (trigger?.isConnected && !trigger.disabled) {
+      trigger.focus();
+    } else {
+      focusFleetSearch();
+    }
+
     setConfirmation(null);
   }
 
@@ -240,14 +245,7 @@ export default function FleetDashboard() {
           justifyContent: "space-between",
         }}
       >
-        <Typography
-          data-testid="fleet-heading"
-          ref={headingRef}
-          tabIndex={-1}
-          component="h1"
-          variant="h4"
-          sx={{ flexShrink: 0 }}
-        >
+        <Typography component="h1" variant="h4" sx={{ flexShrink: 0 }}>
           Fleet dashboard
         </Typography>
         <AddRobotSplitButton
@@ -318,7 +316,7 @@ export default function FleetDashboard() {
           setSearch("");
           setFilters({ ...filters, search: undefined });
         }}
-        headingRef={confirmation ? undefined : headingRef}
+        onRowFocusLost={confirmation ? undefined : focusFleetSearch}
         evaluatedAt={evaluatedAt}
         unverified={unverified}
         state={state}

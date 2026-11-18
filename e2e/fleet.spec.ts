@@ -1,7 +1,44 @@
 import { expect, type APIRequestContext, type Page } from "@playwright/test";
-import type { Robot } from "@/modules/robots/robot";
+
+import { robotPageSize, type Robot } from "@/modules/robots/robot";
 import type { TelemetryReport } from "@/modules/telemetry/telemetry";
+
 import { test } from "./fixtures";
+
+test("loading rows follow the page size when the viewport shrinks", async ({
+  page,
+  request,
+}) => {
+  const [robot] = await seedFleet(request);
+  const { promise, resolve } = Promise.withResolvers<void>();
+
+  await page.route("**/api/robots?*", async (route) => {
+    await promise;
+    await route.continue();
+  });
+
+  const table = page.getByRole("table", { name: "Robot fleet" });
+  const scrollContainer = table.locator("..");
+  const rows = table.locator("tbody > tr");
+
+  try {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/");
+    await expect(scrollContainer).toHaveAttribute("aria-busy", "true");
+    await expect(rows).toHaveCount(robotPageSize);
+
+    await page.setViewportSize({ width: 650, height: 600 });
+    await expect(rows).toHaveCount(robotPageSize);
+    await expect(scrollContainer).toHaveCSS("overflow-y", "hidden");
+    await expect(scrollContainer).toHaveCSS("overflow-x", "auto");
+  } finally {
+    resolve();
+  }
+
+  await expect(table.getByRole("link", { name: robot.name })).toBeVisible();
+  await expect(scrollContainer).toHaveAttribute("aria-busy", "false");
+  await expect(scrollContainer).toHaveCSS("overflow-y", "auto");
+});
 
 test("adds two robots and deletes one", async ({ page, request }) => {
   await page.goto("/");
@@ -54,6 +91,9 @@ test("adds two robots and deletes one", async ({ page, request }) => {
   );
   await expect(firstRow).toHaveCount(0);
   await expect(secondRow).toBeVisible();
+  await expect(
+    page.getByRole("textbox", { name: "Search robots" }),
+  ).toBeFocused();
 });
 
 async function registeredRobots(request: APIRequestContext) {
@@ -388,7 +428,9 @@ test("live filtered recovery closes the action menu and restores focus", async (
   await sendProblem(request, robot, false);
   await expect(row).toHaveCount(0, { timeout: 15000 });
   await expect(page.getByRole("menu")).toHaveCount(0);
-  await expect(page.getByTestId("fleet-heading")).toBeFocused();
+  await expect(
+    page.getByRole("textbox", { name: "Search robots" }),
+  ).toBeFocused();
   await expect(
     page.getByRole("button", {
       name: "Needs attention",
@@ -428,7 +470,9 @@ test("delete confirmation keeps the selected robot after it leaves the filtered 
   expect(new URL(deleted.url()).pathname).toBe(`/api/robots/${robot.id}`);
   expect(deleted.status()).toBe(204);
   await expect(dialog).toBeHidden();
-  await expect(page.getByTestId("fleet-heading")).toBeFocused();
+  await expect(
+    page.getByRole("textbox", { name: "Search robots" }),
+  ).toBeFocused();
   await expect(await request.get(`/api/robots/${otherRobot.id}`)).toBeOK();
 });
 
