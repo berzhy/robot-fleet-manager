@@ -18,7 +18,7 @@ function lastRobotPage(total: number, size: number) {
   return Math.max(0, Math.ceil(total / size) - 1);
 }
 
-export default function useRobots(paused = false) {
+export default function useRobotList(paused = false) {
   const client = useQueryClient();
 
   const [request, setRequest] = useState<{

@@ -7,7 +7,7 @@ import type { Robot } from "@/modules/robots/robot";
 import RobotDetails from "./details/robot-details";
 import useLiveRobot from "./details/use-live-robot";
 import RobotList from "./list/robot-list";
-import useRobots from "./list/use-robots";
+import useRobotList from "./list/use-robot-list";
 import { pageMetadata } from "./test-fixtures";
 
 const robot: Robot = {
@@ -246,7 +246,7 @@ test("a stale in-flight poll cannot overwrite an explicit refresh", async () => 
       )
       .mockResolvedValueOnce(page(40)),
   );
-  const { result } = renderHook(() => useRobots());
+  const { result } = renderHook(() => useRobotList());
   await tick();
 
   await tick(5000);
@@ -374,7 +374,7 @@ test("pausing aborts in-flight fleet and detail polls and ignores their late res
   const initial = { robot, siteRobots: [], verifiedAt: Date.now() };
   const { result, rerender } = renderHook(
     ({ paused }) => ({
-      fleet: useRobots(paused),
+      fleet: useRobotList(paused),
       detail: useLiveRobot(initial, paused),
     }),
     { initialProps: { paused: false } },
@@ -520,9 +520,12 @@ test("paused fleet retains cached data across visibility changes and refreshes o
   vi.useFakeTimers();
   const fetcher = vi.fn().mockImplementation(() => Promise.resolve(page()));
   vi.stubGlobal("fetch", fetcher);
-  const { result, rerender } = renderHook(({ paused }) => useRobots(paused), {
-    initialProps: { paused: false },
-  });
+  const { result, rerender } = renderHook(
+    ({ paused }) => useRobotList(paused),
+    {
+      initialProps: { paused: false },
+    },
+  );
   await tick();
 
   rerender({ paused: true });
@@ -604,7 +607,7 @@ test("fleet and detail retain snapshots after a request timeout and recover on t
   });
   vi.stubGlobal("fetch", fetcher);
   const { result } = renderHook(() => ({
-    fleet: useRobots(),
+    fleet: useRobotList(),
     detail: useLiveRobot({ robot, siteRobots: [], verifiedAt: Date.now() }),
   }));
   await tick();
@@ -653,7 +656,7 @@ test("unmount cancels outstanding fleet and detail requests without restarting p
   );
   vi.stubGlobal("fetch", fetcher);
   const { unmount } = renderHook(() => ({
-    fleet: useRobots(),
+    fleet: useRobotList(),
     detail: useLiveRobot({ robot, siteRobots: [], verifiedAt: Date.now() }),
   }));
 
@@ -883,7 +886,7 @@ test("page correction after a hidden fleet shrinks immediately verifies the dest
   });
   vi.stubGlobal("fetch", fetcher);
 
-  const { result } = renderHook(() => useRobots());
+  const { result } = renderHook(() => useRobotList());
   await tick();
   act(() => result.current.setPage(2));
   await tick();

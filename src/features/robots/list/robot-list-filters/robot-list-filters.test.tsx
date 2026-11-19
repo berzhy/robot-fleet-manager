@@ -4,15 +4,15 @@ import { useState } from "react";
 
 import type { RobotFilters } from "@/modules/robots/robot-filters";
 
-import FleetSummary from "./fleet-summary";
 import RobotListFilters from "./robot-list-filters";
+import RobotStatusFilters from "./robot-status-filters";
 
 test("dropdowns, tiles and removable chips share one selection", () => {
   function Controls() {
     const [filters, setFilters] = useState<RobotFilters>({ view: "all" });
     return (
       <>
-        <FleetSummary
+        <RobotStatusFilters
           filters={filters}
           onChange={setFilters}
           summary={{
@@ -73,7 +73,7 @@ test("dropdowns, tiles and removable chips share one selection", () => {
 
 test("selecting the active tile does not restart its query", () => {
   const change = vi.fn();
-  render(<FleetSummary filters={{ view: "all" }} onChange={change} />);
+  render(<RobotStatusFilters filters={{ view: "all" }} onChange={change} />);
 
   fireEvent.click(screen.getByRole("button", { name: "All robots" }));
 

@@ -28,7 +28,7 @@ const explanations = {
   "low-battery": `Last-reported battery at or below ${lowBatteryPercent}%, including Returning but excluding Charging.`,
 };
 
-export default function FleetSummary({
+export default function RobotStatusFilters({
   filters,
   summary,
   updating = false,

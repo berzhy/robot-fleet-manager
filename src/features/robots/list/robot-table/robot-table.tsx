@@ -14,7 +14,7 @@ import type { Robot, RobotPage } from "@/modules/robots/robot";
 import type { RobotAction } from "@/modules/robots/robot-actions";
 import type { RobotFilters } from "@/modules/robots/robot-filters";
 
-import type { RobotListStatus } from "../use-robots";
+import type { RobotListStatus } from "../use-robot-list";
 
 import RobotTableEmptyState from "./robot-table-empty-state";
 import RobotTableErrorState from "./robot-table-error-state";

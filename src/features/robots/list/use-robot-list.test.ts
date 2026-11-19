@@ -6,7 +6,7 @@ import type { RobotPage } from "@/modules/robots/robot";
 
 import { getRobots } from "../api/robot-api";
 import { pageMetadata } from "../test-fixtures";
-import useRobots from "./use-robots";
+import useRobotList from "./use-robot-list";
 
 vi.mock("../api/robot-api");
 
@@ -27,7 +27,7 @@ test("aborts old requests and ignores their late responses", async () => {
       pageSize: 10,
       ...pageMetadata(),
     });
-  const { result } = renderHook(() => useRobots());
+  const { result } = renderHook(() => useRobotList());
   const signal = vi.mocked(getRobots).mock.calls[0][2];
 
   act(() => result.current.setPage(1));
@@ -56,7 +56,7 @@ test("page size changes cancel old requests and reload preserves the selection",
     pageSize: 20,
     ...pageMetadata(),
   });
-  const { result } = renderHook(() => useRobots());
+  const { result } = renderHook(() => useRobotList());
   await waitFor(() => expect(result.current.status).toBe("success"));
 
   act(() => result.current.setPageSize(20));
@@ -94,7 +94,7 @@ test("failed page correction retains only cached destination data under the corr
       ...pageMetadata(),
     })
     .mockRejectedValueOnce(new Error("correction failed"));
-  const { result } = renderHook(() => useRobots());
+  const { result } = renderHook(() => useRobotList());
   await waitFor(() => expect(result.current.status).toBe("success"));
 
   act(() => result.current.setPage(1));
@@ -120,7 +120,7 @@ test("filter changes cancel old scope requests and reset page while retaining pa
     ...pageMetadata(30),
   };
   vi.mocked(getRobots).mockResolvedValue(response);
-  const { result } = renderHook(() => useRobots());
+  const { result } = renderHook(() => useRobotList());
   await waitFor(() => expect(result.current.status).toBe("success"));
 
   act(() => result.current.setPageSize(10));
@@ -165,7 +165,7 @@ test("zero matching results correct a later page and preserve filters", async ()
     ...pageMetadata(21),
   };
   vi.mocked(getRobots).mockResolvedValue(response);
-  const { result } = renderHook(() => useRobots());
+  const { result } = renderHook(() => useRobotList());
   await waitFor(() => expect(result.current.status).toBe("success"));
 
   act(() => result.current.setFilters({ view: "low-battery" }));
@@ -194,7 +194,7 @@ test("announces explicit search results but keeps background refreshes quiet", a
     ...pageMetadata(2),
   };
   vi.mocked(getRobots).mockResolvedValue(response);
-  const { result } = renderHook(() => useRobots());
+  const { result } = renderHook(() => useRobotList());
   await waitFor(() => expect(result.current.status).toBe("success"));
   expect(result.current.announcement).toBe("");
 
@@ -228,7 +228,7 @@ test("uncached filters keep summary data while their previous rows remain hidden
         }),
     );
 
-  const { result } = renderHook(() => useRobots());
+  const { result } = renderHook(() => useRobotList());
   await waitFor(() => expect(result.current.status).toBe("success"));
 
   act(() => result.current.setFilters({ view: "offline" }));
@@ -265,7 +265,7 @@ test("returning to a cached filter shows only that scope and retains it after re
         }),
     );
 
-  const { result } = renderHook(() => useRobots());
+  const { result } = renderHook(() => useRobotList());
   await waitFor(() => expect(result.current.status).toBe("success"));
 
   act(() => result.current.setFilters({ view: "offline" }));
@@ -296,7 +296,7 @@ test("equivalent filters do not issue an extra request", async () => {
     pageSize: 10,
     ...pageMetadata(),
   });
-  const { result } = renderHook(() => useRobots());
+  const { result } = renderHook(() => useRobotList());
   await waitFor(() => expect(result.current.status).toBe("success"));
 
   await act(async () => {

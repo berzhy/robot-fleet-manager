@@ -21,10 +21,10 @@ import useRobotMutations from "../hooks/use-robot-mutations";
 import AddRobotSplitButton from "./add-robot-split-button";
 import DeleteRobotDialog from "./delete-robot-dialog";
 import { generateRobotInput } from "./generate-robot-input";
-import FleetSummary from "./robot-list-filters/fleet-summary";
 import RobotListFilters from "./robot-list-filters/robot-list-filters";
+import RobotStatusFilters from "./robot-list-filters/robot-status-filters";
 import RobotTable from "./robot-table/robot-table";
-import useRobots from "./use-robots";
+import useRobotList from "./use-robot-list";
 
 type DeleteTarget =
   { kind: "robot"; id: string; name: string } | { kind: "all" };
@@ -64,7 +64,7 @@ export default function RobotList() {
     snapshot,
     filters,
     setFilters,
-  } = useRobots(adding || acting || deleting);
+  } = useRobotList(adding || acting || deleting);
 
   const [notification, setNotification] = useState<{
     severity: "success" | "error";
@@ -296,7 +296,7 @@ export default function RobotList() {
         status={status}
         toolbar={
           <Stack spacing={2}>
-            <FleetSummary
+            <RobotStatusFilters
               filters={filters}
               onChange={setFilters}
               summary={snapshot?.summary}
