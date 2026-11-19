@@ -24,8 +24,5 @@ export const workingRobot: Robot = {
   batteryPercent: 50,
   lastReceivedAt: new Date().toISOString(),
   lastTelemetryAt: new Date().toISOString(),
-  controlTarget: "work",
-  controlRevision: 0,
-  appliedControlRevision: 0,
   problemCode: null,
 };

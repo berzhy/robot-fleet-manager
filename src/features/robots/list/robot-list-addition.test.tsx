@@ -19,9 +19,6 @@ import RobotList from "./robot-list";
 
 const robot: Robot = {
   problemCode: null,
-  controlTarget: "work",
-  controlRevision: 0,
-  appliedControlRevision: 0,
   id: "new",
   name: "New robot",
   manufacturer: "Maker",

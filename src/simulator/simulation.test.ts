@@ -6,9 +6,9 @@ import {
   applyControl,
   telemetryAvailable,
 } from "./simulation";
-import type { Robot } from "@/modules/robots/robot";
+import type { RegistryRobot } from "@/modules/robots/robot";
 
-const robot: Robot = {
+const robot: RegistryRobot = {
   problemCode: null,
   controlTarget: "work",
   controlRevision: 0,
@@ -213,7 +213,7 @@ test("initial battery spans 22–100 deterministically and reported battery surv
 test.each(robotProblemCodes)(
   "%s survives restart, pauses work and is cleared by Retry",
   (problemCode) => {
-    const record: Robot = {
+    const record: RegistryRobot = {
       ...robot,
       activity: "needs-attention",
       problemCode,

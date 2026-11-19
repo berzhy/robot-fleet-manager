@@ -1,13 +1,13 @@
 import { robotProblemCodes } from "@/modules/robots/robot-problems";
-import type { Robot } from "@/modules/robots/robot";
+import type { RegistryRobot } from "@/modules/robots/robot";
 import type { TelemetryReport } from "@/modules/telemetry/telemetry";
 
-type Target = Robot["controlTarget"];
+type Target = RegistryRobot["controlTarget"];
 
 export type SimulatedRobot = {
   battery: number;
-  problemCode: Robot["problemCode"];
-  activity: Robot["activity"];
+  problemCode: RegistryRobot["problemCode"];
+  activity: RegistryRobot["activity"];
   area: string;
   target: Target;
   appliedRevision: number;
@@ -51,7 +51,7 @@ function offlineProne(state: SimulatedRobot) {
   return state.connectionHash % 5 === 0;
 }
 
-export function initializeRobot(robot: Robot): SimulatedRobot {
+export function initializeRobot(robot: RegistryRobot): SimulatedRobot {
   const hash = hashId(robot.id);
   // Seeded robots start above the low-battery tier: deterministic 22–100%.
   return {
@@ -70,7 +70,7 @@ export function initializeRobot(robot: Robot): SimulatedRobot {
   };
 }
 
-export function applyControl(state: SimulatedRobot, robot: Robot) {
+export function applyControl(state: SimulatedRobot, robot: RegistryRobot) {
   if (robot.controlRevision <= state.appliedRevision) {
     return;
   }

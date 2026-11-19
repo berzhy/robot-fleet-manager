@@ -24,6 +24,17 @@ import {
 } from "./robots";
 import { robotHandlers } from "./robot-handlers";
 
+const newRobotControl = {
+  controlTarget: "work",
+  controlRevision: 0,
+  appliedControlRevision: 0,
+} as const;
+
+// Control state is internal: only the simulator's registry exposes it.
+function registryEntry(id: string) {
+  return robotRegistry(db).find((robot) => robot.id === id);
+}
+
 let directory: string;
 let db: FleetDatabase;
 
@@ -331,7 +342,7 @@ test.each(robotTypes)(
     expect(robot.type).toBe(type);
     expect(getRobot(db, robot.id)).toEqual(robot);
     expect(listRobots(db, 0).items).toEqual([robot]);
-    expect(robotRegistry(db)).toEqual([robot]);
+    expect(robotRegistry(db)).toEqual([{ ...robot, ...newRobotControl }]);
   },
 );
 
@@ -363,7 +374,7 @@ test.each(integrationTypes)(
     expect(robot.integrationType).toBe(integrationType);
     expect(getRobot(db, robot.id)).toEqual(robot);
     expect(listRobots(db, 0).items).toEqual([robot]);
-    expect(robotRegistry(db)).toEqual([robot]);
+    expect(robotRegistry(db)).toEqual([{ ...robot, ...newRobotControl }]);
   },
 );
 
@@ -409,7 +420,7 @@ test("actions validate current state, persist latest intent, and leave observati
   expect((await action({ action: "start" })).status).toBe(409);
 
   expect((await action({ action: "stop" })).status).toBe(202);
-  expect(getRobot(db, robot.id)).toMatchObject({
+  expect(registryEntry(robot.id)).toMatchObject({
     activity: "working",
     controlTarget: "stop",
     controlRevision: 1,
@@ -417,7 +428,7 @@ test("actions validate current state, persist latest intent, and leave observati
   });
 
   expect((await action({ action: "return-to-base" })).status).toBe(202);
-  expect(getRobot(db, robot.id)).toMatchObject({
+  expect(registryEntry(robot.id)).toMatchObject({
     controlTarget: "base",
     controlRevision: 2,
   });
@@ -427,7 +438,7 @@ test("actions validate current state, persist latest intent, and leave observati
     .run(new Date(Date.now() - 11000).toISOString(), robot.id);
 
   expect((await action({ action: "stop" })).status).toBe(409);
-  expect(getRobot(db, robot.id)?.controlRevision).toBe(2);
+  expect(registryEntry(robot.id)?.controlRevision).toBe(2);
 });
 
 test.each(robotProblemCodes)(
@@ -457,7 +468,7 @@ test.each(robotProblemCodes)(
     );
 
     expect(response.status).toBe(202);
-    expect(getRobot(db, robot.id)).toMatchObject({
+    expect(registryEntry(robot.id)).toMatchObject({
       controlTarget: "work",
       controlRevision: 1,
       activity: "needs-attention",
@@ -500,7 +511,7 @@ test("action persistence failures roll back the target and return a generic erro
       message: "Unable to request robot action.",
     },
   });
-  expect(getRobot(db, robot.id)).toMatchObject({
+  expect(registryEntry(robot.id)).toMatchObject({
     controlTarget: "work",
     controlRevision: 0,
   });
@@ -857,7 +868,7 @@ test.each([10, 10.1, null])(
 
     const allowed = batteryPercent !== null && batteryPercent > 10;
     expect(response.status).toBe(allowed ? 202 : 409);
-    expect(getRobot(db, robot.id)?.controlRevision).toBe(allowed ? 1 : 0);
+    expect(registryEntry(robot.id)?.controlRevision).toBe(allowed ? 1 : 0);
   },
 );
 

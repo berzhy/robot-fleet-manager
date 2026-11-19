@@ -1,6 +1,10 @@
 import { expect, type APIRequestContext, type Page } from "@playwright/test";
 
-import { robotPageSize, type Robot } from "@/modules/robots/robot";
+import {
+  robotPageSize,
+  type RegistryRobot,
+  type Robot,
+} from "@/modules/robots/robot";
 import type { TelemetryReport } from "@/modules/telemetry/telemetry";
 
 import { test } from "./fixtures";
@@ -103,6 +107,13 @@ async function registeredRobots(request: APIRequestContext) {
   return items;
 }
 
+// The command a robot should follow is read by the simulator from the registry.
+async function registryEntry(request: APIRequestContext, id: string) {
+  const response = await request.get("/api/robots/registry");
+  const { items } = (await response.json()) as { items: RegistryRobot[] };
+  return items.find((robot) => robot.id === id);
+}
+
 async function addRobot(page: Page): Promise<Robot> {
   const created = page.waitForResponse(
     (response) =>
@@ -173,10 +184,7 @@ test("keyboard explanations and Stop/Retry requests follow reported activity", a
   await expect(page.getByTestId("fleet-notification")).toContainText(
     "Stop activity requested for",
   );
-  const stopped = (await (
-    await request.get(`/api/robots/${robot.id}`)
-  ).json()) as Robot;
-  expect(stopped).toMatchObject({
+  expect(await registryEntry(request, robot.id)).toMatchObject({
     activity: "working",
     controlTarget: "stop",
     controlRevision: 1,
@@ -198,9 +206,10 @@ test("keyboard explanations and Stop/Retry requests follow reported activity", a
   await expect(page.getByTestId("fleet-notification")).toContainText(
     "Retry activity requested for",
   );
-  expect(
-    await (await request.get(`/api/robots/${robot.id}`)).json(),
-  ).toMatchObject({ controlTarget: "work", controlRevision: 2 });
+  expect(await registryEntry(request, robot.id)).toMatchObject({
+    controlTarget: "work",
+    controlRevision: 2,
+  });
 
   await report("working", 2);
   await expect(row.getByTestId("robot-activity")).toHaveText("Working", {

@@ -22,9 +22,6 @@ import { pageMetadata } from "./test-fixtures";
 
 const robot: Robot = {
   problemCode: null,
-  controlTarget: "work",
-  controlRevision: 0,
-  appliedControlRevision: 0,
   id: "live",
   name: "Live robot",
   manufacturer: "Maker",

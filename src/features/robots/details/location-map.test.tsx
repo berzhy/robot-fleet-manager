@@ -4,9 +4,6 @@ import type { Robot } from "@/modules/robots/robot";
 import LocationMap from "./location-map";
 const robot: Robot = {
   problemCode: null,
-  controlTarget: "work",
-  controlRevision: 0,
-  appliedControlRevision: 0,
   id: "test",
   name: "Test robot",
   manufacturer: "Test manufacturer",

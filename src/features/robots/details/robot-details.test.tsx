@@ -17,9 +17,6 @@ import RobotDetails from "./robot-details";
 
 const robot: Robot = {
   problemCode: null,
-  controlTarget: "work",
-  controlRevision: 0,
-  appliedControlRevision: 0,
   id: "test",
   name: "Test robot",
   manufacturer: "Test manufacturer",

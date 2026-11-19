@@ -1,5 +1,5 @@
 import { setTimeout as delay } from "node:timers/promises";
-import type { Robot } from "@/modules/robots/robot";
+import type { RegistryRobot } from "@/modules/robots/robot";
 import {
   advanceRobot,
   applyControl,
@@ -33,7 +33,7 @@ export async function runSimulator(origin: string, signal: AbortSignal) {
 
     try {
       const response = await request("/api/robots/registry");
-      const { items } = (await response.json()) as { items: Robot[] };
+      const { items } = (await response.json()) as { items: RegistryRobot[] };
       const ids = new Set(items.map((robot) => robot.id));
       for (const id of states.keys()) {
         if (!ids.has(id)) {

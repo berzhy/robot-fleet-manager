@@ -8,6 +8,7 @@ import {
   criticalBatteryPercent,
   lowBatteryPercent,
   robotPageSize,
+  type RegistryRobot,
   type Robot,
   type RobotPage,
 } from "@/modules/robots/robot";
@@ -26,9 +27,6 @@ import { latestTelemetry, robots } from "../db/schema";
 import { robotSearchCondition } from "./robot-search";
 
 const selection = {
-  controlTarget: robots.controlTarget,
-  controlRevision: robots.controlRevision,
-  appliedControlRevision: sql<number>`coalesce(${latestTelemetry.appliedControlRevision}, 0)`,
   problemCode: latestTelemetry.problemCode,
   id: robots.id,
   name: robots.name,
@@ -44,6 +42,13 @@ const selection = {
   batteryPercent: latestTelemetry.batteryPercent,
   lastReceivedAt: latestTelemetry.receivedAt,
   lastTelemetryAt: latestTelemetry.observedAt,
+};
+
+const registrySelection = {
+  ...selection,
+  controlTarget: robots.controlTarget,
+  controlRevision: robots.controlRevision,
+  appliedControlRevision: sql<number>`coalesce(${latestTelemetry.appliedControlRevision}, 0)`,
 };
 
 export function listRobots(
@@ -173,9 +178,6 @@ export function createRobots(
     return rows.map((row): Robot => ({
       ...row,
       activity: "unknown",
-      controlTarget: "work",
-      controlRevision: 0,
-      appliedControlRevision: 0,
       problemCode: null,
       area: null,
       batteryPercent: null,
@@ -193,9 +195,9 @@ export function deleteRobot(db: FleetDatabase, id: string) {
   return db.delete(robots).where(eq(robots.id, id)).run().changes > 0;
 }
 
-export function robotRegistry(db: FleetDatabase): Robot[] {
+export function robotRegistry(db: FleetDatabase): RegistryRobot[] {
   return db
-    .select(selection)
+    .select(registrySelection)
     .from(robots)
     .leftJoin(latestTelemetry, eq(robots.id, latestTelemetry.robotId))
     .all();
