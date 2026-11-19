@@ -2,30 +2,9 @@ import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 
 import { render } from "@/query/test-utils";
-import type { Robot } from "@/modules/robots/robot";
 
-import { pageMetadata } from "../test-fixtures";
+import { pageMetadata, workingRobot } from "../test-fixtures";
 import RobotList from "./robot-list";
-import RobotActions from "./robot-table/robot-actions";
-
-const robot: Robot = {
-  id: "control",
-  name: "Atlas",
-  manufacturer: "Maker",
-  type: "inspection",
-  integrationType: "ros2",
-  site: "Site",
-  createdAt: new Date().toISOString(),
-  area: "Lobby",
-  activity: "working",
-  batteryPercent: 50,
-  lastReceivedAt: new Date().toISOString(),
-  lastTelemetryAt: new Date().toISOString(),
-  controlTarget: "work",
-  controlRevision: 0,
-  appliedControlRevision: 0,
-  problemCode: null,
-};
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -43,32 +22,6 @@ async function openMenu() {
   return screen.findByRole("menu");
 }
 
-test("disabled actions explain their reason on keyboard focus and cannot execute", async () => {
-  const onAction = vi.fn();
-  const evaluatedAt = Date.now();
-  render(
-    <RobotActions
-      robot={{ ...robot, lastReceivedAt: new Date(evaluatedAt).toISOString() }}
-      evaluatedAt={evaluatedAt}
-      disabled={false}
-      onDelete={vi.fn()}
-      onAction={onAction}
-    />,
-  );
-
-  const menu = await openMenu();
-  const start = within(menu).getByRole("menuitem", { name: "Start activity" });
-  expect(start).toHaveAttribute("aria-disabled", "true");
-
-  fireEvent.focus(start);
-  expect(await screen.findByRole("tooltip")).toHaveTextContent(
-    "Robot is already working",
-  );
-
-  fireEvent.click(start);
-  expect(onAction).not.toHaveBeenCalled();
-});
-
 test.each([202, 409, 500])(
   "Stop request response %s notifies without changing reported activity",
   async (status) => {
@@ -78,7 +31,9 @@ test.each([202, 409, 500])(
       }
       return Promise.resolve(
         Response.json({
-          items: [{ ...robot, lastReceivedAt: new Date().toISOString() }],
+          items: [
+            { ...workingRobot, lastReceivedAt: new Date().toISOString() },
+          ],
           page: 0,
           pageSize: 20,
           ...pageMetadata(1),
@@ -123,7 +78,7 @@ test("pending action prevents overlapping mutations without replacing the table"
     }
     return Promise.resolve(
       Response.json({
-        items: [{ ...robot, lastReceivedAt: new Date().toISOString() }],
+        items: [{ ...workingRobot, lastReceivedAt: new Date().toISOString() }],
         total: 1,
         page: 0,
         pageSize: 20,

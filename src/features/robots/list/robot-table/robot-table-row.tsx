@@ -16,8 +16,6 @@ import type { Robot } from "@/modules/robots/robot";
 import { connectionStatus } from "@/modules/telemetry/freshness";
 
 import { ConnectionIndicator } from "../../connection-status/connection-status";
-import SearchHighlight from "./search-highlight";
-import RobotActions from "./robot-actions";
 import {
   formatActivity,
   formatRobotType,
@@ -26,6 +24,9 @@ import {
   formatAddedParts,
   formatRobotTimestamp,
 } from "../../utils/robot-formatters";
+
+import RobotTableRowMenu from "./robot-table-row-menu";
+import SearchHighlight from "./search-highlight";
 
 export default function RobotTableRow({
   search,
@@ -184,7 +185,7 @@ export default function RobotTableRow({
         </Typography>
       </TableCell>
       <TableCell align="right" sx={{ position: "relative" }}>
-        <RobotActions
+        <RobotTableRowMenu
           disabled={adding}
           robot={robot}
           evaluatedAt={evaluatedAt}

@@ -1,4 +1,5 @@
-import type { RobotPage } from "@/modules/robots/robot";
+import type { Robot, RobotPage } from "@/modules/robots/robot";
+
 export function pageMetadata(
   total = 0,
 ): Pick<RobotPage, "summary" | "fleetTotal" | "filterOptions" | "evaluatedAt"> {
@@ -9,3 +10,22 @@ export function pageMetadata(
     evaluatedAt: Date.now(),
   };
 }
+
+export const workingRobot: Robot = {
+  id: "control",
+  name: "Atlas",
+  manufacturer: "Maker",
+  type: "inspection",
+  integrationType: "ros2",
+  site: "Site",
+  createdAt: new Date().toISOString(),
+  area: "Lobby",
+  activity: "working",
+  batteryPercent: 50,
+  lastReceivedAt: new Date().toISOString(),
+  lastTelemetryAt: new Date().toISOString(),
+  controlTarget: "work",
+  controlRevision: 0,
+  appliedControlRevision: 0,
+  problemCode: null,
+};

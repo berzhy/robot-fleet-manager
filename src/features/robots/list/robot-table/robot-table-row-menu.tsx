@@ -22,7 +22,7 @@ import {
 } from "@/modules/robots/robot-actions";
 import type { Robot } from "@/modules/robots/robot";
 
-export default function RobotActions({
+export default function RobotTableRowMenu({
   robot,
   evaluatedAt,
   onAction,
