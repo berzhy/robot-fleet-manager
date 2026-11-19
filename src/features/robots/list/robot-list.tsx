@@ -18,11 +18,11 @@ import ActionNotification from "../action-notification";
 import { isRequestTimeout } from "../api/robot-api";
 import useRobotMutations from "../hooks/use-robot-mutations";
 
+import AddRobotSplitButton from "./add-robot-split-button";
+import DeleteRobotDialog from "./delete-robot-dialog";
 import { generateRobotInput } from "./generate-robot-input";
 import FleetSummary from "./robot-list-filters/fleet-summary";
 import RobotListFilters from "./robot-list-filters/robot-list-filters";
-import AddRobotSplitButton from "./robot-table/add-robot-split-button";
-import DeleteRobotDialog from "./robot-table/delete-robot-dialog";
 import RobotTable from "./robot-table/robot-table";
 import useRobots from "./use-robots";
 
