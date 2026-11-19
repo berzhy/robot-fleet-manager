@@ -77,7 +77,7 @@ test("created metadata persists after reopening with unknown telemetry", () => {
   expect(getRobot(db, robot.id)).toEqual(robot);
   const snapshot = getRobotContext(db, robot.id);
   expect(snapshot?.robot).toEqual(robot);
-  expect(typeof snapshot?.verifiedAt).toBe("number");
+  expect(typeof snapshot?.evaluatedAt).toBe("number");
   expect(getRobotContext(db, "missing")).toBeUndefined();
 
   expect(() => createRobot(db, { ...input, name: " " })).toThrow();

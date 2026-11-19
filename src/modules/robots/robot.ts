@@ -68,5 +68,5 @@ export type SiteRobot = Pick<Robot, "id" | "name" | "area" | "lastReceivedAt">;
 export type RobotContext = {
   robot: Robot;
   siteRobots: SiteRobot[];
-  verifiedAt: number;
+  evaluatedAt: number;
 };

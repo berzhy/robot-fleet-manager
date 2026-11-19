@@ -33,13 +33,8 @@ export default function RobotDetails({ robotId }: { robotId: string }) {
   const [tab, setTab] = useState<"overview" | "logs">("overview");
   const requestAction = useRobotCommand();
   const { isWritePending } = useRobotWriteLock();
-  const {
-    robot,
-    siteRobots,
-    missing,
-    refreshFailed,
-    verifiedAt: evaluatedAt,
-  } = useLiveRobot(robotId);
+  const { robot, siteRobots, missing, refreshFailed, evaluatedAt } =
+    useLiveRobot(robotId);
 
   const connection = connectionStatus(robot.lastReceivedAt, evaluatedAt);
   const stale = connection === "delayed" || connection === "offline";

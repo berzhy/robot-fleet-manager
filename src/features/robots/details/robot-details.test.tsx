@@ -38,7 +38,7 @@ function renderDetails(context: RobotContext) {
 }
 
 test("details show fields, missing values, and breadcrumbs", async () => {
-  renderDetails({ robot: robot, siteRobots: [], verifiedAt: 0 });
+  renderDetails({ robot: robot, siteRobots: [], evaluatedAt: 0 });
 
   const details = within(screen.getByTestId("robot-details"));
   expect(
@@ -176,11 +176,11 @@ test.each([
         Response.json({
           robot: online,
           siteRobots: [],
-          verifiedAt: Date.now(),
+          evaluatedAt: Date.now(),
         }),
       ),
     );
-    renderDetails({ robot: online, siteRobots: [], verifiedAt: Date.now() });
+    renderDetails({ robot: online, siteRobots: [], evaluatedAt: Date.now() });
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent(`${label}. ${guidance}`);
@@ -207,7 +207,7 @@ test.each([
       lastReceivedAt: new Date().toISOString(),
     };
     const context = () =>
-      Response.json({ robot: online, siteRobots: [], verifiedAt: Date.now() });
+      Response.json({ robot: online, siteRobots: [], evaluatedAt: Date.now() });
     let resolveAction!: (response: Response) => void;
     let resolveRefresh!: (response: Response) => void;
     const fetcher = vi
@@ -220,7 +220,7 @@ test.each([
       )
       .mockImplementation(() => Promise.resolve(context()));
     vi.stubGlobal("fetch", fetcher);
-    renderDetails({ robot: online, siteRobots: [], verifiedAt: Date.now() });
+    renderDetails({ robot: online, siteRobots: [], evaluatedAt: Date.now() });
     await act(async () => {});
 
     await act(async () => {
@@ -306,12 +306,12 @@ test("activity requests are guarded while pending and telemetry confirms the cha
         Response.json({
           robot: observed,
           siteRobots: [],
-          verifiedAt: Date.now(),
+          evaluatedAt: Date.now(),
         }),
       );
     });
   vi.stubGlobal("fetch", fetcher);
-  renderDetails({ robot: online, siteRobots: [], verifiedAt: Date.now() });
+  renderDetails({ robot: online, siteRobots: [], evaluatedAt: Date.now() });
 
   const stop = screen.getByRole("button", {
     name: "Stop activity",
@@ -399,7 +399,7 @@ test("a command result is reported after leaving the details screen", async () =
             Response.json({
               robot: online,
               siteRobots: [],
-              verifiedAt: Date.now(),
+              evaluatedAt: Date.now(),
             }),
           ),
     ),
@@ -407,7 +407,7 @@ test("a command result is reported after leaving the details screen", async () =
   const { rerender } = renderDetails({
     robot: online,
     siteRobots: [],
-    verifiedAt: Date.now(),
+    evaluatedAt: Date.now(),
   });
 
   const stop = screen.getByRole("button", { name: "Stop activity" });
@@ -452,7 +452,7 @@ test("activity controls stay disabled until the command refresh lands", async ()
     });
   });
   vi.stubGlobal("fetch", fetcher);
-  renderDetails({ robot: online, siteRobots: [], verifiedAt: Date.now() });
+  renderDetails({ robot: online, siteRobots: [], evaluatedAt: Date.now() });
 
   const stop = screen.getByRole("button", { name: "Stop activity" });
   await waitFor(() => expect(stop).toHaveAttribute("aria-disabled", "false"));
@@ -485,7 +485,7 @@ test("activity controls stay disabled until the command refresh lands", async ()
       Response.json({
         robot: { ...online, activity: "idle" },
         siteRobots: [],
-        verifiedAt: Date.now(),
+        evaluatedAt: Date.now(),
       }),
     );
     await Promise.resolve();
@@ -518,12 +518,12 @@ test("failed action keeps reported activity and explains the failure", async () 
           : Response.json({
               robot: online,
               siteRobots: [],
-              verifiedAt: Date.now(),
+              evaluatedAt: Date.now(),
             }),
       ),
     ),
   );
-  renderDetails({ robot: online, siteRobots: [], verifiedAt: Date.now() });
+  renderDetails({ robot: online, siteRobots: [], evaluatedAt: Date.now() });
 
   await act(async () => {
     fireEvent.click(screen.getByRole("button", { name: /^Stop activity$/ }));
@@ -562,12 +562,12 @@ test("an action the server refuses shows the server's reason", async () => {
           : Response.json({
               robot: online,
               siteRobots: [],
-              verifiedAt: Date.now(),
+              evaluatedAt: Date.now(),
             }),
       ),
     ),
   );
-  renderDetails({ robot: online, siteRobots: [], verifiedAt: Date.now() });
+  renderDetails({ robot: online, siteRobots: [], evaluatedAt: Date.now() });
 
   fireEvent.click(screen.getByRole("button", { name: /^Stop activity$/ }));
 

@@ -224,6 +224,6 @@ export function getRobotContext(db: FleetDatabase, id: string) {
       .all()
       .filter((peer) => peer.id !== id);
 
-    return { robot, siteRobots, verifiedAt: Date.now() };
+    return { robot, siteRobots, evaluatedAt: Date.now() };
   });
 }
