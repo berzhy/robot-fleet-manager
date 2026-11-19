@@ -550,3 +550,43 @@ test("failed action keeps reported activity and explains the failure", async () 
   );
   expect(screen.getByTestId("robot-activity")).toHaveTextContent("Working");
 });
+
+test("an action the server refuses shows the server's reason", async () => {
+  const online: Robot = {
+    ...robot,
+    activity: "working" as const,
+    batteryPercent: 80,
+    lastReceivedAt: new Date().toISOString(),
+  };
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockImplementation((_url: string, init?: RequestInit) =>
+      Promise.resolve(
+        init?.method === "POST"
+          ? Response.json(
+              {
+                error: {
+                  code: "ACTION_UNAVAILABLE",
+                  message: "Robot must be online",
+                },
+              },
+              { status: 409 },
+            )
+          : Response.json({
+              robot: online,
+              siteRobots: [],
+              verifiedAt: Date.now(),
+            }),
+      ),
+    ),
+  );
+  render(
+    <RobotDetails robot={online} siteRobots={[]} verifiedAt={Date.now()} />,
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: /^Stop activity$/ }));
+
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Robot must be online. Check the latest report before trying again.",
+  );
+});

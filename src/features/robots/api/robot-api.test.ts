@@ -1,11 +1,13 @@
 import { pageMetadata } from "../test-fixtures";
 import { afterEach, expect, test, vi } from "vitest";
 import {
+  ApiError,
   createRobots,
   deleteAllRobots,
   getRobots,
   getRobotContext,
   deleteRobot as dataDeleteRobot,
+  sendRobotAction,
 } from "./robot-api";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -75,6 +77,37 @@ test("deletes an encoded robot id and distinguishes an already removed robot fro
   await expect(dataDeleteRobot("unrecognized")).rejects.toThrow(
     "Unable to delete robot.",
   );
+});
+
+test("a failed response carries the server's error code and message", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi
+      .fn()
+      .mockResolvedValueOnce(
+        Response.json(
+          {
+            error: {
+              code: "ACTION_UNAVAILABLE",
+              message: "Robot must be online",
+            },
+          },
+          { status: 409 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response("<html>Bad gateway</html>", { status: 502 }),
+      ),
+  );
+
+  await expect(sendRobotAction("robot", "stop")).rejects.toEqual(
+    new ApiError(409, "ACTION_UNAVAILABLE", "Robot must be online"),
+  );
+  await expect(sendRobotAction("robot", "stop")).rejects.toMatchObject({
+    status: 502,
+    code: undefined,
+    message: "Unable to request robot action.",
+  });
 });
 
 test("creates robots in one batch POST and requires a 201 response", async () => {
