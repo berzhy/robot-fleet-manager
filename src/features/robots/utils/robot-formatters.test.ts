@@ -5,7 +5,6 @@ import {
   formatBattery,
   formatRobotTimestamp,
   formatAddedParts,
-  formatResultCount,
 } from "./robot-formatters";
 
 test("battery formatting distinguishes missing data from zero and rounds percentages", () => {
@@ -33,20 +32,5 @@ test("Registered parts split the same Berlin date and time for two-line display"
   expect(parts).toEqual({ date: "14 Nov 2026", time: "13:34:56 CET" });
   expect(`${parts.date}, ${parts.time}`).toBe(
     formatRobotTimestamp("2026-11-14T12:34:56.000Z"),
-  );
-});
-
-test("result count describes the selected view within the matching scope", () => {
-  expect(formatResultCount(215, 215, { view: "all" })).toBe(
-    "215 robots · Newest first",
-  );
-  expect(formatResultCount(12, 12, { view: "all", site: "Munich" })).toBe(
-    "12 matching robots · Newest first",
-  );
-  expect(
-    formatResultCount(3, 12, { view: "needs-attention", site: "Munich" }),
-  ).toBe("3 of 12 matching robots · Newest first");
-  expect(formatResultCount(1, 1, { view: "all" })).toBe(
-    "1 robot · Newest first",
   );
 });

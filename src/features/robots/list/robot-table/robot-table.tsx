@@ -2,26 +2,24 @@
 
 import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
-import Skeleton from "@mui/material/Skeleton";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
-import Typography from "@mui/material/Typography";
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 
 import type { Robot, RobotPage } from "@/modules/robots/robot";
 import type { RobotAction } from "@/modules/robots/robot-actions";
 import type { RobotFilters } from "@/modules/robots/robot-filters";
 
-import { formatResultCount } from "../../utils/robot-formatters";
 import type { RobotListStatus } from "../use-robots";
+
 import RobotTableEmptyState from "./robot-table-empty-state";
 import RobotTableErrorState from "./robot-table-error-state";
+import RobotTableFooter from "./robot-table-footer";
 import RobotTableNoResultsState from "./robot-table-no-results-state";
-import RobotTablePagination from "./robot-table-pagination";
 import RobotTableRow from "./robot-table-row";
 import RobotTableSkeleton from "./robot-table-skeleton";
 
@@ -95,7 +93,6 @@ export default function RobotTable({
 
   const isLoading = status === "loading";
   const result = status === "success" ? snapshot : undefined;
-  const total = snapshot?.total ?? 0;
   const { search } = filters;
 
   return (
@@ -206,38 +203,16 @@ export default function RobotTable({
           ))}
         {status === "error" && <RobotTableErrorState onRetry={onRetry} />}
       </TableContainer>
-      <Box
-        sx={{
-          minHeight: 52,
-          flexShrink: 0,
-          bgcolor: "background.default",
-          display: "flex",
-          alignItems: "center",
-        }}
-      >
-        {total > 0 && (
-          <RobotTablePagination
-            total={total}
-            page={page}
-            pageSize={pageSize}
-            onPageSizeChange={onPageSizeChange}
-            onPageChange={onPageChange}
-            disabled={adding || status !== "success"}
-          />
-        )}
-        <Typography
-          data-testid="fleet-result-count"
-          variant="body2"
-          color="text.secondary"
-          sx={{ ml: "auto", pr: 2, fontVariantNumeric: "tabular-nums" }}
-        >
-          {result ? (
-            formatResultCount(result.total, result.summary.all, filters)
-          ) : (
-            <Skeleton width={180} aria-hidden="true" />
-          )}
-        </Typography>
-      </Box>
+      <RobotTableFooter
+        snapshot={snapshot}
+        filters={filters}
+        showResultCount={status === "success"}
+        page={page}
+        pageSize={pageSize}
+        onPageSizeChange={onPageSizeChange}
+        onPageChange={onPageChange}
+        paginationDisabled={adding || status !== "success"}
+      />
     </Paper>
   );
 }
