@@ -101,7 +101,7 @@ test("failed page correction retains only cached destination data under the corr
   await waitFor(() => expect(result.current.status).toBe("success"));
 
   act(() => result.current.refresh());
-  await waitFor(() => expect(result.current.interrupted).toBe(true));
+  await waitFor(() => expect(result.current.refreshFailed).toBe(true));
   expect(result.current.status).toBe("success");
   expect(result.current.snapshot?.page).toBe(0);
   expect(result.current.page).toBe(0);
@@ -283,7 +283,7 @@ test("returning to a cached filter shows only that scope and retains it after re
     await Promise.resolve();
   });
 
-  await waitFor(() => expect(result.current.interrupted).toBe(true));
+  await waitFor(() => expect(result.current.refreshFailed).toBe(true));
   expect(result.current.status).toBe("success");
   expect(result.current.snapshot?.total).toBe(30);
 });

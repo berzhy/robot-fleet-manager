@@ -33,7 +33,7 @@ export default function RobotTableRowMenu({
   disabled: boolean;
   robot: Robot;
   evaluatedAt: number;
-  onAction?: (robot: Robot, action: RobotAction) => void;
+  onAction: (robot: Robot, action: RobotAction) => void;
   unverified?: boolean;
   onDelete: (robot: Robot, trigger: HTMLButtonElement) => void;
 }) {
@@ -80,7 +80,7 @@ export default function RobotTableRowMenu({
               <MenuItem
                 disabled={Boolean(reason)}
                 onClick={() => {
-                  if (reason || !onAction) {
+                  if (reason) {
                     return;
                   }
                   onAction(robot, action);

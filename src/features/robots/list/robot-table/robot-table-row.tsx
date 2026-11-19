@@ -46,7 +46,7 @@ export default function RobotTableRow({
   onFocusCapture: FocusEventHandler<HTMLTableRowElement>;
   robot: Robot;
   rowHeight: number;
-  onAction?: (robot: Robot, action: RobotAction) => void;
+  onAction: (robot: Robot, action: RobotAction) => void;
   onDelete: (robot: Robot, trigger: HTMLButtonElement) => void;
 }) {
   const connection = connectionStatus(robot.lastReceivedAt, evaluatedAt);

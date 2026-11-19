@@ -55,8 +55,7 @@ export default function RobotList() {
     setPage,
     setPageSize,
     refresh,
-    interrupted,
-    unverified,
+    refreshFailed,
     snapshot,
     filters,
     setFilters,
@@ -275,7 +274,7 @@ export default function RobotList() {
       >
         {status === "loading" ? "Loading robots" : announcement}
       </Box>
-      {interrupted && status === "success" && (
+      {refreshFailed && status === "success" && (
         <Alert data-testid="fleet-refresh-warning" severity="warning">
           Live updates interrupted. Showing last-known data and connection
           states.
@@ -315,7 +314,7 @@ export default function RobotList() {
           setFilters({ ...filters, search: undefined });
         }}
         onRowFocusLost={confirmation ? undefined : focusSearch}
-        unverified={unverified}
+        unverified={refreshFailed}
         page={page}
         pageSize={pageSize}
         onPageSizeChange={setPageSize}

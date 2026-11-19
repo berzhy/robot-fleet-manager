@@ -29,6 +29,17 @@ const robot: Robot = {
   createdAt: "2026-11-14T12:00:00.000Z",
 };
 
+const tableHandlers = {
+  onPageSizeChange: () => {},
+  onPageChange: () => {},
+  onRetry: () => {},
+  onAdd: () => {},
+  onDelete: () => {},
+  onAction: () => {},
+  onClearFilters: () => {},
+  onClearSearch: () => {},
+};
+
 function robotPage(items: Robot[]): RobotPage {
   return {
     items,
@@ -41,15 +52,11 @@ function robotPage(items: Robot[]): RobotPage {
 
 test.each(robotPageSizes)("loading renders %i decorative rows", (pageSize) => {
   const props = {
+    ...tableHandlers,
     snapshot: { ...robotPage([robot]), pageSize },
     page: 0,
     pageSize,
-    onPageSizeChange: () => {},
-    onPageChange: () => {},
-    onRetry: () => {},
-    onAdd: () => {},
     adding: false,
-    onDelete: () => {},
   };
   const { rerender } = render(
     <RobotTable
@@ -86,6 +93,7 @@ test("table renders the supplied server page without slicing or sorting", () => 
 
   render(
     <RobotTable
+      {...tableHandlers}
       filters={{ view: "needs-attention", site: "Munich" }}
       status="success"
       snapshot={{
@@ -112,13 +120,9 @@ test("table renders the supplied server page without slicing or sorting", () => 
         summary: { ...metadata.summary, "needs-attention": 23 },
       }}
       pageSize={20}
-      onPageSizeChange={() => {}}
       page={1}
       onPageChange={onPageChange}
-      onRetry={() => {}}
-      onAdd={() => {}}
       adding={false}
-      onDelete={() => {}}
     />,
   );
 
@@ -145,17 +149,13 @@ test("table renders the supplied server page without slicing or sorting", () => 
 test("robot names are plain text with one accessible navigation link per row", () => {
   render(
     <RobotTable
+      {...tableHandlers}
       filters={{ view: "all" }}
       snapshot={robotPage([robot])}
       pageSize={20}
-      onPageSizeChange={() => {}}
       page={0}
-      onPageChange={() => {}}
       status="success"
-      onRetry={() => {}}
-      onAdd={() => {}}
       adding={false}
-      onDelete={() => {}}
     />,
   );
 
@@ -186,17 +186,13 @@ test("robot names are plain text with one accessible navigation link per row", (
 test("columns put identity and operational context before catalog metadata", () => {
   render(
     <RobotTable
+      {...tableHandlers}
       filters={{ view: "all" }}
       snapshot={robotPage([robot])}
       pageSize={20}
-      onPageSizeChange={() => {}}
       page={0}
-      onPageChange={() => {}}
       status="success"
-      onRetry={() => {}}
-      onAdd={() => {}}
       adding={false}
-      onDelete={() => {}}
     />,
   );
 
@@ -227,19 +223,14 @@ test("a search with no matches names the query, lists searchable fields and offe
   const onClearSearch = vi.fn();
   render(
     <RobotTable
+      {...tableHandlers}
       filters={{ view: "all", search: "no-such-robot" }}
       snapshot={{ ...robotPage([]), fleetTotal: 5 }}
-      onClearFilters={() => {}}
       onClearSearch={onClearSearch}
       pageSize={20}
-      onPageSizeChange={() => {}}
       page={0}
-      onPageChange={() => {}}
       status="success"
-      onRetry={() => {}}
-      onAdd={() => {}}
       adding={false}
-      onDelete={() => {}}
     />,
   );
 
@@ -264,6 +255,7 @@ test.each([
   (problemCode, label) => {
     render(
       <RobotTable
+        {...tableHandlers}
         filters={{ view: "all" }}
         status="success"
         snapshot={robotPage([
@@ -271,11 +263,6 @@ test.each([
         ])}
         page={0}
         pageSize={20}
-        onPageSizeChange={() => {}}
-        onPageChange={() => {}}
-        onRetry={() => {}}
-        onDelete={() => {}}
-        onAdd={() => {}}
         adding={false}
       />,
     );

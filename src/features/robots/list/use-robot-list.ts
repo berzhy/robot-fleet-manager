@@ -102,8 +102,7 @@ export default function useRobotList(paused = false) {
       setRequest((previous) => ({ ...previous, page: 0, filters }));
     },
     refresh,
-    interrupted: query.isError,
-    unverified: query.isError,
+    refreshFailed: query.isRefetchError,
     snapshot,
     filters: request.filters,
   };

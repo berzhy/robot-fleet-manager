@@ -8,8 +8,8 @@ export default function RobotTableNoResultsState({
   onClearFilters,
 }: {
   search?: string;
-  onClearSearch?: () => void;
-  onClearFilters?: () => void;
+  onClearSearch: () => void;
+  onClearFilters: () => void;
 }) {
   return (
     <Stack

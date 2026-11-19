@@ -264,7 +264,7 @@ test("a stale in-flight poll cannot overwrite an explicit refresh", async () => 
   expect(result.current.snapshot?.items).toMatchObject([
     { batteryPercent: 40 },
   ]);
-  expect(result.current.interrupted).toBe(false);
+  expect(result.current.refreshFailed).toBe(false);
 });
 
 test("detail refreshes while Logs is selected and stops when its robot is deleted", async () => {
@@ -399,7 +399,7 @@ test("pausing aborts in-flight fleet and detail polls and ignores their late res
     { batteryPercent: 50 },
   ]);
   expect(result.current.detail.robot.batteryPercent).toBe(50);
-  expect(result.current.fleet.interrupted).toBe(false);
+  expect(result.current.fleet.refreshFailed).toBe(false);
   expect(result.current.detail.interrupted).toBe(false);
 
   await tick(10000);
@@ -530,17 +530,17 @@ test("paused fleet retains cached data across visibility changes and refreshes o
 
   rerender({ paused: true });
   setPageVisibility(true);
-  expect(result.current.unverified).toBe(false);
+  expect(result.current.refreshFailed).toBe(false);
 
   setPageVisibility(false);
   await tick(10000);
   expect(fetcher).toHaveBeenCalledTimes(1);
-  expect(result.current.unverified).toBe(false);
+  expect(result.current.refreshFailed).toBe(false);
 
   rerender({ paused: false });
   await tick();
   expect(fetcher).toHaveBeenCalledTimes(2);
-  expect(result.current.unverified).toBe(false);
+  expect(result.current.refreshFailed).toBe(false);
 });
 
 test("paused detail retains verification across visibility changes and refreshes on resume", async () => {
@@ -620,7 +620,7 @@ test("fleet and detail retain snapshots after a request timeout and recover on t
     timeout.abort(new DOMException("Request timed out", "TimeoutError"));
     await Promise.resolve();
   });
-  expect(result.current.fleet.interrupted).toBe(true);
+  expect(result.current.fleet.refreshFailed).toBe(true);
   expect(result.current.detail.interrupted).toBe(true);
   expect(result.current.fleet.status).toBe("success");
   expect(result.current.fleet.snapshot?.items).toMatchObject([
@@ -635,7 +635,7 @@ test("fleet and detail retain snapshots after a request timeout and recover on t
   timeout = new AbortController();
   await tick(1);
   expect(fetcher).toHaveBeenCalledTimes(6);
-  expect(result.current.fleet.interrupted).toBe(false);
+  expect(result.current.fleet.refreshFailed).toBe(false);
   expect(result.current.detail.interrupted).toBe(false);
 });
 
@@ -902,8 +902,7 @@ test("page correction after a hidden fleet shrinks immediately verifies the dest
   expect(result.current.page).toBe(0);
   expect(result.current.status).toBe("success");
   expect(result.current.snapshot?.items).toMatchObject([{ id: robot.id }]);
-  expect(result.current.unverified).toBe(false);
-  expect(result.current.interrupted).toBe(false);
+  expect(result.current.refreshFailed).toBe(false);
   expect(
     new URL(fetcher.mock.lastCall![0], "http://localhost").searchParams.get(
       "page",

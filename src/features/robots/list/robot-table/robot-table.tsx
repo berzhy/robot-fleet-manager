@@ -60,8 +60,8 @@ export default function RobotTable({
   filters: RobotFilters;
   snapshot?: RobotPage;
   status: RobotListStatus;
-  onClearFilters?: () => void;
-  onClearSearch?: () => void;
+  onClearFilters: () => void;
+  onClearSearch: () => void;
   onRowFocusLost?: () => void;
   unverified?: boolean;
   onAdd: (trigger: HTMLButtonElement) => void;
@@ -71,7 +71,7 @@ export default function RobotTable({
   onPageSizeChange: (pageSize: number) => void;
   onPageChange: (page: number) => void;
   onRetry: () => void;
-  onAction?: (robot: Robot, action: RobotAction) => void;
+  onAction: (robot: Robot, action: RobotAction) => void;
   onDelete: (robot: Robot, trigger: HTMLButtonElement) => void;
 }) {
   // Focus events from the portalled menu follow the React tree to its row.
