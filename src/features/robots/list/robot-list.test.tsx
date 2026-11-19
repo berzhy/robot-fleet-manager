@@ -90,6 +90,38 @@ test("handles HTTP failure, retry, and empty fleet without demo controls", async
   expect(empty).toHaveTextContent("No robots available.");
 });
 
+test.each(["Clear search", "Clear filters"])(
+  "%s returns focus to search from the no-results view",
+  async (name) => {
+    const noMatches = { ...page([]), fleetTotal: 1 };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string) => {
+        const { searchParams } = new URL(url, "http://localhost");
+        const result = searchParams.has("search") ? noMatches : page([robot]);
+        return Promise.resolve(Response.json(result));
+      }),
+    );
+    render(<RobotList />);
+    await screen.findByTestId("robot-row-one");
+
+    const search = screen.getByRole("textbox", { name: "Search robots" });
+    fireEvent.change(search, { target: { value: "missing" } });
+
+    const noResults = await screen.findByTestId("fleet-no-results");
+    const reset = within(noResults).getByRole("button", { name });
+    reset.focus();
+    expect(reset).toHaveFocus();
+
+    fireEvent.click(reset);
+
+    expect(await screen.findByTestId("robot-row-one")).toBeVisible();
+    expect(reset).not.toBeInTheDocument();
+    expect(search).toHaveValue("");
+    expect(search).toHaveFocus();
+  },
+);
+
 test("requests pages and keeps the pager mounted while loading", async () => {
   const rows = Array.from({ length: 10 }, (_, i) => ({
     ...robot,

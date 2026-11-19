@@ -11,7 +11,14 @@ import Popover from "@mui/material/Popover";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
-import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
+import {
+  useEffect,
+  useEffectEvent,
+  useId,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 
 import { integrationTypes, robotTypes } from "@/modules/robots/robot";
 import {
@@ -39,12 +46,14 @@ function formatFilterValue(key: keyof RobotFilters, value: string) {
 export default function RobotListFilters({
   filters,
   search,
+  searchInputRef,
   onSearchChange,
   options,
   onChange,
 }: {
   filters: RobotFilters;
   search: string;
+  searchInputRef: RefObject<HTMLInputElement | null>;
   onSearchChange: (value: string) => void;
   options?: FilterOptions;
   onChange: (filters: RobotFilters) => void;
@@ -77,7 +86,7 @@ export default function RobotListFilters({
   }, [search, composing]);
 
   function clearSearch() {
-    container.current?.querySelector<HTMLElement>("#fleet-search")?.focus();
+    searchInputRef.current?.focus();
     onSearchChange("");
     if (filters.search !== undefined) {
       onChange({ ...filters, search: undefined });
@@ -145,7 +154,7 @@ export default function RobotListFilters({
     const doc = container.current?.ownerDocument;
     const field =
       key === "search"
-        ? container.current?.querySelector<HTMLElement>("#fleet-search")
+        ? searchInputRef.current
         : key === "view"
           ? doc?.querySelector<HTMLElement>('[data-view="all"]')
           : key === "manufacturer" || key === "integrationType"
@@ -242,6 +251,7 @@ export default function RobotListFilters({
       >
         <TextField
           id="fleet-search"
+          inputRef={searchInputRef}
           label="Search robots"
           placeholder="Name, manufacturer, location…"
           size="small"

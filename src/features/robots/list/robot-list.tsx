@@ -29,13 +29,10 @@ import useRobotList from "./use-robot-list";
 type DeleteTarget =
   { kind: "robot"; id: string; name: string } | { kind: "all" };
 
-function focusFleetSearch() {
-  document.getElementById("fleet-search")?.focus();
-}
-
 export default function RobotList() {
   const [search, setSearch] = useState("");
 
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const addButtonRef = useRef<HTMLButtonElement>(null);
   const addFocusRef = useRef<HTMLElement | null>(null);
   const inFlightRef = useRef(false);
@@ -222,12 +219,16 @@ export default function RobotList() {
     }
   }
 
+  function focusSearch() {
+    searchInputRef.current?.focus();
+  }
+
   function finishDialogClose() {
     const trigger = confirmation?.trigger;
     if (trigger?.isConnected && !trigger.disabled) {
       trigger.focus();
     } else {
-      focusFleetSearch();
+      focusSearch();
     }
 
     setConfirmation(null);
@@ -306,6 +307,7 @@ export default function RobotList() {
             <RobotListFilters
               filters={filters}
               search={search}
+              searchInputRef={searchInputRef}
               onSearchChange={setSearch}
               onChange={setFilters}
               options={snapshot?.filterOptions}
@@ -313,14 +315,16 @@ export default function RobotList() {
           </Stack>
         }
         onClearFilters={() => {
+          focusSearch();
           setSearch("");
           setFilters({ view: "all" });
         }}
         onClearSearch={() => {
+          focusSearch();
           setSearch("");
           setFilters({ ...filters, search: undefined });
         }}
-        onRowFocusLost={confirmation ? undefined : focusFleetSearch}
+        onRowFocusLost={confirmation ? undefined : focusSearch}
         unverified={unverified}
         page={page}
         pageSize={pageSize}

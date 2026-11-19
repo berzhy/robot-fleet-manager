@@ -559,6 +559,7 @@ test("search combines with filters and tiles, clears through chips and recovers 
     .click();
   await expect(search).toHaveValue("");
   await expect(page.getByTestId(`robot-row-${robots[1].id}`)).toBeVisible();
+  await expect(search).toBeFocused();
 
   await page.setViewportSize({ width: 650, height: 900 });
   await expect(search).toBeVisible();

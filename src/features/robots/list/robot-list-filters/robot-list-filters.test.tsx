@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import type { RobotFilters } from "@/modules/robots/robot-filters";
 
@@ -10,6 +10,8 @@ import RobotStatusFilters from "./robot-status-filters";
 test("dropdowns, tiles and removable chips share one selection", () => {
   function Controls() {
     const [filters, setFilters] = useState<RobotFilters>({ view: "all" });
+    const searchInputRef = useRef<HTMLInputElement>(null);
+
     return (
       <>
         <RobotStatusFilters
@@ -24,6 +26,7 @@ test("dropdowns, tiles and removable chips share one selection", () => {
         />
         <RobotListFilters
           search=""
+          searchInputRef={searchInputRef}
           onSearchChange={vi.fn()}
           filters={filters}
           onChange={setFilters}
@@ -90,9 +93,12 @@ test("type selection creates a removable chip without clearing other filters", (
       view: "offline",
       site: "Munich",
     });
+    const searchInputRef = useRef<HTMLInputElement>(null);
+
     return (
       <RobotListFilters
         search=""
+        searchInputRef={searchInputRef}
         onSearchChange={vi.fn()}
         filters={filters}
         onChange={setFilters}
@@ -127,10 +133,13 @@ function SearchControls() {
     site: "Munich",
   });
   const [search, setSearch] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
   return (
     <RobotListFilters
       filters={filters}
       search={search}
+      searchInputRef={searchInputRef}
       onSearchChange={setSearch}
       onChange={setFilters}
       options={{ sites: ["Munich"], manufacturers: [] }}
@@ -224,9 +233,12 @@ test("chip removal and Clear filters cancel pending search", async () => {
 test("selecting in more filters closes it, applies immediately and counts active criteria", () => {
   function Controls() {
     const [filters, setFilters] = useState<RobotFilters>({ view: "all" });
+    const searchInputRef = useRef<HTMLInputElement>(null);
+
     return (
       <RobotListFilters
         search=""
+        searchInputRef={searchInputRef}
         onSearchChange={vi.fn()}
         filters={filters}
         onChange={setFilters}

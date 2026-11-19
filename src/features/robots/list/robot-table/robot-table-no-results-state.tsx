@@ -13,6 +13,7 @@ export default function RobotTableNoResultsState({
 }) {
   return (
     <Stack
+      data-testid="fleet-no-results"
       sx={{
         flex: 1,
         alignItems: "center",
@@ -31,7 +32,7 @@ export default function RobotTableNoResultsState({
             {`No robots match “${search}”.`}
           </Typography>
           <Typography variant="body2" color="text.secondary" align="center">
-            Search matches name, ID, manufacturer, location, area, type,
+            Search matches name, manufacturer, location, area, type,
             integration, activity, problem, connection and battery.
           </Typography>
           <Stack direction="row" spacing={1}>

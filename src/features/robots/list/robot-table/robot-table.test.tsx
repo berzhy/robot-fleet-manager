@@ -245,7 +245,9 @@ test("a search with no matches names the query, lists searchable fields and offe
 
   expect(screen.getByText("No robots match “no-such-robot”.")).toBeVisible();
   expect(
-    screen.getByText(/Search matches name, ID, manufacturer/),
+    screen.getByText(
+      "Search matches name, manufacturer, location, area, type, integration, activity, problem, connection and battery.",
+    ),
   ).toBeVisible();
 
   fireEvent.click(screen.getByRole("button", { name: "Clear search" }));
