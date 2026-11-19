@@ -1,36 +1,26 @@
 "use client";
 
 import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
-import type { IconButtonProps } from "@mui/material/IconButton";
 import Paper from "@mui/material/Paper";
-import Skeleton from "@mui/material/Skeleton";
-import Stack from "@mui/material/Stack";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
-import TablePagination from "@mui/material/TablePagination";
 import TableRow from "@mui/material/TableRow";
-import Typography from "@mui/material/Typography";
-import {
-  useLayoutEffect,
-  useRef,
-  type HTMLAttributes,
-  type ReactNode,
-} from "react";
+import { useLayoutEffect, useRef, type ReactNode } from "react";
 
-import { robotPageSizes, type Robot } from "@/modules/robots/robot";
+import type { Robot } from "@/modules/robots/robot";
 import type { RobotAction } from "@/modules/robots/robot-actions";
 
 import type { RobotQueryState } from "../robot-query-state";
+import FleetResultCount from "./fleet-result-count";
+import RobotTableEmptyState from "./robot-table-empty-state";
+import RobotTableErrorState from "./robot-table-error-state";
+import RobotTableNoResultsState from "./robot-table-no-results-state";
+import RobotTablePagination from "./robot-table-pagination";
 import RobotTableRow from "./robot-table-row";
 import RobotTableSkeleton from "./robot-table-skeleton";
-import {
-  RobotTableEmptyState,
-  RobotTableErrorState,
-} from "./robot-table-states";
 
 const columns = [
   { label: "Robot", width: "20%" },
@@ -43,6 +33,7 @@ const columns = [
   { label: "Registered", width: "10%" },
   { label: "Actions", width: "64px" },
 ] as const;
+
 const rowHeight = 70;
 
 export default function RobotTable({
@@ -103,8 +94,9 @@ export default function RobotTable({
     }
   });
 
-  const items = state.status === "success" ? state.robots : [];
   const isLoading = state.status === "loading";
+  const hasNoResults = state.status === "success" && total === 0;
+  const hasRobotsInFleet = fleetTotal !== undefined && fleetTotal > 0;
 
   return (
     <Paper
@@ -183,66 +175,32 @@ export default function RobotTable({
                 rowHeight={rowHeight}
               />
             )}
-            {items.map((robot) => (
-              <RobotTableRow
-                key={robot.id}
-                robot={robot}
-                search={search}
-                evaluatedAt={evaluatedAt}
-                unverified={unverified}
-                onFocusCapture={(event) => {
-                  focusedRowElement.current = event.currentTarget;
-                }}
-                adding={adding}
-                onDelete={onDelete}
-                onAction={onAction}
-                rowHeight={rowHeight}
-              />
-            ))}
+            {state.status === "success" &&
+              state.robots.map((robot) => (
+                <RobotTableRow
+                  key={robot.id}
+                  robot={robot}
+                  search={search}
+                  evaluatedAt={evaluatedAt}
+                  unverified={unverified}
+                  onFocusCapture={(event) => {
+                    focusedRowElement.current = event.currentTarget;
+                  }}
+                  adding={adding}
+                  onDelete={onDelete}
+                  onAction={onAction}
+                  rowHeight={rowHeight}
+                />
+              ))}
           </TableBody>
         </Table>
-        {state.status === "success" &&
-          total === 0 &&
-          (fleetTotal !== undefined && fleetTotal > 0 ? (
-            <Stack
-              sx={{
-                flex: 1,
-                alignItems: "center",
-                justifyContent: "center",
-                p: 3,
-              }}
-              spacing={2}
-            >
-              {search ? (
-                <>
-                  <Typography
-                    role="status"
-                    sx={{ overflowWrap: "anywhere", textAlign: "center" }}
-                  >
-                    {`No robots match “${search}”.`}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ textAlign: "center" }}
-                  >
-                    Search matches name, ID, manufacturer, location, area, type,
-                    integration, activity, problem, connection and battery.
-                  </Typography>
-                  <Stack direction="row" spacing={1}>
-                    <Button onClick={onClearSearch}>Clear search</Button>
-                    <Button onClick={onClearFilters}>Clear filters</Button>
-                  </Stack>
-                </>
-              ) : (
-                <>
-                  <Typography role="status">
-                    No robots match these filters.
-                  </Typography>
-                  <Button onClick={onClearFilters}>Clear filters</Button>
-                </>
-              )}
-            </Stack>
+        {hasNoResults &&
+          (hasRobotsInFleet ? (
+            <RobotTableNoResultsState
+              search={search}
+              onClearSearch={onClearSearch}
+              onClearFilters={onClearFilters}
+            />
           ) : (
             <RobotTableEmptyState onAdd={onAdd} adding={adding} />
           ))}
@@ -258,49 +216,16 @@ export default function RobotTable({
         }}
       >
         {total > 0 && (
-          <TablePagination
-            data-testid="fleet-pagination"
-            component="div"
-            count={total}
+          <RobotTablePagination
+            total={total}
             page={page}
-            rowsPerPage={pageSize}
-            rowsPerPageOptions={robotPageSizes}
-            onRowsPerPageChange={(event) =>
-              onPageSizeChange(Number(event.target.value))
-            }
+            pageSize={pageSize}
+            onPageSizeChange={onPageSizeChange}
+            onPageChange={onPageChange}
             disabled={adding || state.status !== "success"}
-            slotProps={{
-              actions: {
-                previousButton: {
-                  "data-testid": "fleet-previous-page",
-                } as IconButtonProps,
-                nextButton: {
-                  "data-testid": "fleet-next-page",
-                } as IconButtonProps,
-              },
-              select: {
-                SelectDisplayProps: {
-                  "data-testid": "fleet-page-size",
-                } as HTMLAttributes<HTMLDivElement>,
-              },
-              displayedRows: () => ({ "data-testid": "fleet-page-summary" }),
-              spacer: { sx: { display: "none" } },
-              toolbar: {
-                disableGutters: true,
-                sx: { justifyContent: "flex-start", pl: 2 },
-              },
-            }}
-            onPageChange={(_, nextPage) => onPageChange(nextPage)}
           />
         )}
-        <Typography
-          data-testid="fleet-result-count"
-          variant="body2"
-          color="text.secondary"
-          sx={{ ml: "auto", pr: 2, fontVariantNumeric: "tabular-nums" }}
-        >
-          {resultCount ?? <Skeleton width={180} aria-hidden="true" />}
-        </Typography>
+        <FleetResultCount resultCount={resultCount} />
       </Box>
     </Paper>
   );
