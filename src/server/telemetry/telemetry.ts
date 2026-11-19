@@ -32,7 +32,9 @@ export function ingestTelemetry(
       )
       .map((report) => ({ ...report, receivedAt }));
 
-    if (!rows.length) return;
+    if (!rows.length) {
+      return;
+    }
 
     tx.insert(latestTelemetry)
       .values(rows)

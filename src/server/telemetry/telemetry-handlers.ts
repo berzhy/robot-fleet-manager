@@ -23,8 +23,9 @@ export function telemetryHandlers(database: () => FleetDatabase) {
         parsed.data.reports.some(
           (report) => Date.parse(report.observedAt) > now + maxClockSkewMs,
         )
-      )
+      ) {
         return invalid();
+      }
 
       try {
         ingestTelemetry(

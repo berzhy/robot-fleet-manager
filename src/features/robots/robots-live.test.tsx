@@ -82,10 +82,11 @@ function liveResponses() {
   const fetcher = vi.fn((url: string, init?: RequestInit) => {
     const detail = url.includes("/context");
 
-    if (deferred)
+    if (deferred) {
       return new Promise<Response>((resolve) => {
         stale.push({ detail, signal: init!.signal!, resolve });
       });
+    }
 
     return Promise.resolve(respond(detail, battery));
   });
@@ -100,8 +101,9 @@ function liveResponses() {
       deferred = value;
     },
     resolveStale(value: number) {
-      for (const pending of stale)
+      for (const pending of stale) {
         pending.resolve(respond(pending.detail, value));
+      }
     },
   };
 }
@@ -573,7 +575,7 @@ test("fleet and detail retain snapshots after a request timeout and recover on t
   vi.spyOn(AbortSignal, "timeout").mockImplementation(() => timeout.signal);
   let stalled = false;
   const fetcher = vi.fn((url: string, init?: RequestInit) => {
-    if (stalled)
+    if (stalled) {
       return new Promise<Response>((_resolve, reject) => {
         const signal = init!.signal!;
         signal.addEventListener(
@@ -589,6 +591,7 @@ test("fleet and detail retain snapshots after a request timeout and recover on t
           },
         );
       });
+    }
     return Promise.resolve(
       url.includes("/context")
         ? Response.json({

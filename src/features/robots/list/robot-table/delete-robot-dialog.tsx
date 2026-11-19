@@ -39,7 +39,9 @@ export default function DeleteRobotDialog({
       aria-describedby={`${id}-description`}
       disableRestoreFocus
       onClose={() => {
-        if (!pending) onCancel();
+        if (!pending) {
+          onCancel();
+        }
       }}
       slotProps={{
         paper: () => ({ "data-testid": "delete-robot-dialog" }),

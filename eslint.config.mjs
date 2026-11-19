@@ -23,12 +23,20 @@ const eslintConfig = defineConfig([
         tsconfigRootDir: import.meta.dirname,
       },
     },
+    rules: {
+      "@typescript-eslint/switch-exhaustiveness-check": "error",
+    },
   },
   {
     files: ["src/**"],
     extends: [query.configs["flat/recommended"]],
   },
   prettier,
+  {
+    rules: {
+      curly: ["error", "all"],
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

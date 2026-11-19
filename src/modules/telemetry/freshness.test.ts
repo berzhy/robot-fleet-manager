@@ -10,6 +10,7 @@ test("connection freshness has explicit boundaries and unknown state", () => {
     [10001, "Delayed"],
     [15000, "Delayed"],
     [15001, "Offline"],
-  ] as const)
+  ] as const) {
     expect(connectionStatus(stamp, start + age)).toBe(status);
+  }
 });

@@ -81,7 +81,9 @@ export default function RobotTable({
 
   useLayoutEffect(() => {
     const row = focusedRowElement.current;
-    if (!row || row.isConnected) return;
+    if (!row || row.isConnected) {
+      return;
+    }
 
     focusedRowElement.current = null;
 
@@ -115,8 +117,9 @@ export default function RobotTable({
           if (
             event.relatedTarget instanceof HTMLElement &&
             !event.currentTarget.contains(event.relatedTarget)
-          )
+          ) {
             focusedRowElement.current = null;
+          }
         }}
         aria-busy={isLoading}
         sx={{

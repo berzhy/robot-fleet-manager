@@ -115,9 +115,11 @@ test.each(["HTTP", "network"])(
   "%s creation failure preserves rows, restores focus and supports another attempt",
   async (kind) => {
     const fetcher = vi.fn().mockResolvedValueOnce(response([robot]));
-    if (kind === "HTTP")
+    if (kind === "HTTP") {
       fetcher.mockResolvedValueOnce(new Response(null, { status: 500 }));
-    else fetcher.mockRejectedValueOnce(new TypeError("Network failed"));
+    } else {
+      fetcher.mockRejectedValueOnce(new TypeError("Network failed"));
+    }
     fetcher
       .mockResolvedValueOnce(response([robot]))
       .mockResolvedValueOnce(Response.json(robot, { status: 201 }))

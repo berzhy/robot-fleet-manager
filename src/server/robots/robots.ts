@@ -204,7 +204,9 @@ export function robotRegistry(db: FleetDatabase): Robot[] {
 export function getRobotContext(db: FleetDatabase, id: string) {
   return db.transaction((tx) => {
     const robot = getRobot(tx, id);
-    if (!robot) return undefined;
+    if (!robot) {
+      return undefined;
+    }
 
     const siteRobots = tx
       .select({

@@ -80,7 +80,9 @@ export default function RobotActions({
               <MenuItem
                 disabled={Boolean(reason)}
                 onClick={() => {
-                  if (reason || !onAction) return;
+                  if (reason || !onAction) {
+                    return;
+                  }
                   onAction(robot, action);
                   setAnchor(null);
                 }}
@@ -96,7 +98,9 @@ export default function RobotActions({
         <MenuItem
           data-testid="robot-delete"
           onClick={() => {
-            if (anchor) onDelete(robot, anchor);
+            if (anchor) {
+              onDelete(robot, anchor);
+            }
             setAnchor(null);
           }}
         >

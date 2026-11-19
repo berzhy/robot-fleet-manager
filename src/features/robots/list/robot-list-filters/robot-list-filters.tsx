@@ -27,10 +27,12 @@ import {
 const searchDebounceMs = 300;
 
 function formatFilterValue(key: keyof RobotFilters, value: string) {
-  if (key === "integrationType")
+  if (key === "integrationType") {
     return formatIntegrationType(value as (typeof integrationTypes)[number]);
-  if (key === "type")
+  }
+  if (key === "type") {
     return formatRobotType(value as (typeof robotTypes)[number]);
+  }
   return value;
 }
 
@@ -61,10 +63,15 @@ export default function RobotListFilters({
   const applySearch = useEffectEvent((value: string) => {
     const normalized = value.trim();
     const applied = normalized.length >= 2 ? normalized : undefined;
-    if (applied !== filters.search) onChange({ ...filters, search: applied });
+    if (applied !== filters.search) {
+      onChange({ ...filters, search: applied });
+    }
   });
+
   useEffect(() => {
-    if (composing) return;
+    if (composing) {
+      return;
+    }
     const timer = setTimeout(() => applySearch(search), searchDebounceMs);
     return () => clearTimeout(timer);
   }, [search, composing]);
@@ -72,8 +79,9 @@ export default function RobotListFilters({
   function clearSearch() {
     container.current?.querySelector<HTMLElement>("#fleet-search")?.focus();
     onSearchChange("");
-    if (filters.search !== undefined)
+    if (filters.search !== undefined) {
       onChange({ ...filters, search: undefined });
+    }
   }
 
   function closeMoreFilters() {
@@ -98,6 +106,7 @@ export default function RobotListFilters({
     },
   ] as const;
   const fields = [...primaryFields, ...secondaryFields];
+
   const secondaryCount = secondaryFields.filter(
     (field) => filters[field.key] !== undefined,
   ).length;
@@ -115,9 +124,10 @@ export default function RobotListFilters({
         : [];
     },
   );
-  if (filters.search)
+  if (filters.search) {
     chips.unshift({ key: "search", label: `Search: ${filters.search}` });
-  if (filters.view !== "all")
+  }
+  if (filters.view !== "all") {
     chips.push({
       key: "view",
       label:
@@ -127,6 +137,7 @@ export default function RobotListFilters({
             ? "Battery: Low"
             : "Needs attention",
     });
+  }
 
   function remove(key: keyof RobotFilters, button: HTMLElement) {
     const next = (button.closest('[role="button"]') ?? button)
@@ -142,11 +153,17 @@ export default function RobotListFilters({
             : container.current?.querySelector<HTMLElement>(
                 `#fleet-filter-${key}`,
               );
-    if (key === "search") onSearchChange("");
+
+    if (key === "search") {
+      onSearchChange("");
+    }
     onChange({ ...filters, [key]: key === "view" ? "all" : undefined });
-    if (next instanceof HTMLElement && next.getAttribute("role") === "button")
+
+    if (next instanceof HTMLElement && next.getAttribute("role") === "button") {
       next.focus();
-    else field?.focus();
+    } else {
+      field?.focus();
+    }
   }
 
   function renderField(
@@ -185,7 +202,9 @@ export default function RobotListFilters({
             ...filters,
             [field.key]: event.target.value || undefined,
           });
-          if (inPopover) closeMoreFilters();
+          if (inPopover) {
+            closeMoreFilters();
+          }
         }}
       >
         <MenuItem value="">
@@ -236,7 +255,9 @@ export default function RobotListFilters({
           onChange={(event) => {
             const value = event.target.value;
             onSearchChange(value);
-            if (!value) clearSearch();
+            if (!value) {
+              clearSearch();
+            }
           }}
           onCompositionStart={() => setComposing(true)}
           onCompositionEnd={() => setComposing(false)}

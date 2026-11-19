@@ -48,18 +48,20 @@ export function robotHandlers(database: () => FleetDatabase) {
         params.get("pageSize") ?? String(robotPageSize),
       );
 
-      if (!pageSize.success)
+      if (!pageSize.success) {
         return errorResponse(
           400,
           "INVALID_INPUT",
           "Page size must be 10, 20 or 50.",
         );
-      if (!page.success)
+      }
+      if (!page.success) {
         return errorResponse(
           400,
           "INVALID_INPUT",
           "Page must be a nonnegative integer.",
         );
+      }
 
       const filters = robotFiltersSchema.safeParse(
         Object.fromEntries(
@@ -74,8 +76,9 @@ export function robotHandlers(database: () => FleetDatabase) {
         ),
       );
 
-      if (!filters.success)
+      if (!filters.success) {
         return errorResponse(400, "INVALID_INPUT", "Invalid robot filters.");
+      }
 
       return safely(() =>
         jsonResponse(
@@ -93,12 +96,13 @@ export function robotHandlers(database: () => FleetDatabase) {
       }
 
       const input = createRobotSchema.safeParse(body);
-      if (!input.success)
+      if (!input.success) {
         return errorResponse(
           400,
           "INVALID_INPUT",
           "Provide name, manufacturer and site (1–100 characters each), and valid robot and integration types.",
         );
+      }
 
       return safely(() =>
         jsonResponse(createRobot(database(), input.data), 201),
@@ -114,12 +118,13 @@ export function robotHandlers(database: () => FleetDatabase) {
       }
 
       const input = createRobotBatchSchema.safeParse(body);
-      if (!input.success)
+      if (!input.success) {
         return errorResponse(
           400,
           "INVALID_INPUT",
           "Provide between 1 and 100 valid robots.",
         );
+      }
 
       return safely(() =>
         jsonResponse(

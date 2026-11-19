@@ -32,7 +32,9 @@ async function RobotContent({
   const { robotId } = await params;
   await io();
   const snapshot = getRobotContext(getDatabase(), robotId);
-  if (!snapshot) notFound();
+  if (!snapshot) {
+    notFound();
+  }
 
   const client = createQueryClient();
   client.setQueryData(robotKeys.context(robotId), snapshot);

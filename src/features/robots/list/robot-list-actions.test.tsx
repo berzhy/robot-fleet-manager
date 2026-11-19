@@ -73,8 +73,9 @@ test.each([202, 409, 500])(
   "Stop request response %s notifies without changing reported activity",
   async (status) => {
     const fetcher = vi.fn((url: string, init?: RequestInit) => {
-      if (init?.method === "POST")
+      if (init?.method === "POST") {
         return Promise.resolve(new Response(null, { status }));
+      }
       return Promise.resolve(
         Response.json({
           items: [{ ...robot, lastReceivedAt: new Date().toISOString() }],
@@ -115,10 +116,11 @@ test.each([202, 409, 500])(
 test("pending action prevents overlapping mutations without replacing the table", async () => {
   let finish!: (response: Response) => void;
   const fetcher = vi.fn((url: string, init?: RequestInit) => {
-    if (init?.method === "POST")
+    if (init?.method === "POST") {
       return new Promise<Response>((resolve) => {
         finish = resolve;
       });
+    }
     return Promise.resolve(
       Response.json({
         items: [{ ...robot, lastReceivedAt: new Date().toISOString() }],

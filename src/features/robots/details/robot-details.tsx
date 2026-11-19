@@ -64,7 +64,9 @@ export default function RobotDetails(initial: RobotContext) {
   const waitingForVerification = unverified || refreshing || !evaluatedAt;
 
   async function act(action: RobotAction) {
-    if (inFlight.current || waitingForVerification) return;
+    if (inFlight.current || waitingForVerification) {
+      return;
+    }
 
     const reason = actionUnavailable(robot, action, Date.now());
     if (reason) {

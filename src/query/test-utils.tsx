@@ -16,7 +16,9 @@ notifyManager.setScheduler(queueMicrotask);
 const clients: ReturnType<typeof createQueryClient>[] = [];
 
 afterEach(() => {
-  for (const client of clients) client.clear();
+  for (const client of clients) {
+    client.clear();
+  }
   clients.length = 0;
 });
 

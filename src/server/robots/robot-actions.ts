@@ -25,16 +25,21 @@ export async function requestRobotAction(
   }
 
   const parsed = schema.safeParse(body);
-  if (!parsed.success)
+  if (!parsed.success) {
     return errorResponse(400, "INVALID_INPUT", "Invalid robot action.");
+  }
 
   try {
     return db.transaction((tx) => {
       const robot = getRobot(tx, id);
-      if (!robot) return errorResponse(404, "NOT_FOUND", "Robot not found.");
+      if (!robot) {
+        return errorResponse(404, "NOT_FOUND", "Robot not found.");
+      }
 
       const reason = actionUnavailable(robot, parsed.data.action, Date.now());
-      if (reason) return errorResponse(409, "ACTION_UNAVAILABLE", reason);
+      if (reason) {
+        return errorResponse(409, "ACTION_UNAVAILABLE", reason);
+      }
 
       const controlTarget =
         parsed.data.action === "stop"

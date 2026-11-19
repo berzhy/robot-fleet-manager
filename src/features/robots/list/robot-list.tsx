@@ -80,15 +80,18 @@ export default function RobotList() {
       confirmation ||
       status === "loading" ||
       !addFocusRef.current
-    )
+    ) {
       return;
+    }
     const target = addFocusRef.current;
     addFocusRef.current = null;
     (target.isConnected ? target : addButtonRef.current)?.focus();
   }, [adding, confirmation, status]);
 
   async function addRobot(trigger: HTMLButtonElement, count: 1 | 10 | 100 = 1) {
-    if (inFlightRef.current || confirmation || status === "loading") return;
+    if (inFlightRef.current || confirmation || status === "loading") {
+      return;
+    }
 
     inFlightRef.current = true;
     setNotification(null);
@@ -122,7 +125,9 @@ export default function RobotList() {
   }
 
   async function actOnRobot(robot: Robot, action: RobotAction) {
-    if (inFlightRef.current) return;
+    if (inFlightRef.current) {
+      return;
+    }
 
     const reason = actionUnavailable(robot, action, Date.now());
     if (reason) {
@@ -162,21 +167,27 @@ export default function RobotList() {
   }
 
   function requestDelete(target: DeleteTarget, trigger: HTMLButtonElement) {
-    if (inFlightRef.current || confirmation) return;
+    if (inFlightRef.current || confirmation) {
+      return;
+    }
 
     setNotification(null);
     setConfirmation({ target, trigger, open: true });
   }
 
   function closeDeleteDialog() {
-    if (!confirmation?.open || inFlightRef.current) return;
+    if (!confirmation?.open || inFlightRef.current) {
+      return;
+    }
 
     setNotification(null);
     setConfirmation({ ...confirmation, open: false });
   }
 
   async function confirmDelete() {
-    if (!confirmation?.open || inFlightRef.current) return;
+    if (!confirmation?.open || inFlightRef.current) {
+      return;
+    }
 
     const { target } = confirmation;
     setNotification(null);

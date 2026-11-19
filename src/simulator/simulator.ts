@@ -21,8 +21,9 @@ export async function runSimulator(origin: string, signal: AbortSignal) {
       signal: AbortSignal.any([signal, AbortSignal.timeout(requestTimeoutMs)]),
       cache: "no-store",
     });
-    if (!response.ok)
+    if (!response.ok) {
       throw new Error(`Simulator request failed (${response.status})`);
+    }
     return response;
   }
 
@@ -34,7 +35,11 @@ export async function runSimulator(origin: string, signal: AbortSignal) {
       const response = await request("/api/robots/registry");
       const { items } = (await response.json()) as { items: Robot[] };
       const ids = new Set(items.map((robot) => robot.id));
-      for (const id of states.keys()) if (!ids.has(id)) states.delete(id);
+      for (const id of states.keys()) {
+        if (!ids.has(id)) {
+          states.delete(id);
+        }
+      }
       for (const robot of items) {
         if (!states.has(robot.id)) {
           states.set(robot.id, initializeRobot(robot));
@@ -71,11 +76,16 @@ export async function runSimulator(origin: string, signal: AbortSignal) {
       }
     }
 
-    if (signal.aborted) break;
+    if (signal.aborted) {
+      break;
+    }
 
-    if (failed && !failing)
+    if (failed && !failing) {
       console.error("Simulator requests failed; retrying.");
-    if (!failed && failing) console.info("Simulator connection restored.");
+    }
+    if (!failed && failing) {
+      console.info("Simulator connection restored.");
+    }
     failing = failed;
 
     try {

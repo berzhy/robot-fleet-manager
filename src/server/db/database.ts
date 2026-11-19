@@ -12,7 +12,9 @@ export function databasePath() {
 }
 
 export function openDatabase(path: string) {
-  if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
+  if (path !== ":memory:") {
+    mkdirSync(dirname(path), { recursive: true });
+  }
   const client = new Database(path, { timeout: 5000 });
 
   try {

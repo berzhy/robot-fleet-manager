@@ -174,7 +174,7 @@ test("telemetry preserves problems and rejects impossible or regressing acknowle
     appliedControlRevision: 2,
   });
 
-  for (const revision of [1, 3])
+  for (const revision of [1, 3]) {
     ingestTelemetry(
       db,
       [
@@ -186,6 +186,7 @@ test("telemetry preserves problems and rejects impossible or regressing acknowle
       ],
       "2026-01-02T00:00:00.000Z",
     );
+  }
   expect(getRobot(db, id)).toMatchObject({
     activity: "needs-attention",
     appliedControlRevision: 2,
@@ -197,10 +198,11 @@ test("telemetry preserves problems and rejects impossible or regressing acknowle
     { activity: "working", problemCode: "path-blocked" },
     { activity: "blocked" },
     { appliedControlRevision: -1 },
-  ])
+  ]) {
     expect(
       (await post({ reports: [{ ...report(), ...invalid }] })).status,
     ).toBe(400);
+  }
 });
 
 test.each(robotProblemCodes)(

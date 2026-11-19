@@ -73,7 +73,7 @@ test("created metadata persists after reopening with unknown telemetry", () => {
 });
 
 test("pagination orders newest first with descending id tie-breaking", () => {
-  for (let i = 0; i < 21; i++)
+  for (let i = 0; i < 21; i++) {
     db.insert(robots)
       .values({
         ...input,
@@ -89,6 +89,7 @@ test("pagination orders newest first with descending id tie-breaking", () => {
         ).toISOString(),
       })
       .run();
+  }
 
   expect(listRobots(db, 0, 20).items.map((r) => r.id)).toEqual(
     Array.from({ length: 20 }, (_, i) => String(20 - i).padStart(2, "0")),
@@ -165,8 +166,9 @@ test("HTTP contracts create/read/list/delete and reject invalid requests", async
   };
 
   expect((await post(missingType)).status).toBe(400);
-  for (const type of ["unknown", "measurement", "", null])
+  for (const type of ["unknown", "measurement", "", null]) {
     expect((await post({ ...input, type })).status).toBe(400);
+  }
   expect((await post({ ...input, integrationType: undefined })).status).toBe(
     400,
   );
@@ -198,10 +200,11 @@ test("HTTP contracts create/read/list/delete and reject invalid requests", async
     await api.list(new Request("http://local/api/robots?page=9")).json(),
   ).toMatchObject({ items: [], total: 1, page: 9, pageSize: 10 });
 
-  for (const page of ["-1", "abc", "1.5", "Infinity"])
+  for (const page of ["-1", "abc", "1.5", "Infinity"]) {
     expect(
       api.list(new Request(`http://local/api/robots?page=${page}`)).status,
     ).toBe(400);
+  }
 
   expect(api.remove(robot.id).status).toBe(204);
   expect(api.remove(robot.id).status).toBe(404);
@@ -227,7 +230,7 @@ test("database failures return generic errors without leaking details", async ()
 });
 
 test("HTTP page size controls database pagination and unsupported sizes are rejected", async () => {
-  for (let i = 0; i < 21; i++)
+  for (let i = 0; i < 21; i++) {
     db.insert(robots)
       .values({
         ...input,
@@ -235,6 +238,7 @@ test("HTTP page size controls database pagination and unsupported sizes are reje
         createdAt: "2026-11-14T12:00:00.000Z",
       })
       .run();
+  }
   const api = robotHandlers(() => db);
 
   const result = (await api
@@ -246,17 +250,19 @@ test("HTTP page size controls database pagination and unsupported sizes are reje
   expect(result.items).toHaveLength(10);
   expect(result.items[0].id).toBe("10");
 
-  for (const size of ["-1", "0", "11", "100", "101", "abc", "20.5"])
+  for (const size of ["-1", "0", "11", "100", "101", "abc", "20.5"]) {
     expect(
       api.list(new Request(`http://local/api/robots?pageSize=${size}`)).status,
     ).toBe(400);
+  }
 
-  for (const size of [10, 20, 50])
+  for (const size of [10, 20, 50]) {
     expect(
       await api
         .list(new Request(`http://local/api/robots?pageSize=${size}`))
         .json(),
     ).toMatchObject({ pageSize: size });
+  }
 });
 
 test.each([10, 100])(
@@ -334,7 +340,7 @@ test("fresh schema rejects missing and unsupported types even outside the API", 
     "INSERT INTO robots (id, name, manufacturer, site, created_at, type, integration_type) VALUES (?, ?, ?, ?, ?, ?, 'vendor-api')",
   );
 
-  for (const type of [null, "unknown", "measurement"])
+  for (const type of [null, "unknown", "measurement"]) {
     expect(() =>
       insert.run(
         "invalid",
@@ -345,6 +351,7 @@ test("fresh schema rejects missing and unsupported types even outside the API", 
         type,
       ),
     ).toThrow();
+  }
   expect(listRobots(db, 0).total).toBe(0);
 });
 
@@ -365,8 +372,9 @@ test("fresh schema rejects missing and unsupported integrations outside the API"
     "INSERT INTO robots (id, name, manufacturer, site, created_at, type, integration_type) VALUES ('invalid', 'Name', 'Maker', 'Site', '2026-01-01T00:00:00Z', 'inspection', ?)",
   );
 
-  for (const integrationType of [null, "unsupported"])
+  for (const integrationType of [null, "unsupported"]) {
     expect(() => insert.run(integrationType)).toThrow();
+  }
   expect(listRobots(db, 0).total).toBe(0);
 });
 
@@ -733,11 +741,12 @@ test("search treats SQL wildcards and escapes literally and validates trimmed in
   createRobot(db, { ...input, name: "100%_unit\\dock" });
   createRobot(db, { ...input, name: "100XXunitXdock" });
 
-  for (const search of ["%_", "unit\\dock"])
+  for (const search of ["%_", "unit\\dock"]) {
     expect(listRobots(db, 0, 20, { view: "all", search }).total).toBe(1);
+  }
 
   const handlers = robotHandlers(() => db);
-  for (const search of ["a", " ", "a".repeat(101)])
+  for (const search of ["a", " ", "a".repeat(101)]) {
     expect(
       handlers.list(
         new Request(
@@ -745,6 +754,7 @@ test("search treats SQL wildcards and escapes literally and validates trimmed in
         ),
       ).status,
     ).toBe(400);
+  }
 
   const response = handlers.list(
     new Request("http://localhost/api/robots?search=%20%20100%25%20%20"),

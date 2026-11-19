@@ -22,13 +22,18 @@ export function actionUnavailable(
   action: RobotAction,
   now: number,
 ): string | null {
-  if (connectionStatus(robot.lastReceivedAt, now) !== "Online")
+  if (connectionStatus(robot.lastReceivedAt, now) !== "Online") {
     return "Robot must be online";
+  }
 
   switch (action) {
     case "start":
-      if (robot.activity === "working") return "Robot is already working";
-      if (robot.activity !== "idle") return "Robot must be idle";
+      if (robot.activity === "working") {
+        return "Robot is already working";
+      }
+      if (robot.activity !== "idle") {
+        return "Robot must be idle";
+      }
       return robot.batteryPercent !== null &&
         robot.batteryPercent > criticalBatteryPercent
         ? null

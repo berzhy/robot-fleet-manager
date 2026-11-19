@@ -29,8 +29,9 @@ const robot: Robot = {
 
 function tick(state: ReturnType<typeof initializeRobot>, seconds: number) {
   let report = advanceRobot(robot.id, state, 0, 0);
-  for (let i = 1; i <= seconds; i++)
+  for (let i = 1; i <= seconds; i++) {
     report = advanceRobot(robot.id, state, 1, i * 1000);
+  }
   return report;
 }
 
@@ -122,8 +123,9 @@ test("faults affect a stable minority, accumulate across charging, and Retry rec
   );
 
   expect(states.filter((s) => s.hash % 5 === 0)).toHaveLength(200);
-  for (const state of states)
+  for (const state of states) {
     expect(state.faultAfter).toBeGreaterThanOrEqual(120);
+  }
   expect(states.every((s) => s.faultAfter <= 600)).toBe(true);
 
   const state = states.find((s) => s.hash % 5 === 0)!;
@@ -170,8 +172,9 @@ test.each(["returning", "charging", "needs-attention"] as const)(
 
     applyControl(state, record);
     expect(tick(state, 0).activity).toBe(activity);
-    if (activity === "needs-attention")
+    if (activity === "needs-attention") {
       expect(tick(state, 0).problemCode).toBe("path-blocked");
+    }
   },
 );
 
@@ -250,7 +253,9 @@ test("fault-prone robots produce all three causes without increasing incident el
     if (state.hash % 5 === 0) {
       expect(report.activity).toBe("needs-attention");
       causes.add(report.problemCode);
-    } else expect(report.activity).toBe("working");
+    } else {
+      expect(report.activity).toBe("working");
+    }
   }
 
   expect(causes).toEqual(new Set(robotProblemCodes));
@@ -281,8 +286,9 @@ test("connection outages affect a stable minority, recover on schedule and are i
   for (const state of states.filter(
     (state) => state.connectionHash % 5 !== 0,
   )) {
-    for (const now of [0, 59000, 60000, 180000])
+    for (const now of [0, 59000, 60000, 180000]) {
       expect(telemetryAvailable(state, now)).toBe(true);
+    }
   }
 });
 

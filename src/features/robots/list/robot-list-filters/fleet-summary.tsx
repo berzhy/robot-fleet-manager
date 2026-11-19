@@ -64,7 +64,9 @@ export default function FleetSummary({
             data-view={view}
             selected={filters.view === view}
             onChange={() => {
-              if (view !== filters.view) onChange({ ...filters, view });
+              if (view !== filters.view) {
+                onChange({ ...filters, view });
+              }
             }}
             aria-label={labels[view]}
             sx={{ py: 1.25 }}

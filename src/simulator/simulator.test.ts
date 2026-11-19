@@ -91,7 +91,9 @@ test("failed discovery retains known robots and failed telemetry is retried", as
     "fetch",
     vi.fn((url: URL, init?: RequestInit) => {
       if (url.pathname.endsWith("registry")) {
-        if (++discoveries === 2) throw new Error("network");
+        if (++discoveries === 2) {
+          throw new Error("network");
+        }
         return Promise.resolve(Response.json({ items: [robot] }));
       }
       const { reports } = JSON.parse(init!.body as string) as {
@@ -139,7 +141,9 @@ test("existing robots receive controls and failed telemetry does not replay olde
         reports: typeof reports;
       };
       reports.push(body.reports[0]);
-      if (reports.length === 3) controller.abort();
+      if (reports.length === 3) {
+        controller.abort();
+      }
       return Promise.resolve(
         new Response(null, { status: reports.length === 2 ? 500 : 204 }),
       );
@@ -178,7 +182,9 @@ test("outages omit telemetry but preserve discovery and local activity until rep
         reports: typeof delivered;
       };
       delivered.push(...body.reports);
-      if (discoveries === 3) controller.abort();
+      if (discoveries === 3) {
+        controller.abort();
+      }
       return Promise.resolve(new Response(null, { status: 204 }));
     }),
   );

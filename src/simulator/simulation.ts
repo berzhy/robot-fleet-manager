@@ -71,14 +71,17 @@ export function initializeRobot(robot: Robot): SimulatedRobot {
 }
 
 export function applyControl(state: SimulatedRobot, robot: Robot) {
-  if (robot.controlRevision <= state.appliedRevision) return;
+  if (robot.controlRevision <= state.appliedRevision) {
+    return;
+  }
 
   state.appliedRevision = robot.controlRevision;
   state.target = robot.controlTarget;
   state.problemCode = null;
 
-  if (state.target === "stop") state.activity = "idle";
-  else if (state.target === "base") {
+  if (state.target === "stop") {
+    state.activity = "idle";
+  } else if (state.target === "base") {
     state.activity = "returning";
     state.remaining = returnDuration;
   } else {
@@ -87,7 +90,9 @@ export function applyControl(state: SimulatedRobot, robot: Robot) {
       state.faultAfter = faultInterval(state.hash, ++state.faultCount);
     }
     state.activity = "working";
-    if (state.area === "Base") state.area = areas[state.hash % areas.length];
+    if (state.area === "Base") {
+      state.area = areas[state.hash % areas.length];
+    }
   }
 }
 
@@ -153,6 +158,10 @@ export function advanceRobot(
           state.activity = "idle";
           state.remaining = departureDelay;
         }
+        break;
+      // Faults and unknown activity hold until a control command changes them.
+      case "needs-attention":
+      case "unknown":
         break;
     }
   }

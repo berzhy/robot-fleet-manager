@@ -33,8 +33,9 @@ export async function getRobots(
     pageSize: String(pageSize),
   });
   for (const [key, value] of Object.entries(filters)) {
-    if (value !== undefined && !(key === "view" && value === "all"))
+    if (value !== undefined && !(key === "view" && value === "all")) {
       params.set(key, value);
+    }
   }
 
   const response = await fetch(`/api/robots?${params}`, {
@@ -42,7 +43,9 @@ export async function getRobots(
     cache: "no-store",
   });
 
-  if (!response.ok) throw new Error("Unable to load robots.");
+  if (!response.ok) {
+    throw new Error("Unable to load robots.");
+  }
   return response.json() as Promise<RobotPage>;
 }
 
@@ -51,11 +54,15 @@ export async function deleteRobot(id: string) {
     method: "DELETE",
     signal: requestSignal(),
   });
-  if (response.status === 204) return "deleted";
+  if (response.status === 204) {
+    return "deleted";
+  }
 
   if (response.status === 404) {
     const body: unknown = await response.json().catch((error: unknown) => {
-      if (error instanceof SyntaxError) return null;
+      if (error instanceof SyntaxError) {
+        return null;
+      }
       throw error;
     });
     const error =
@@ -68,8 +75,9 @@ export async function deleteRobot(id: string) {
       error !== null &&
       "code" in error &&
       error.code === "NOT_FOUND"
-    )
+    ) {
       return "already-removed";
+    }
   }
 
   throw new Error("Unable to delete robot.");
@@ -82,7 +90,9 @@ export async function createRobot(input: CreateRobotInput): Promise<Robot> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   });
-  if (response.status !== 201) throw new Error("Unable to add robot.");
+  if (response.status !== 201) {
+    throw new Error("Unable to add robot.");
+  }
   return response.json() as Promise<Robot>;
 }
 
@@ -95,7 +105,9 @@ export async function createRobots(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ robots }),
   });
-  if (response.status !== 201) throw new Error("Unable to add robots.");
+  if (response.status !== 201) {
+    throw new Error("Unable to add robots.");
+  }
   const result = (await response.json()) as { items: Robot[] };
   return result.items;
 }
@@ -113,8 +125,9 @@ export async function sendRobotAction(
       body: JSON.stringify({ action }),
     },
   );
-  if (response.status !== 202)
+  if (response.status !== 202) {
     throw new Error("Unable to request robot action.");
+  }
 }
 
 export async function getRobotContext(
@@ -125,8 +138,12 @@ export async function getRobotContext(
     `/api/robots/${encodeURIComponent(id)}/context`,
     { cache: "no-store", signal: requestSignal(signal) },
   );
-  if (response.status === 404) return null;
-  if (!response.ok) throw new Error("Unable to refresh robot context.");
+  if (response.status === 404) {
+    return null;
+  }
+  if (!response.ok) {
+    throw new Error("Unable to refresh robot context.");
+  }
   return response.json() as Promise<RobotContext>;
 }
 
@@ -135,5 +152,7 @@ export async function deleteAllRobots(): Promise<void> {
     method: "DELETE",
     signal: requestSignal(),
   });
-  if (response.status !== 204) throw new Error("Unable to delete all robots.");
+  if (response.status !== 204) {
+    throw new Error("Unable to delete all robots.");
+  }
 }

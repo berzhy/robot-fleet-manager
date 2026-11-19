@@ -224,7 +224,9 @@ async function seedFleet(request: APIRequestContext, count = 1) {
 
 async function chooseFilter(page: Page, label: string, value: string) {
   const secondary = label === "Manufacturer" || label === "Integration";
-  if (secondary) await page.getByTestId("fleet-more-filters").click();
+  if (secondary) {
+    await page.getByTestId("fleet-more-filters").click();
+  }
 
   await page.getByRole("combobox", { name: label, exact: true }).click();
   await page.getByRole("option", { name: value, exact: true }).click();
@@ -370,8 +372,9 @@ for (const filter of ["Location", "Manufacturer"] as const) {
     const [atlas] = items;
 
     await page.goto("/robots");
-    if (filter === "Manufacturer")
+    if (filter === "Manufacturer") {
       await page.getByRole("button", { name: "More filters" }).click();
+    }
 
     const select = page.getByRole("combobox", { name: filter });
     await select.click();
@@ -633,8 +636,9 @@ test("search debounce closes an unmounted action menu and the new view keeps pol
   let requests = 0;
   page.on("request", (request) => {
     const url = new URL(request.url());
-    if (url.pathname === "/api/robots" && url.searchParams.has("search"))
+    if (url.pathname === "/api/robots" && url.searchParams.has("search")) {
       requests++;
+    }
   });
   await page.getByRole("textbox", { name: "Search robots" }).fill(robot.name);
   await row.getByTestId("robot-actions").click();

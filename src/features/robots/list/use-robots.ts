@@ -57,8 +57,9 @@ export default function useRobots(paused = false) {
   );
 
   useEffect(() => {
-    if (paused)
+    if (paused) {
       void client.cancelQueries({ queryKey: options.queryKey, exact: true });
+    }
   }, [client, options.queryKey, paused]);
 
   if (outOfRange) {

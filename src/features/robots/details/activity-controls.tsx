@@ -60,7 +60,9 @@ export default function ActivityControls({
               aria-disabled={Boolean(reason)}
               aria-describedby={reason ? `${id}-${action}` : undefined}
               onClick={() => {
-                if (!reason) onAction(action);
+                if (!reason) {
+                  onAction(action);
+                }
               }}
             >
               {actionLabels[action]}

@@ -129,11 +129,13 @@ test.each([
       await Promise.resolve();
     });
 
-    if (disabled) expect(onAction).not.toHaveBeenCalled();
-    else
+    if (disabled) {
+      expect(onAction).not.toHaveBeenCalled();
+    } else {
       expect(onAction).toHaveBeenCalledWith(
         activity === "idle" ? "start" : "stop",
       );
+    }
   },
 );
 
@@ -293,10 +295,11 @@ test("activity requests are guarded while pending and telemetry confirms the cha
   const fetcher = vi
     .fn()
     .mockImplementation((_url: string, init?: RequestInit) => {
-      if (init?.method === "POST")
+      if (init?.method === "POST") {
         return new Promise<Response>((resolve) => {
           resolveAction = resolve;
         });
+      }
       return Promise.resolve(
         Response.json({
           robot: observed,
@@ -388,17 +391,19 @@ test("activity controls stay disabled until the command refresh lands", async ()
   let refreshes = 0;
 
   const fetcher = vi.fn((_url: string, init?: RequestInit) => {
-    if (init?.method === "POST")
+    if (init?.method === "POST") {
       return new Promise<Response>((resolve) => {
         resolveAction = resolve;
       });
+    }
 
     refreshes += 1;
 
-    if (refreshes > 1)
+    if (refreshes > 1) {
       return new Promise<Response>((resolve) => {
         resolveRefresh = resolve;
       });
+    }
 
     return Promise.resolve(
       Response.json({ robot: online, siteRobots: [], verifiedAt: Date.now() }),

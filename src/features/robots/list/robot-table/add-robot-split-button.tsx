@@ -64,7 +64,9 @@ export default function AddRobotSplitButton({
             key={count}
             data-testid={`fleet-add-robots-${count}`}
             onClick={() => {
-              if (anchor) onAdd(anchor, count);
+              if (anchor) {
+                onAdd(anchor, count);
+              }
               setAnchor(null);
             }}
           >
@@ -74,7 +76,9 @@ export default function AddRobotSplitButton({
         <Divider />
         <MenuItem
           onClick={() => {
-            if (anchor) onDeleteAll(anchor);
+            if (anchor) {
+              onDeleteAll(anchor);
+            }
             setAnchor(null);
           }}
         >

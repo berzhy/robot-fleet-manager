@@ -18,7 +18,9 @@ export default function ActionNotification({
       anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       autoHideDuration={severity === "success" ? 6000 : null}
       onClose={(_event, reason) => {
-        if (reason !== "clickaway") onClose();
+        if (reason !== "clickaway") {
+          onClose();
+        }
       }}
     >
       <Alert

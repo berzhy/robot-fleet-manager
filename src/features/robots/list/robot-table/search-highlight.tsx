@@ -5,7 +5,9 @@ export default function SearchHighlight({
   text: string;
   search?: string;
 }) {
-  if (!search) return text;
+  if (!search) {
+    return text;
+  }
   const query = search.toLowerCase();
   const value = text.toLowerCase();
   const parts = [];

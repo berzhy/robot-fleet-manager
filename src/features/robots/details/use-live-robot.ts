@@ -25,7 +25,9 @@ export default function useLiveRobot(initial: RobotContext, paused = false) {
   if (paused !== wasPaused) {
     setWasPaused(paused);
 
-    if (!paused) setRefreshAfter(count());
+    if (!paused) {
+      setRefreshAfter(count());
+    }
   }
 
   const query = useQuery({
@@ -38,8 +40,9 @@ export default function useLiveRobot(initial: RobotContext, paused = false) {
   });
 
   useEffect(() => {
-    if (paused)
+    if (paused) {
       void client.cancelQueries({ queryKey: options.queryKey, exact: true });
+    }
   }, [client, options.queryKey, paused]);
 
   const missing = query.data === null;
