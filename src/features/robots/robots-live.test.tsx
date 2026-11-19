@@ -258,10 +258,10 @@ test("a stale in-flight poll cannot overwrite an explicit refresh", async () => 
     stale(page(99));
     await Promise.resolve();
   });
-  expect(result.current.state).toMatchObject({
-    status: "success",
-    robots: [{ batteryPercent: 40 }],
-  });
+  expect(result.current.status).toBe("success");
+  expect(result.current.snapshot?.items).toMatchObject([
+    { batteryPercent: 40 },
+  ]);
   expect(result.current.interrupted).toBe(false);
 });
 
@@ -392,10 +392,10 @@ test("pausing aborts in-flight fleet and detail polls and ignores their late res
     live.resolveStale(99);
     await Promise.resolve();
   });
-  expect(result.current.fleet.state).toMatchObject({
-    status: "success",
-    robots: [{ batteryPercent: 50 }],
-  });
+  expect(result.current.fleet.status).toBe("success");
+  expect(result.current.fleet.snapshot?.items).toMatchObject([
+    { batteryPercent: 50 },
+  ]);
   expect(result.current.detail.robot.batteryPercent).toBe(50);
   expect(result.current.fleet.interrupted).toBe(false);
   expect(result.current.detail.interrupted).toBe(false);
@@ -408,10 +408,10 @@ test("pausing aborts in-flight fleet and detail polls and ignores their late res
   rerender({ paused: false });
   await tick();
   expect(live.fetcher).toHaveBeenCalledTimes(6);
-  expect(result.current.fleet.state).toMatchObject({
-    status: "success",
-    robots: [{ batteryPercent: 40 }],
-  });
+  expect(result.current.fleet.status).toBe("success");
+  expect(result.current.fleet.snapshot?.items).toMatchObject([
+    { batteryPercent: 40 },
+  ]);
   expect(result.current.detail.robot.batteryPercent).toBe(40);
 });
 
@@ -616,10 +616,10 @@ test("fleet and detail retain snapshots after a request timeout and recover on t
   });
   expect(result.current.fleet.interrupted).toBe(true);
   expect(result.current.detail.interrupted).toBe(true);
-  expect(result.current.fleet.state).toMatchObject({
-    status: "success",
-    robots: [{ batteryPercent: 45 }],
-  });
+  expect(result.current.fleet.status).toBe("success");
+  expect(result.current.fleet.snapshot?.items).toMatchObject([
+    { batteryPercent: 45 },
+  ]);
   expect(result.current.detail.robot.batteryPercent).toBe(45);
 
   await tick(4999);
@@ -894,10 +894,8 @@ test("page correction after a hidden fleet shrinks immediately verifies the dest
   await tick();
 
   expect(result.current.page).toBe(0);
-  expect(result.current.state).toMatchObject({
-    status: "success",
-    robots: [{ id: robot.id }],
-  });
+  expect(result.current.status).toBe("success");
+  expect(result.current.snapshot?.items).toMatchObject([{ id: robot.id }]);
   expect(result.current.unverified).toBe(false);
   expect(result.current.interrupted).toBe(false);
   expect(

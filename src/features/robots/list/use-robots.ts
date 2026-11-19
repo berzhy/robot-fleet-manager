@@ -11,7 +11,8 @@ import type { RobotFilters } from "@/modules/robots/robot-filters";
 import { robotPageSize } from "@/modules/robots/robot";
 
 import { robotListOptions } from "../api/robot-queries";
-import type { RobotQueryState } from "./robot-query-state";
+
+export type RobotListStatus = "loading" | "error" | "success";
 
 function lastRobotPage(total: number, size: number) {
   return Math.max(0, Math.ceil(total / size) - 1);
@@ -76,19 +77,18 @@ export default function useRobots(paused = false) {
     });
   }
 
-  const state: RobotQueryState =
+  const status: RobotListStatus =
     outOfRange || query.isPlaceholderData
-      ? { status: "loading" }
-      : query.data
-        ? { status: "success", robots: query.data.items }
+      ? "loading"
+      : snapshot
+        ? "success"
         : query.isError
-          ? { status: "error" }
-          : { status: "loading" };
+          ? "error"
+          : "loading";
 
   return {
-    state,
+    status,
     announcement,
-    total,
     page,
     pageSize: request.pageSize,
     setPage: (page: number) =>
@@ -103,7 +103,6 @@ export default function useRobots(paused = false) {
     refresh,
     interrupted: query.isError,
     unverified: query.isError,
-    verifiedAt: snapshot?.evaluatedAt ?? 0,
     snapshot,
     filters: request.filters,
   };

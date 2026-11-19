@@ -1,8 +1,13 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 
-import { robotPageSizes, type Robot } from "@/modules/robots/robot";
+import {
+  robotPageSizes,
+  type Robot,
+  type RobotPage,
+} from "@/modules/robots/robot";
 
+import { pageMetadata } from "../../test-fixtures";
 import RobotTable from "./robot-table";
 
 const robot: Robot = {
@@ -24,8 +29,19 @@ const robot: Robot = {
   createdAt: "2026-11-14T12:00:00.000Z",
 };
 
+function robotPage(items: Robot[]): RobotPage {
+  return {
+    items,
+    total: items.length,
+    page: 0,
+    pageSize: 20,
+    ...pageMetadata(items.length),
+  };
+}
+
 test.each(robotPageSizes)("loading renders %i decorative rows", (pageSize) => {
   const props = {
+    snapshot: { ...robotPage([robot]), pageSize },
     page: 0,
     pageSize,
     onPageSizeChange: () => {},
@@ -36,49 +52,65 @@ test.each(robotPageSizes)("loading renders %i decorative rows", (pageSize) => {
     onDelete: () => {},
   };
   const { rerender } = render(
-    <RobotTable {...props} total={0} state={{ status: "loading" }} />,
+    <RobotTable
+      {...props}
+      filters={{ view: "needs-attention" }}
+      status="loading"
+    />,
   );
 
   const table = screen.getByRole("table", { name: "Robot fleet" });
+  const footerCount = screen.getByTestId("fleet-result-count");
+
   expect(table.querySelectorAll("tbody > tr")).toHaveLength(pageSize);
   expect(within(table).getAllByRole("row")).toHaveLength(1);
+  expect(footerCount).not.toHaveTextContent("Newest first");
+  expect(screen.getByTestId("fleet-page-summary")).toHaveTextContent("of 1");
 
   rerender(
-    <RobotTable
-      {...props}
-      total={1}
-      state={{ status: "success", robots: [robot] }}
-    />,
+    <RobotTable {...props} filters={{ view: "all" }} status="success" />,
   );
 
   expect(table.querySelectorAll("tbody > tr")).toHaveLength(1);
   expect(within(table).getByRole("link", { name: robot.name })).toBeVisible();
+  expect(footerCount).toHaveTextContent("1 robot · Newest first");
 });
 
 test("table renders the supplied server page without slicing or sorting", () => {
   const onPageChange = vi.fn();
+  const robotNeedingAttention = {
+    ...robot,
+    problemCode: "path-blocked",
+  } as const;
+  const metadata = pageMetadata(42);
+
   render(
     <RobotTable
-      resultCount="23 robots · Newest first"
-      state={{
-        status: "success",
-        robots: [
+      filters={{ view: "needs-attention", site: "Munich" }}
+      status="success"
+      snapshot={{
+        items: [
           {
-            ...robot,
+            ...robotNeedingAttention,
             id: "zulu",
             name: "Zulu robot",
             createdAt: "2026-01-03T00:00:00.000Z",
           },
           {
-            ...robot,
+            ...robotNeedingAttention,
             id: "alpha",
             name: "Alpha robot",
             createdAt: "2026-01-01T00:00:00.000Z",
           },
-          robot,
+          robotNeedingAttention,
         ],
+        total: 23,
+        page: 1,
+        pageSize: 20,
+        ...metadata,
+        fleetTotal: 60,
+        summary: { ...metadata.summary, "needs-attention": 23 },
       }}
-      total={23}
       pageSize={20}
       onPageSizeChange={() => {}}
       page={1}
@@ -95,7 +127,7 @@ test("table renders the supplied server page without slicing or sorting", () => 
     "21–23 of 23",
   );
   expect(screen.getByTestId("fleet-result-count")).toHaveTextContent(
-    "23 robots · Newest first",
+    "23 of 42 matching robots · Newest first",
   );
   expect(
     screen.getAllByTestId("robot-name").map((name) => name.textContent),
@@ -113,12 +145,13 @@ test("table renders the supplied server page without slicing or sorting", () => 
 test("robot names are plain text with one accessible navigation link per row", () => {
   render(
     <RobotTable
-      total={1}
+      filters={{ view: "all" }}
+      snapshot={robotPage([robot])}
       pageSize={20}
       onPageSizeChange={() => {}}
       page={0}
       onPageChange={() => {}}
-      state={{ status: "success", robots: [robot] }}
+      status="success"
       onRetry={() => {}}
       onAdd={() => {}}
       adding={false}
@@ -153,12 +186,13 @@ test("robot names are plain text with one accessible navigation link per row", (
 test("columns put identity and operational context before catalog metadata", () => {
   render(
     <RobotTable
-      total={1}
+      filters={{ view: "all" }}
+      snapshot={robotPage([robot])}
       pageSize={20}
       onPageSizeChange={() => {}}
       page={0}
       onPageChange={() => {}}
-      state={{ status: "success", robots: [robot] }}
+      status="success"
       onRetry={() => {}}
       onAdd={() => {}}
       adding={false}
@@ -193,16 +227,15 @@ test("a search with no matches names the query, lists searchable fields and offe
   const onClearSearch = vi.fn();
   render(
     <RobotTable
-      search="no-such-robot"
-      fleetTotal={5}
+      filters={{ view: "all", search: "no-such-robot" }}
+      snapshot={{ ...robotPage([]), fleetTotal: 5 }}
       onClearFilters={() => {}}
       onClearSearch={onClearSearch}
-      total={0}
       pageSize={20}
       onPageSizeChange={() => {}}
       page={0}
       onPageChange={() => {}}
-      state={{ status: "success", robots: [] }}
+      status="success"
       onRetry={() => {}}
       onAdd={() => {}}
       adding={false}
@@ -229,19 +262,13 @@ test.each([
   (problemCode, label) => {
     render(
       <RobotTable
-        state={{
-          status: "success",
-          robots: [
-            {
-              ...robot,
-              activity: "needs-attention",
-              problemCode,
-            },
-          ],
-        }}
+        filters={{ view: "all" }}
+        status="success"
+        snapshot={robotPage([
+          { ...robot, activity: "needs-attention", problemCode },
+        ])}
         page={0}
         pageSize={20}
-        total={1}
         onPageSizeChange={() => {}}
         onPageChange={() => {}}
         onRetry={() => {}}

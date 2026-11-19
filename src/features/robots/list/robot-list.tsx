@@ -17,7 +17,6 @@ import {
 import ActionNotification from "../action-notification";
 import { isRequestTimeout } from "../api/robot-api";
 import useRobotMutations from "../hooks/use-robot-mutations";
-import { formatResultCount } from "../utils/robot-formatters";
 
 import { generateRobotInput } from "./generate-robot-input";
 import FleetSummary from "./robot-list-filters/fleet-summary";
@@ -53,9 +52,8 @@ export default function RobotList() {
   } | null>(null);
 
   const {
-    state,
+    status,
     announcement,
-    total,
     page,
     pageSize,
     setPage,
@@ -63,7 +61,6 @@ export default function RobotList() {
     refresh,
     interrupted,
     unverified,
-    verifiedAt: evaluatedAt,
     snapshot,
     filters,
     setFilters,
@@ -81,18 +78,17 @@ export default function RobotList() {
       inFlightRef.current ||
       adding ||
       confirmation ||
-      state.status === "loading" ||
+      status === "loading" ||
       !addFocusRef.current
     )
       return;
     const target = addFocusRef.current;
     addFocusRef.current = null;
     (target.isConnected ? target : addButtonRef.current)?.focus();
-  }, [adding, confirmation, state.status]);
+  }, [adding, confirmation, status]);
 
   async function addRobot(trigger: HTMLButtonElement, count: 1 | 10 | 100 = 1) {
-    if (inFlightRef.current || confirmation || state.status === "loading")
-      return;
+    if (inFlightRef.current || confirmation || status === "loading") return;
 
     inFlightRef.current = true;
     setNotification(null);
@@ -254,7 +250,7 @@ export default function RobotList() {
           buttonRef={addButtonRef}
           loading={adding}
           disabled={
-            acting || state.status === "loading" || Boolean(confirmation?.open)
+            acting || status === "loading" || Boolean(confirmation?.open)
           }
           onAdd={(trigger, count) => void addRobot(trigger, count)}
         />
@@ -275,27 +271,25 @@ export default function RobotList() {
           whiteSpace: "nowrap",
         }}
       >
-        {state.status === "loading" ? "Loading robots" : announcement}
+        {status === "loading" ? "Loading robots" : announcement}
       </Box>
-      {interrupted && state.status === "success" && (
+      {interrupted && status === "success" && (
         <Alert data-testid="fleet-refresh-warning" severity="warning">
           Live updates interrupted. Showing last-known data and connection
           states.
         </Alert>
       )}
       <RobotTable
-        resultCount={
-          state.status === "success" && snapshot
-            ? formatResultCount(total, snapshot.summary.all, filters)
-            : undefined
-        }
+        filters={filters}
+        snapshot={snapshot}
+        status={status}
         toolbar={
           <Stack spacing={2}>
             <FleetSummary
               filters={filters}
               onChange={setFilters}
               summary={snapshot?.summary}
-              updating={state.status === "loading"}
+              updating={status === "loading"}
             />
             <Divider />
             <RobotListFilters
@@ -307,8 +301,6 @@ export default function RobotList() {
             />
           </Stack>
         }
-        search={filters.search}
-        fleetTotal={snapshot?.fleetTotal}
         onClearFilters={() => {
           setSearch("");
           setFilters({ view: "all" });
@@ -318,10 +310,7 @@ export default function RobotList() {
           setFilters({ ...filters, search: undefined });
         }}
         onRowFocusLost={confirmation ? undefined : focusFleetSearch}
-        evaluatedAt={evaluatedAt}
         unverified={unverified}
-        state={state}
-        total={total}
         page={page}
         pageSize={pageSize}
         onPageSizeChange={setPageSize}

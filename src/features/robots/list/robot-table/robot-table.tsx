@@ -2,19 +2,22 @@
 
 import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
+import Skeleton from "@mui/material/Skeleton";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
+import Typography from "@mui/material/Typography";
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 
-import type { Robot } from "@/modules/robots/robot";
+import type { Robot, RobotPage } from "@/modules/robots/robot";
 import type { RobotAction } from "@/modules/robots/robot-actions";
+import type { RobotFilters } from "@/modules/robots/robot-filters";
 
-import type { RobotQueryState } from "../robot-query-state";
-import FleetResultCount from "./fleet-result-count";
+import { formatResultCount } from "../../utils/robot-formatters";
+import type { RobotListStatus } from "../use-robots";
 import RobotTableEmptyState from "./robot-table-empty-state";
 import RobotTableErrorState from "./robot-table-error-state";
 import RobotTableNoResultsState from "./robot-table-no-results-state";
@@ -38,19 +41,16 @@ const rowHeight = 70;
 
 export default function RobotTable({
   toolbar,
-  resultCount,
-  search,
-  fleetTotal,
+  filters,
+  snapshot,
+  status,
   onClearFilters,
   onClearSearch,
   onRowFocusLost,
-  evaluatedAt = 0,
   unverified = false,
-  state,
   page,
   pageSize,
   onPageSizeChange,
-  total,
   onPageChange,
   onRetry,
   onAction,
@@ -59,21 +59,18 @@ export default function RobotTable({
   adding,
 }: {
   toolbar?: ReactNode;
-  resultCount?: string;
-  search?: string;
-  fleetTotal?: number;
+  filters: RobotFilters;
+  snapshot?: RobotPage;
+  status: RobotListStatus;
   onClearFilters?: () => void;
   onClearSearch?: () => void;
   onRowFocusLost?: () => void;
-  evaluatedAt?: number;
   unverified?: boolean;
   onAdd: (trigger: HTMLButtonElement) => void;
   adding: boolean;
-  state: RobotQueryState;
   page: number;
   pageSize: number;
   onPageSizeChange: (pageSize: number) => void;
-  total: number;
   onPageChange: (page: number) => void;
   onRetry: () => void;
   onAction?: (robot: Robot, action: RobotAction) => void;
@@ -94,9 +91,10 @@ export default function RobotTable({
     }
   });
 
-  const isLoading = state.status === "loading";
-  const hasNoResults = state.status === "success" && total === 0;
-  const hasRobotsInFleet = fleetTotal !== undefined && fleetTotal > 0;
+  const isLoading = status === "loading";
+  const result = status === "success" ? snapshot : undefined;
+  const total = snapshot?.total ?? 0;
+  const { search } = filters;
 
   return (
     <Paper
@@ -175,27 +173,26 @@ export default function RobotTable({
                 rowHeight={rowHeight}
               />
             )}
-            {state.status === "success" &&
-              state.robots.map((robot) => (
-                <RobotTableRow
-                  key={robot.id}
-                  robot={robot}
-                  search={search}
-                  evaluatedAt={evaluatedAt}
-                  unverified={unverified}
-                  onFocusCapture={(event) => {
-                    focusedRowElement.current = event.currentTarget;
-                  }}
-                  adding={adding}
-                  onDelete={onDelete}
-                  onAction={onAction}
-                  rowHeight={rowHeight}
-                />
-              ))}
+            {result?.items.map((robot) => (
+              <RobotTableRow
+                key={robot.id}
+                robot={robot}
+                search={search}
+                evaluatedAt={result.evaluatedAt}
+                unverified={unverified}
+                onFocusCapture={(event) => {
+                  focusedRowElement.current = event.currentTarget;
+                }}
+                adding={adding}
+                onDelete={onDelete}
+                onAction={onAction}
+                rowHeight={rowHeight}
+              />
+            ))}
           </TableBody>
         </Table>
-        {hasNoResults &&
-          (hasRobotsInFleet ? (
+        {result?.total === 0 &&
+          (result.fleetTotal > 0 ? (
             <RobotTableNoResultsState
               search={search}
               onClearSearch={onClearSearch}
@@ -204,7 +201,7 @@ export default function RobotTable({
           ) : (
             <RobotTableEmptyState onAdd={onAdd} adding={adding} />
           ))}
-        {state.status === "error" && <RobotTableErrorState onRetry={onRetry} />}
+        {status === "error" && <RobotTableErrorState onRetry={onRetry} />}
       </TableContainer>
       <Box
         sx={{
@@ -222,10 +219,21 @@ export default function RobotTable({
             pageSize={pageSize}
             onPageSizeChange={onPageSizeChange}
             onPageChange={onPageChange}
-            disabled={adding || state.status !== "success"}
+            disabled={adding || status !== "success"}
           />
         )}
-        <FleetResultCount resultCount={resultCount} />
+        <Typography
+          data-testid="fleet-result-count"
+          variant="body2"
+          color="text.secondary"
+          sx={{ ml: "auto", pr: 2, fontVariantNumeric: "tabular-nums" }}
+        >
+          {result ? (
+            formatResultCount(result.total, result.summary.all, filters)
+          ) : (
+            <Skeleton width={180} aria-hidden="true" />
+          )}
+        </Typography>
       </Box>
     </Paper>
   );
