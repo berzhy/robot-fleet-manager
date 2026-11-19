@@ -659,3 +659,52 @@ test("search debounce closes an unmounted action menu and the new view keeps pol
     .poll(() => requests, { timeout: 10000 })
     .toBeGreaterThan(previous);
 });
+
+test("the URL keeps the list view across shared links, reloads and Back", async ({
+  page,
+  request,
+}) => {
+  await seedFleet(request, 25);
+  const listResponses: number[] = [];
+  page.on("response", (response) => {
+    if (new URL(response.url()).pathname === "/api/robots") {
+      listResponses.push(response.status());
+    }
+  });
+
+  const view = "/robots?search=Filter&site=Munich&pageSize=20&page=1";
+  const summary = page.getByTestId("fleet-page-summary");
+  const search = page.getByRole("textbox", { name: "Search robots" });
+
+  async function expectSharedView() {
+    await expect(summary).toHaveText("21–25 of 25");
+    await expect(search).toHaveValue("Filter");
+    await expect(page.getByTestId("fleet-chip-search")).toHaveText(
+      "Search: Filter",
+    );
+    await expect(
+      page.getByText("Location: Munich", { exact: true }),
+    ).toBeVisible();
+  }
+
+  await page.goto(view);
+  await expectSharedView();
+
+  await page.reload();
+  await expectSharedView();
+
+  const row = page.getByTestId("fleet-table").locator("tbody tr").first();
+  await row.getByTestId("robot-link").click();
+  await expect(page.getByTestId("robot-details")).toBeVisible();
+  await page.goBack();
+  await expectSharedView();
+  expect(new URL(page.url()).search).toBe(new URL(view, page.url()).search);
+
+  // Invalid fields fall back one by one; the valid location filter stays.
+  await page.goto("/robots?view=bogus&site=Munich&page=-1&pageSize=7");
+  await expect(summary).toHaveText("1–10 of 25");
+  await expect(
+    page.getByText("Location: Munich", { exact: true }),
+  ).toBeVisible();
+  expect(listResponses).not.toContain(400);
+});

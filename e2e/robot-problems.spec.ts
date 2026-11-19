@@ -70,10 +70,8 @@ test("investigates a reported problem and retries it from robot details", async 
   });
   await expect(alert).toHaveCount(0);
 
-  await page
-    .getByRole("navigation", { name: "Breadcrumb" })
-    .getByRole("link", { name: "Robots", exact: true })
-    .click();
+  // Back returns to the filtered view the URL kept.
+  await page.goBack();
   await expect(
     page.getByRole("button", {
       name: "Needs attention",
@@ -83,4 +81,20 @@ test("investigates a reported problem and retries it from robot details", async 
   ).toBeVisible();
   await expect(row).toHaveCount(0);
   await expect(page.getByText("No robots match these filters.")).toBeVisible();
+
+  // The breadcrumb is a plain link to the whole fleet.
+  await page.goForward();
+  await page
+    .getByRole("navigation", { name: "Breadcrumb" })
+    .getByRole("link", { name: "Robots", exact: true })
+    .click();
+  await expect(page).toHaveURL("/robots");
+  await expect(
+    page.getByRole("button", {
+      name: "All robots",
+      exact: true,
+      pressed: true,
+    }),
+  ).toBeVisible();
+  await expect(row).toBeVisible();
 });

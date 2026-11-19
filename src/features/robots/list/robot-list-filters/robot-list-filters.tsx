@@ -50,13 +50,15 @@ export default function RobotListFilters({
   onSearchChange,
   options,
   onChange,
+  onClearFilters,
 }: {
   filters: RobotFilters;
   search: string;
   searchInputRef: RefObject<HTMLInputElement | null>;
   onSearchChange: (value: string) => void;
   options?: FilterOptions;
-  onChange: (filters: RobotFilters) => void;
+  onChange: (changes: Partial<RobotFilters>) => void;
+  onClearFilters: () => void;
 }) {
   const [composing, setComposing] = useState(false);
   const [moreAnchor, setMoreAnchor] = useState<HTMLElement | null>(null);
@@ -74,7 +76,7 @@ export default function RobotListFilters({
     const normalized = value.trim();
     const applied = normalized.length >= 2 ? normalized : undefined;
     if (applied !== filters.search) {
-      onChange({ ...filters, search: applied });
+      onChange({ search: applied });
     }
   });
 
@@ -90,7 +92,7 @@ export default function RobotListFilters({
     searchInputRef.current?.focus();
     onSearchChange("");
     if (filters.search !== undefined) {
-      onChange({ ...filters, search: undefined });
+      onChange({ search: undefined });
     }
   }
 
@@ -167,7 +169,7 @@ export default function RobotListFilters({
     if (key === "search") {
       onSearchChange("");
     }
-    onChange({ ...filters, [key]: key === "view" ? "all" : undefined });
+    onChange({ [key]: key === "view" ? "all" : undefined });
 
     if (next instanceof HTMLElement && next.getAttribute("role") === "button") {
       next.focus();
@@ -208,10 +210,7 @@ export default function RobotListFilters({
           },
         }}
         onChange={(event) => {
-          onChange({
-            ...filters,
-            [field.key]: event.target.value || undefined,
-          });
+          onChange({ [field.key]: event.target.value || undefined });
           if (inPopover) {
             closeMoreFilters();
           }
@@ -401,7 +400,7 @@ export default function RobotListFilters({
             size="small"
             onClick={() => {
               onSearchChange("");
-              onChange({ view: "all" });
+              onClearFilters();
               container.current?.ownerDocument
                 .querySelector<HTMLElement>('[data-view="all"]')
                 ?.focus();

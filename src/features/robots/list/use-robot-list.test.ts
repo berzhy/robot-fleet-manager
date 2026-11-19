@@ -335,3 +335,71 @@ test("equivalent filters do not issue an extra request", async () => {
   expect(getRobots).toHaveBeenCalledTimes(1);
   expect(result.current.status).toBe("success");
 });
+
+function emptyPage(total = 0): RobotPage {
+  return {
+    items: [],
+    total,
+    page: 0,
+    pageSize: 10,
+    ...pageMetadata(total),
+  };
+}
+
+test("the URL's view drives the first request", () => {
+  window.history.replaceState(
+    null,
+    "",
+    "/robots?view=offline&site=Munich&pageSize=20&page=1",
+  );
+  vi.mocked(getRobots).mockResolvedValue(emptyPage(30));
+
+  renderHook(() => useRobotList());
+
+  expect(getRobots).toHaveBeenCalledWith(
+    { page: 1, pageSize: 20, filters: { view: "offline", site: "Munich" } },
+    expect.any(AbortSignal),
+  );
+});
+
+test("a filter change writes a short URL and returns to the first page", async () => {
+  window.history.replaceState(null, "", "/robots?page=2");
+  vi.mocked(getRobots).mockResolvedValue(emptyPage(30));
+  const { result } = renderHook(() => useRobotList());
+  await waitFor(() => expect(result.current.status).toBe("success"));
+
+  act(() => result.current.setFilters({ view: "offline", search: "Atlas" }));
+
+  expect(window.location.pathname).toBe("/robots");
+  expect(window.location.search).toBe("?search=Atlas&view=offline");
+
+  act(() => result.current.clearFilters());
+
+  expect(window.location.search).toBe("");
+});
+
+test("two filter changes in the same tick both land", async () => {
+  vi.mocked(getRobots).mockResolvedValue(emptyPage());
+  const { result } = renderHook(() => useRobotList());
+  await waitFor(() => expect(result.current.status).toBe("success"));
+
+  act(() => {
+    result.current.setFilters({ search: "Atlas" });
+    result.current.setFilters({ view: "offline" });
+  });
+
+  expect(result.current.filters).toEqual({
+    view: "offline",
+    search: "Atlas",
+  });
+});
+
+test("an out-of-range page in the URL is corrected to the last page", async () => {
+  window.history.replaceState(null, "", "/robots?page=9");
+  vi.mocked(getRobots).mockResolvedValue(emptyPage(15));
+  const { result } = renderHook(() => useRobotList());
+
+  await waitFor(() => expect(window.location.search).toBe("?page=1"));
+  await waitFor(() => expect(result.current.status).toBe("success"));
+  expect(result.current.page).toBe(1);
+});

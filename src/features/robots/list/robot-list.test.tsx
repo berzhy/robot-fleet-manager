@@ -258,3 +258,23 @@ test("switching summary tiles preserves counts while refreshing and updates them
   expect(all).toHaveTextContent("11");
   expect(offline).toHaveTextContent("3");
 });
+
+test("a shared search link fills the search box and keeps its search", async () => {
+  window.history.replaceState(null, "", "/robots?search=Atlas&view=offline");
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() => Promise.resolve(Response.json(page([robot])))),
+  );
+  render(<RobotList />);
+
+  await screen.findByTestId("robot-row-one");
+  expect(screen.getByRole("textbox", { name: "Search robots" })).toHaveValue(
+    "Atlas",
+  );
+
+  // Longer than the search debounce: the draft must not clear the URL's search.
+  await act(() => new Promise((resolve) => setTimeout(resolve, 400)));
+
+  expect(window.location.search).toBe("?search=Atlas&view=offline");
+  expect(screen.getByText("Search: Atlas")).toBeVisible();
+});

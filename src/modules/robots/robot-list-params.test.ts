@@ -76,5 +76,5 @@ test("the all view and empty filters are left out of the query", () => {
   ).toBe("");
   expect(
     robotFilterSearchParams({ view: "low-battery", search: "a&b" }).toString(),
-  ).toBe("view=low-battery&search=a%26b");
+  ).toBe("search=a%26b&view=low-battery");
 });

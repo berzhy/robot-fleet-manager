@@ -37,7 +37,7 @@ export default function RobotStatusFilters({
   filters: RobotFilters;
   summary?: FleetSummary;
   updating?: boolean;
-  onChange: (filters: RobotFilters) => void;
+  onChange: (changes: Partial<RobotFilters>) => void;
 }) {
   return (
     <Box
@@ -65,7 +65,7 @@ export default function RobotStatusFilters({
             selected={filters.view === view}
             onChange={() => {
               if (view !== filters.view) {
-                onChange({ ...filters, view });
+                onChange({ view });
               }
             }}
             aria-label={labels[view]}

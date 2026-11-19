@@ -38,11 +38,31 @@ export function parseRobotListParams(
   return { page, pageSize, filters };
 }
 
+/** The view as a short, shareable query: default values are left out. */
+export function robotListSearchParams({
+  page,
+  pageSize,
+  filters,
+}: RobotListParams) {
+  const searchParams = robotFilterSearchParams(filters);
+
+  if (pageSize !== robotPageSize) {
+    searchParams.set("pageSize", String(pageSize));
+  }
+  if (page !== 0) {
+    searchParams.set("page", String(page));
+  }
+
+  return searchParams;
+}
+
 /** Filters as query parameters; the "all" view and empty values are left out. */
 export function robotFilterSearchParams(filters: RobotFilters) {
   const searchParams = new URLSearchParams();
 
-  for (const [key, value] of Object.entries(filters)) {
+  // Schema order, so the same view always gives the same URL.
+  for (const key of robotFiltersSchema.keyof().options) {
+    const value = filters[key];
     if (value !== undefined && !(key === "view" && value === "all")) {
       searchParams.set(key, value);
     }

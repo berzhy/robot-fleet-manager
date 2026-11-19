@@ -5,11 +5,15 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
-import { robotPageSize } from "@/modules/robots/robot";
 import type { RobotFilters } from "@/modules/robots/robot-filters";
-import type { RobotListParams } from "@/modules/robots/robot-list-params";
+import {
+  parseRobotListParams,
+  robotListSearchParams,
+  type RobotListParams,
+} from "@/modules/robots/robot-list-params";
 
 import { robotListOptions } from "../api/robot-queries";
 
@@ -22,11 +26,7 @@ function lastRobotPage(total: number, size: number) {
 export default function useRobotList() {
   const client = useQueryClient();
 
-  const [request, setRequest] = useState<RobotListParams>({
-    page: 0,
-    pageSize: robotPageSize,
-    filters: { view: "all" },
-  });
+  const request = parseRobotListParams(useSearchParams());
 
   const options = robotListOptions(request);
 
@@ -44,20 +44,29 @@ export default function useRobotList() {
     request.page > lastRobotPage(query.data.total, request.pageSize),
   );
 
-  if (outOfRange) {
-    setRequest((previous) => ({ ...previous, page }));
-  } else if (query.data && !query.isPlaceholderData && announce) {
+  if (query.data && !query.isPlaceholderData && announce) {
     setAnnouncement(
       `${query.data.total} ${query.data.total === 1 ? "robot" : "robots"} found.`,
     );
     setAnnounce(false);
   }
 
+  useEffect(() => {
+    if (outOfRange) {
+      updateRequest((current) => ({ ...current, page }));
+    }
+  }, [outOfRange, page]);
+
   function refresh() {
     void client.invalidateQueries({
       queryKey: options.queryKey,
       exact: true,
     });
+  }
+
+  function announceNextResult() {
+    setAnnounce(true);
+    setAnnouncement("");
   }
 
   const status: RobotListStatus =
@@ -75,17 +84,44 @@ export default function useRobotList() {
     page,
     pageSize: request.pageSize,
     setPage: (page: number) =>
-      setRequest((previous) => ({ ...previous, page })),
+      updateRequest((current) => ({ ...current, page })),
     setPageSize: (pageSize: number) =>
-      setRequest((previous) => ({ ...previous, page: 0, pageSize })),
-    setFilters: (filters: RobotFilters) => {
-      setAnnounce(true);
-      setAnnouncement("");
-      setRequest((previous) => ({ ...previous, page: 0, filters }));
+      updateRequest((current) => ({ ...current, page: 0, pageSize })),
+    setFilters: (changes: Partial<RobotFilters>) => {
+      announceNextResult();
+      updateRequest((current) => ({
+        ...current,
+        page: 0,
+        filters: { ...current.filters, ...changes },
+      }));
+    },
+    clearFilters: () => {
+      announceNextResult();
+      updateRequest((current) => ({
+        ...current,
+        page: 0,
+        filters: { view: "all" },
+      }));
     },
     refresh,
     refreshFailed: query.isRefetchError,
     snapshot,
     filters: request.filters,
   };
+}
+
+// The URL is the list's state. Changes merge into window.location rather than
+// this render's snapshot: Next re-renders after replaceState inside a
+// transition, so a second change in the same tick would otherwise drop the first.
+function updateRequest(change: (current: RobotListParams) => RobotListParams) {
+  const current = parseRobotListParams(
+    new URLSearchParams(window.location.search),
+  );
+  const query = robotListSearchParams(change(current)).toString();
+
+  window.history.replaceState(
+    null,
+    "",
+    query ? `?${query}` : window.location.pathname,
+  );
 }

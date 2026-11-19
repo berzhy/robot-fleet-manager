@@ -31,8 +31,6 @@ type DeleteTarget =
   { kind: "robot"; id: string; name: string } | { kind: "all" };
 
 export default function RobotList() {
-  const [search, setSearch] = useState("");
-
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const createRobots = useCreateRobots();
@@ -63,7 +61,11 @@ export default function RobotList() {
     snapshot,
     filters,
     setFilters,
+    clearFilters,
   } = useRobotList();
+
+  // The typed draft; the debounced, applied search lives in the URL.
+  const [search, setSearch] = useState(filters.search ?? "");
 
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
@@ -258,6 +260,7 @@ export default function RobotList() {
               searchInputRef={searchInputRef}
               onSearchChange={setSearch}
               onChange={setFilters}
+              onClearFilters={clearFilters}
               options={snapshot?.filterOptions}
             />
           </Stack>
@@ -265,12 +268,12 @@ export default function RobotList() {
         onClearFilters={() => {
           focusSearch();
           setSearch("");
-          setFilters({ view: "all" });
+          clearFilters();
         }}
         onClearSearch={() => {
           focusSearch();
           setSearch("");
-          setFilters({ ...filters, search: undefined });
+          setFilters({ search: undefined });
         }}
         onRowFocusLost={confirmation ? undefined : focusSearch}
         unverified={refreshFailed}

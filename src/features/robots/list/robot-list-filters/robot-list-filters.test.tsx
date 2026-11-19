@@ -7,16 +7,27 @@ import type { RobotFilters } from "@/modules/robots/robot-filters";
 import RobotListFilters from "./robot-list-filters";
 import RobotStatusFilters from "./robot-status-filters";
 
+function useFilters(initial: RobotFilters) {
+  const [filters, setFilters] = useState(initial);
+
+  return {
+    filters,
+    onChange: (changes: Partial<RobotFilters>) =>
+      setFilters((current) => ({ ...current, ...changes })),
+    onClearFilters: () => setFilters({ view: "all" }),
+  };
+}
+
 test("dropdowns, tiles and removable chips share one selection", () => {
   function Controls() {
-    const [filters, setFilters] = useState<RobotFilters>({ view: "all" });
+    const { filters, onChange, onClearFilters } = useFilters({ view: "all" });
     const searchInputRef = useRef<HTMLInputElement>(null);
 
     return (
       <>
         <RobotStatusFilters
           filters={filters}
-          onChange={setFilters}
+          onChange={onChange}
           summary={{
             all: 12,
             offline: 3,
@@ -29,7 +40,8 @@ test("dropdowns, tiles and removable chips share one selection", () => {
           searchInputRef={searchInputRef}
           onSearchChange={vi.fn()}
           filters={filters}
-          onChange={setFilters}
+          onChange={onChange}
+          onClearFilters={onClearFilters}
           options={{ sites: ["Munich", "Berlin"], manufacturers: ["Maker"] }}
         />
       </>
@@ -89,7 +101,7 @@ test("selecting the active tile does not restart its query", () => {
 
 test("type selection creates a removable chip without clearing other filters", () => {
   function Controls() {
-    const [filters, setFilters] = useState<RobotFilters>({
+    const { filters, onChange, onClearFilters } = useFilters({
       view: "offline",
       site: "Munich",
     });
@@ -101,7 +113,8 @@ test("type selection creates a removable chip without clearing other filters", (
         searchInputRef={searchInputRef}
         onSearchChange={vi.fn()}
         filters={filters}
-        onChange={setFilters}
+        onChange={onChange}
+        onClearFilters={onClearFilters}
         options={{ sites: ["Munich"], manufacturers: [] }}
       />
     );
@@ -128,7 +141,7 @@ test("type selection creates a removable chip without clearing other filters", (
 afterEach(() => vi.useRealTimers());
 
 function SearchControls() {
-  const [filters, setFilters] = useState<RobotFilters>({
+  const { filters, onChange, onClearFilters } = useFilters({
     view: "all",
     site: "Munich",
   });
@@ -141,7 +154,8 @@ function SearchControls() {
       search={search}
       searchInputRef={searchInputRef}
       onSearchChange={setSearch}
-      onChange={setFilters}
+      onChange={onChange}
+      onClearFilters={onClearFilters}
       options={{ sites: ["Munich"], manufacturers: [] }}
     />
   );
@@ -232,7 +246,7 @@ test("chip removal and Clear filters cancel pending search", async () => {
 
 test("more filters opens a named dialog and applies a selection immediately", () => {
   function Controls() {
-    const [filters, setFilters] = useState<RobotFilters>({ view: "all" });
+    const { filters, onChange, onClearFilters } = useFilters({ view: "all" });
     const searchInputRef = useRef<HTMLInputElement>(null);
 
     return (
@@ -241,7 +255,8 @@ test("more filters opens a named dialog and applies a selection immediately", ()
         searchInputRef={searchInputRef}
         onSearchChange={vi.fn()}
         filters={filters}
-        onChange={setFilters}
+        onChange={onChange}
+        onClearFilters={onClearFilters}
         options={{ sites: ["Munich"], manufacturers: ["Maker"] }}
       />
     );
