@@ -9,7 +9,7 @@ import Image from "next/image";
 
 import fleetEmpty from "@/assets/fleet-empty.png";
 
-export function FleetTableEmptyState({
+export function RobotTableEmptyState({
   onAdd,
   adding,
 }: {
@@ -60,7 +60,7 @@ export function FleetTableEmptyState({
     </Stack>
   );
 }
-export function FleetTableErrorState({ onRetry }: { onRetry: () => void }) {
+export function RobotTableErrorState({ onRetry }: { onRetry: () => void }) {
   return (
     <Stack
       spacing={2}

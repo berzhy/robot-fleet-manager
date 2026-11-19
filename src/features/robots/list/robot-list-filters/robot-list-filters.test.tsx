@@ -1,9 +1,11 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import { useState } from "react";
+
 import type { RobotFilters } from "@/modules/robots/robot-filters";
-import FleetFilters from "./fleet-filters";
+
 import FleetSummary from "./fleet-summary";
+import RobotListFilters from "./robot-list-filters";
 
 test("dropdowns, tiles and removable chips share one selection", () => {
   function Controls() {
@@ -20,7 +22,7 @@ test("dropdowns, tiles and removable chips share one selection", () => {
             "low-battery": 2,
           }}
         />
-        <FleetFilters
+        <RobotListFilters
           search=""
           onSearchChange={vi.fn()}
           filters={filters}
@@ -89,7 +91,7 @@ test("type selection creates a removable chip without clearing other filters", (
       site: "Munich",
     });
     return (
-      <FleetFilters
+      <RobotListFilters
         search=""
         onSearchChange={vi.fn()}
         filters={filters}
@@ -126,7 +128,7 @@ function SearchControls() {
   });
   const [search, setSearch] = useState("");
   return (
-    <FleetFilters
+    <RobotListFilters
       filters={filters}
       search={search}
       onSearchChange={setSearch}
@@ -223,7 +225,7 @@ test("selecting in more filters closes it, applies immediately and counts active
   function Controls() {
     const [filters, setFilters] = useState<RobotFilters>({ view: "all" });
     return (
-      <FleetFilters
+      <RobotListFilters
         search=""
         onSearchChange={vi.fn()}
         filters={filters}

@@ -2,7 +2,7 @@ import Skeleton from "@mui/material/Skeleton";
 import TableCell from "@mui/material/TableCell";
 import TableRow from "@mui/material/TableRow";
 
-export default function FleetTableSkeleton({
+export default function RobotTableSkeleton({
   columnCount,
   rowCount,
   rowHeight,

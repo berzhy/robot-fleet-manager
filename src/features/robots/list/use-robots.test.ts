@@ -1,10 +1,11 @@
-import { pageMetadata } from "../test-fixtures";
 import { act, waitFor } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 
 import { renderHook } from "@/query/test-utils";
 import type { RobotPage } from "@/modules/robots/robot";
+
 import { getRobots } from "../api/robot-api";
+import { pageMetadata } from "../test-fixtures";
 import useRobots from "./use-robots";
 
 vi.mock("../api/robot-api");

@@ -25,7 +25,6 @@ import { connectionStatus } from "@/modules/telemetry/freshness";
 import ActionNotification from "../action-notification";
 import { isRequestTimeout } from "../api/robot-api";
 import ConnectionStatus from "../connection-status/connection-status";
-import useLiveRobot from "../hooks/use-live-robot";
 import useRobotMutations from "../hooks/use-robot-mutations";
 import {
   formatActivity,
@@ -33,10 +32,12 @@ import {
   formatRobotTimestamp,
   formatRobotType,
 } from "../utils/robot-formatters";
+
 import ActivityControls from "./activity-controls";
 import LocationMap from "./location-map";
-import RobotProfile from "./robot-profile";
 import RobotLogs from "./robot-logs";
+import RobotProfile from "./robot-profile";
+import useLiveRobot from "./use-live-robot";
 
 export default function RobotDetails(initial: RobotContext) {
   const tabId = useId();

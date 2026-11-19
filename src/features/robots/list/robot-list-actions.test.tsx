@@ -1,11 +1,12 @@
-import { pageMetadata } from "./test-fixtures";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 
 import { render } from "@/query/test-utils";
 import type { Robot } from "@/modules/robots/robot";
-import FleetDashboard from "./fleet-dashboard";
-import RobotActions from "./fleet-table/robot-actions";
+
+import { pageMetadata } from "../test-fixtures";
+import RobotList from "./robot-list";
+import RobotActions from "./robot-table/robot-actions";
 
 const robot: Robot = {
   id: "control",
@@ -85,7 +86,7 @@ test.each([202, 409, 500])(
       );
     });
     vi.stubGlobal("fetch", fetcher);
-    render(<FleetDashboard />);
+    render(<RobotList />);
 
     const menu = await openMenu();
     fireEvent.click(
@@ -129,7 +130,7 @@ test("pending action prevents overlapping mutations without replacing the table"
     );
   });
   vi.stubGlobal("fetch", fetcher);
-  render(<FleetDashboard />);
+  render(<RobotList />);
 
   const menu = await openMenu();
   const row = screen.getByTestId("robot-row-control");

@@ -1,8 +1,9 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 
-import FleetTable from "@/features/fleet-dashboard/fleet-table/fleet-table";
 import { robotPageSizes, type Robot } from "@/modules/robots/robot";
+
+import RobotTable from "./robot-table";
 
 const robot: Robot = {
   problemCode: null,
@@ -35,7 +36,7 @@ test.each(robotPageSizes)("loading renders %i decorative rows", (pageSize) => {
     onDelete: () => {},
   };
   const { rerender } = render(
-    <FleetTable {...props} total={0} state={{ status: "loading" }} />,
+    <RobotTable {...props} total={0} state={{ status: "loading" }} />,
   );
 
   const table = screen.getByRole("table", { name: "Robot fleet" });
@@ -43,7 +44,7 @@ test.each(robotPageSizes)("loading renders %i decorative rows", (pageSize) => {
   expect(within(table).getAllByRole("row")).toHaveLength(1);
 
   rerender(
-    <FleetTable
+    <RobotTable
       {...props}
       total={1}
       state={{ status: "success", robots: [robot] }}
@@ -57,7 +58,7 @@ test.each(robotPageSizes)("loading renders %i decorative rows", (pageSize) => {
 test("table renders the supplied server page without slicing or sorting", () => {
   const onPageChange = vi.fn();
   render(
-    <FleetTable
+    <RobotTable
       resultCount="23 robots · Newest first"
       state={{
         status: "success",
@@ -111,7 +112,7 @@ test("table renders the supplied server page without slicing or sorting", () => 
 
 test("robot names are plain text with one accessible navigation link per row", () => {
   render(
-    <FleetTable
+    <RobotTable
       total={1}
       pageSize={20}
       onPageSizeChange={() => {}}
@@ -151,7 +152,7 @@ test("robot names are plain text with one accessible navigation link per row", (
 
 test("columns put identity and operational context before catalog metadata", () => {
   render(
-    <FleetTable
+    <RobotTable
       total={1}
       pageSize={20}
       onPageSizeChange={() => {}}
@@ -191,7 +192,7 @@ test("columns put identity and operational context before catalog metadata", () 
 test("a search with no matches names the query, lists searchable fields and offers Clear search", () => {
   const onClearSearch = vi.fn();
   render(
-    <FleetTable
+    <RobotTable
       search="no-such-robot"
       fleetTotal={5}
       onClearFilters={() => {}}
@@ -227,7 +228,7 @@ test.each([
   "%s shows Needs attention and its concrete reason",
   (problemCode, label) => {
     render(
-      <FleetTable
+      <RobotTable
         state={{
           status: "success",
           robots: [

@@ -14,17 +14,18 @@ import {
   type RobotAction,
 } from "@/modules/robots/robot-actions";
 
-import ActionNotification from "./action-notification";
-import { isRequestTimeout } from "./api/robot-api";
-import useRobotMutations from "./hooks/use-robot-mutations";
-import FleetFilters from "./fleet-filters/fleet-filters";
-import FleetSummary from "./fleet-filters/fleet-summary";
-import AddRobotSplitButton from "./fleet-table/add-robot-split-button";
-import DeleteRobotDialog from "./fleet-table/delete-robot-dialog";
-import FleetTable from "./fleet-table/fleet-table";
-import useRobots from "./hooks/use-robots";
-import { generateRobotInput } from "./utils/generate-robot-input";
-import { formatResultCount } from "./utils/robot-formatters";
+import ActionNotification from "../action-notification";
+import { isRequestTimeout } from "../api/robot-api";
+import useRobotMutations from "../hooks/use-robot-mutations";
+import { formatResultCount } from "../utils/robot-formatters";
+
+import { generateRobotInput } from "./generate-robot-input";
+import FleetSummary from "./robot-list-filters/fleet-summary";
+import RobotListFilters from "./robot-list-filters/robot-list-filters";
+import AddRobotSplitButton from "./robot-table/add-robot-split-button";
+import DeleteRobotDialog from "./robot-table/delete-robot-dialog";
+import RobotTable from "./robot-table/robot-table";
+import useRobots from "./use-robots";
 
 type DeleteTarget =
   { kind: "robot"; id: string; name: string } | { kind: "all" };
@@ -33,7 +34,7 @@ function focusFleetSearch() {
   document.getElementById("fleet-search")?.focus();
 }
 
-export default function FleetDashboard() {
+export default function RobotList() {
   const [search, setSearch] = useState("");
 
   const addButtonRef = useRef<HTMLButtonElement>(null);
@@ -282,7 +283,7 @@ export default function FleetDashboard() {
           states.
         </Alert>
       )}
-      <FleetTable
+      <RobotTable
         resultCount={
           state.status === "success" && snapshot
             ? formatResultCount(total, snapshot.summary.all, filters)
@@ -297,7 +298,7 @@ export default function FleetDashboard() {
               updating={state.status === "loading"}
             />
             <Divider />
-            <FleetFilters
+            <RobotListFilters
               filters={filters}
               search={search}
               onSearchChange={setSearch}

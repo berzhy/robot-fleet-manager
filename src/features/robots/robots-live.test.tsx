@@ -1,13 +1,14 @@
-import { pageMetadata } from "./test-fixtures";
 import { act, fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 
 import { renderHook, render } from "@/query/test-utils";
 import type { Robot } from "@/modules/robots/robot";
-import FleetDashboard from "./fleet-dashboard";
-import RobotDetails from "./robot-details/robot-details";
-import useRobots from "./hooks/use-robots";
-import useLiveRobot from "./hooks/use-live-robot";
+
+import RobotDetails from "./details/robot-details";
+import useLiveRobot from "./details/use-live-robot";
+import RobotList from "./list/robot-list";
+import useRobots from "./list/use-robots";
+import { pageMetadata } from "./test-fixtures";
 
 const robot: Robot = {
   problemCode: null,
@@ -115,7 +116,7 @@ test("quiet polling preserves DOM and focus, retains failed data, and recovers",
     .mockRejectedValueOnce(new Error("offline"))
     .mockImplementation(() => Promise.resolve(page(48)));
   vi.stubGlobal("fetch", fetcher);
-  render(<FleetDashboard />);
+  render(<RobotList />);
   await tick();
 
   const row = within(screen.getByTestId("robot-row-live"));
@@ -152,7 +153,7 @@ test("an open action menu receives fleet updates while a hidden tab stops pollin
     .mockImplementationOnce(() => Promise.resolve(page()))
     .mockImplementation(() => Promise.resolve(page(49)));
   vi.stubGlobal("fetch", fetcher);
-  render(<FleetDashboard />);
+  render(<RobotList />);
   await tick();
 
   const row = within(screen.getByTestId("robot-row-live"));
@@ -193,7 +194,7 @@ test.each(["fleet", "detail"] as const)(
 
     render(
       surface === "fleet" ? (
-        <FleetDashboard />
+        <RobotList />
       ) : (
         <RobotDetails robot={robot} siteRobots={[]} verifiedAt={evaluatedAt} />
       ),
@@ -421,7 +422,7 @@ test("connection classification stays on the last fleet snapshot between refresh
     "fetch",
     vi.fn().mockImplementation(() => Promise.resolve(page())),
   );
-  render(<FleetDashboard />);
+  render(<RobotList />);
   await tick();
 
   const row = within(screen.getByTestId("robot-row-live"));
@@ -488,7 +489,7 @@ test("Escape closes a secondary select before More filters while polling continu
   vi.setSystemTime(new Date(robot.lastReceivedAt!));
   const fetcher = vi.fn().mockImplementation(() => Promise.resolve(page()));
   vi.stubGlobal("fetch", fetcher);
-  render(<FleetDashboard />);
+  render(<RobotList />);
   await tick();
 
   fireEvent.click(screen.getByRole("button", { name: /More filters/ }));
@@ -677,11 +678,11 @@ test("cached fleet remount preserves rows while refreshing and after refresh fai
     )
     .mockResolvedValue(page(40));
   vi.stubGlobal("fetch", fetcher);
-  const view = render(<FleetDashboard />);
+  const view = render(<RobotList />);
   await tick();
   expect(screen.getByTestId("robot-row-live")).toBeInTheDocument();
   view.rerender(<></>);
-  view.rerender(<FleetDashboard />);
+  view.rerender(<RobotList />);
   expect(screen.getByTestId("fleet-loading")).not.toHaveTextContent(
     "Loading robots",
   );
@@ -730,7 +731,7 @@ test.each(["fleet", "detail"] as const)(
 
     render(
       screenName === "fleet" ? (
-        <FleetDashboard />
+        <RobotList />
       ) : (
         <RobotDetails robot={robot} siteRobots={[]} verifiedAt={Date.now()} />
       ),
@@ -826,7 +827,7 @@ test.each(["fleet", "detail"] as const)(
     vi.stubGlobal("fetch", fetcher);
     render(
       screenName === "fleet" ? (
-        <FleetDashboard />
+        <RobotList />
       ) : (
         <RobotDetails robot={robot} siteRobots={[]} verifiedAt={Date.now()} />
       ),

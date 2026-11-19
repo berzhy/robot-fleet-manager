@@ -11,7 +11,7 @@ import type { RobotFilters } from "@/modules/robots/robot-filters";
 import { robotPageSize } from "@/modules/robots/robot";
 
 import { robotListOptions } from "../api/robot-queries";
-import type { RobotQueryState } from "../types/robot-query-state";
+import type { RobotQueryState } from "./robot-query-state";
 
 function lastRobotPage(total: number, size: number) {
   return Math.max(0, Math.ceil(total / size) - 1);

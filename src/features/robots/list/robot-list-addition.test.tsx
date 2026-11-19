@@ -1,4 +1,3 @@
-import { pageMetadata } from "./test-fixtures";
 import {
   act,
   fireEvent,
@@ -9,11 +8,11 @@ import {
 import { afterEach, expect, test, vi } from "vitest";
 
 import { render } from "@/query/test-utils";
-
 import type { Robot } from "@/modules/robots/robot";
 import { createRobotSchema } from "@/modules/robots/robot-validation";
 
-import FleetDashboard from "./fleet-dashboard";
+import { pageMetadata } from "../test-fixtures";
+import RobotList from "./robot-list";
 
 const robot: Robot = {
   problemCode: null,
@@ -60,7 +59,7 @@ test("both add buttons share pending state; empty creation reloads and restores 
     )
     .mockResolvedValueOnce(response([robot]));
   vi.stubGlobal("fetch", fetcher);
-  render(<FleetDashboard />);
+  render(<RobotList />);
 
   await screen.findByTestId("fleet-empty");
   const emptyAdd = screen.getByTestId("fleet-empty-add-robot");
@@ -124,7 +123,7 @@ test.each(["HTTP", "network"])(
       .mockResolvedValueOnce(Response.json(robot, { status: 201 }))
       .mockResolvedValue(response([robot]));
     vi.stubGlobal("fetch", fetcher);
-    render(<FleetDashboard />);
+    render(<RobotList />);
 
     await screen.findByTestId("robot-row-new");
     const add = screen.getByTestId("fleet-add-robot");
@@ -168,7 +167,7 @@ test("creation locks pagination and deletion, then refreshes the current later p
     )
     .mockResolvedValueOnce(response([robot], 12, 1));
   vi.stubGlobal("fetch", fetcher);
-  render(<FleetDashboard />);
+  render(<RobotList />);
 
   await screen.findByTestId("robot-row-new");
   await act(async () => {
@@ -221,7 +220,7 @@ test("successful creation followed by failed reload keeps success and restores f
       .mockResolvedValueOnce(Response.json(robot, { status: 201 }))
       .mockResolvedValueOnce(new Response(null, { status: 500 })),
   );
-  render(<FleetDashboard />);
+  render(<RobotList />);
 
   await screen.findByTestId("fleet-empty");
   await act(async () => {
@@ -255,7 +254,7 @@ test.each([10, 100])(
       )
       .mockResolvedValueOnce(response([robot], count + 1));
     vi.stubGlobal("fetch", fetcher);
-    render(<FleetDashboard />);
+    render(<RobotList />);
 
     await screen.findByTestId("robot-row-new");
     const more = screen.getByTestId("fleet-add-options");
@@ -322,7 +321,7 @@ test("batch failure preserves rows and resumes fleet updates", async () => {
     .mockResolvedValueOnce(new Response(null, { status: 500 }))
     .mockResolvedValue(response([robot]));
   vi.stubGlobal("fetch", fetcher);
-  render(<FleetDashboard />);
+  render(<RobotList />);
 
   await screen.findByTestId("robot-row-new");
   const more = screen.getByTestId("fleet-add-options");
@@ -364,7 +363,7 @@ test("addition outside the selected view retains filters and reports success wit
     .mockResolvedValueOnce(Response.json(robot, { status: 201 }))
     .mockImplementation(() => Promise.resolve(filtered()));
   vi.stubGlobal("fetch", fetcher);
-  render(<FleetDashboard />);
+  render(<RobotList />);
 
   await screen.findByTestId("robot-row-new");
   await act(async () => {
@@ -401,7 +400,7 @@ test("an uncertain add timeout unlocks controls, does not retry, and reconciles 
     .mockRejectedValueOnce(new DOMException("Timed out", "TimeoutError"))
     .mockResolvedValue(response([robot]));
   vi.stubGlobal("fetch", fetcher);
-  render(<FleetDashboard />);
+  render(<RobotList />);
   const add = await screen.findByTestId("fleet-empty-add-robot");
   await act(async () => {
     fireEvent.click(add);

@@ -1,4 +1,3 @@
-import { pageMetadata } from "./test-fixtures";
 import {
   act,
   fireEvent,
@@ -10,7 +9,9 @@ import { afterEach, expect, test, vi } from "vitest";
 
 import { render } from "@/query/test-utils";
 import type { Robot, RobotPage } from "@/modules/robots/robot";
-import FleetDashboard from "./fleet-dashboard";
+
+import { pageMetadata } from "../test-fixtures";
+import RobotList from "./robot-list";
 
 const robot: Robot = {
   problemCode: null,
@@ -49,7 +50,7 @@ test("renders the API response with accessible loading status", async () => {
     }),
   );
   vi.stubGlobal("fetch", fetcher);
-  render(<FleetDashboard />);
+  render(<RobotList />);
 
   const status = screen.getByRole("status", {
     name: "Robot list loading status",
@@ -77,7 +78,7 @@ test("handles HTTP failure, retry, and empty fleet without demo controls", async
       .mockResolvedValueOnce(new Response(null, { status: 500 }))
       .mockResolvedValueOnce(Response.json(page([]))),
   );
-  render(<FleetDashboard />);
+  render(<RobotList />);
 
   expect(await screen.findByTestId("fleet-load-error")).toHaveTextContent(
     "Unable to load robots",
@@ -105,7 +106,7 @@ test("requests pages and keeps the pager mounted while loading", async () => {
       }),
     );
   vi.stubGlobal("fetch", fetcher);
-  render(<FleetDashboard />);
+  render(<RobotList />);
 
   await screen.findByTestId("robot-row-0");
   const next = screen.getByTestId("fleet-next-page");
@@ -143,7 +144,7 @@ test("changing rows per page resets to the first page and requests the selected 
       }),
     );
   vi.stubGlobal("fetch", fetcher);
-  render(<FleetDashboard />);
+  render(<RobotList />);
 
   await screen.findByTestId("robot-row-one");
   fireEvent.click(screen.getByTestId("fleet-next-page"));
@@ -192,7 +193,7 @@ test("switching summary tiles preserves counts while refreshing and updates them
         }),
     );
   vi.stubGlobal("fetch", fetcher);
-  render(<FleetDashboard />);
+  render(<RobotList />);
 
   const tiles = screen.getByRole("group", { name: "Robot status filters" });
   const all = within(tiles).getByRole("button", {

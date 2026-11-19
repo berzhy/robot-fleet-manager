@@ -22,7 +22,7 @@ import {
 import {
   formatIntegrationType,
   formatRobotType,
-} from "../utils/robot-formatters";
+} from "../../utils/robot-formatters";
 
 const searchDebounceMs = 300;
 
@@ -34,7 +34,7 @@ function formatFilterValue(key: keyof RobotFilters, value: string) {
   return value;
 }
 
-export default function FleetFilters({
+export default function RobotListFilters({
   filters,
   search,
   onSearchChange,

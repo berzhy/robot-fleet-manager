@@ -8,10 +8,10 @@ import {
 import { expect, test, vi, afterEach } from "vitest";
 
 import { render } from "@/query/test-utils";
-
 import type { Robot } from "@/modules/robots/robot";
-import RobotDetails from "@/features/fleet-dashboard/robot-details/robot-details";
+
 import ActivityControls from "./activity-controls";
+import RobotDetails from "./robot-details";
 
 const robot: Robot = {
   problemCode: null,

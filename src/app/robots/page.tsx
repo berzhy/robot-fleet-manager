@@ -1,5 +1,5 @@
-import FleetDashboard from "@/features/fleet-dashboard/fleet-dashboard";
+import RobotList from "@/features/robots/list/robot-list";
 
-export default function FleetDashboardRoute() {
-  return <FleetDashboard />;
+export default function RobotsPage() {
+  return <RobotList />;
 }

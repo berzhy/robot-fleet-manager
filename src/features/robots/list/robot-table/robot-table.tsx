@@ -24,13 +24,13 @@ import {
 import { robotPageSizes, type Robot } from "@/modules/robots/robot";
 import type { RobotAction } from "@/modules/robots/robot-actions";
 
-import type { RobotQueryState } from "../types/robot-query-state";
-import FleetTableRow from "./fleet-table-row";
-import FleetTableSkeleton from "./fleet-table-skeleton";
+import type { RobotQueryState } from "../robot-query-state";
+import RobotTableRow from "./robot-table-row";
+import RobotTableSkeleton from "./robot-table-skeleton";
 import {
-  FleetTableEmptyState,
-  FleetTableErrorState,
-} from "./fleet-table-states";
+  RobotTableEmptyState,
+  RobotTableErrorState,
+} from "./robot-table-states";
 
 const columns = [
   { label: "Robot", width: "20%" },
@@ -45,7 +45,7 @@ const columns = [
 ] as const;
 const rowHeight = 70;
 
-export default function FleetTable({
+export default function RobotTable({
   toolbar,
   resultCount,
   search,
@@ -177,14 +177,14 @@ export default function FleetTable({
           </TableHead>
           <TableBody>
             {isLoading && (
-              <FleetTableSkeleton
+              <RobotTableSkeleton
                 columnCount={columns.length}
                 rowCount={pageSize}
                 rowHeight={rowHeight}
               />
             )}
             {items.map((robot) => (
-              <FleetTableRow
+              <RobotTableRow
                 key={robot.id}
                 robot={robot}
                 search={search}
@@ -244,9 +244,9 @@ export default function FleetTable({
               )}
             </Stack>
           ) : (
-            <FleetTableEmptyState onAdd={onAdd} adding={adding} />
+            <RobotTableEmptyState onAdd={onAdd} adding={adding} />
           ))}
-        {state.status === "error" && <FleetTableErrorState onRetry={onRetry} />}
+        {state.status === "error" && <RobotTableErrorState onRetry={onRetry} />}
       </TableContainer>
       <Box
         sx={{

@@ -1,14 +1,14 @@
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import Typography from "@mui/material/Typography";
+import { io } from "next/cache";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
-import { io } from "next/cache";
+import { robotKeys } from "@/features/robots/api/robot-queries";
+import RobotDetails from "@/features/robots/details/robot-details";
 import { createQueryClient } from "@/query/query-client";
-import { robotKeys } from "@/features/fleet-dashboard/api/robot-queries";
-import { getRobotContext } from "@/server/robots/robots";
 import { getDatabase } from "@/server/db/runtime-database";
-import RobotDetails from "@/features/fleet-dashboard/robot-details/robot-details";
+import { getRobotContext } from "@/server/robots/robots";
 
 export default function RobotPage({
   params,
