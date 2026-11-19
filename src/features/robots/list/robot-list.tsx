@@ -6,7 +6,7 @@ import Divider from "@mui/material/Divider";
 import Portal from "@mui/material/Portal";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import type { Robot } from "@/modules/robots/robot";
 import {
@@ -24,6 +24,7 @@ import { generateRobotInput } from "./generate-robot-input";
 import RobotListFilters from "./robot-list-filters/robot-list-filters";
 import RobotStatusFilters from "./robot-list-filters/robot-status-filters";
 import RobotTable from "./robot-table/robot-table";
+import useAddRobotFocus from "./use-add-robot-focus";
 import useRobotList from "./use-robot-list";
 
 type DeleteTarget =
@@ -33,8 +34,6 @@ export default function RobotList() {
   const [search, setSearch] = useState("");
 
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const addButtonRef = useRef<HTMLButtonElement>(null);
-  const addFocusRef = useRef<HTMLElement | null>(null);
   const inFlightRef = useRef(false);
 
   const { add, remove, command } = useRobotMutations();
@@ -68,22 +67,13 @@ export default function RobotList() {
     message: string;
   } | null>(null);
 
-  // Restore focus only once mutations, loading, and the delete dialog
-  // settle; a poll may have replaced the recorded trigger meanwhile.
-  useEffect(() => {
-    if (
-      inFlightRef.current ||
-      adding ||
-      confirmation ||
-      status === "loading" ||
-      !addFocusRef.current
-    ) {
-      return;
-    }
-    const target = addFocusRef.current;
-    addFocusRef.current = null;
-    (target.isConnected ? target : addButtonRef.current)?.focus();
-  }, [adding, confirmation, status]);
+  const { addButtonRef, rememberAddTrigger, preferAddButton } =
+    useAddRobotFocus({
+      inFlightRef,
+      adding,
+      deleteDialogActive: confirmation !== null,
+      status,
+    });
 
   async function addRobot(trigger: HTMLButtonElement, count: 1 | 10 | 100 = 1) {
     if (inFlightRef.current || confirmation || status === "loading") {
@@ -92,7 +82,7 @@ export default function RobotList() {
 
     inFlightRef.current = true;
     setNotification(null);
-    addFocusRef.current = trigger;
+    rememberAddTrigger(trigger);
 
     try {
       const robots = await add.mutateAsync(
@@ -106,7 +96,7 @@ export default function RobotList() {
             ? `“${robots[0].name}” added.`
             : `${robots.length} robots added.`,
       });
-      addFocusRef.current = addButtonRef.current;
+      preferAddButton();
     } catch (error) {
       setNotification({
         severity: "error",
