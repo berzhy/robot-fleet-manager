@@ -564,10 +564,12 @@ test("search combines with filters and tiles, clears through chips and recovers 
   await page.setViewportSize({ width: 650, height: 900 });
   await expect(search).toBeVisible();
   await page.getByTestId("fleet-more-filters").click();
+
+  const moreFilters = page.getByRole("dialog", { name: "More filters" });
   await expect(
-    page.getByRole("combobox", { name: "Integration", exact: true }),
+    moreFilters.getByRole("combobox", { name: "Integration", exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Close more filters" }).click();
+  await moreFilters.getByRole("button", { name: "Close more filters" }).click();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,

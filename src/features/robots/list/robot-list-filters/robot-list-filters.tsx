@@ -68,6 +68,7 @@ export default function RobotListFilters({
   const container = useRef<HTMLDivElement>(null);
   const moreButtonRef = useRef<HTMLButtonElement>(null);
   const popoverId = useId();
+  const popoverTitleId = `${popoverId}-title`;
 
   const applySearch = useEffectEvent((value: string) => {
     const normalized = value.trim();
@@ -322,7 +323,7 @@ export default function RobotListFilters({
             variant="text"
             endIcon={moreAnchor ? <ArrowDropUpIcon /> : <ArrowDropDownIcon />}
             aria-haspopup="dialog"
-            aria-expanded={moreAnchor ? true : undefined}
+            aria-expanded={moreAnchor !== null}
             aria-controls={moreAnchor ? popoverId : undefined}
             onClick={(event) => setMoreAnchor(event.currentTarget)}
             sx={{
@@ -335,15 +336,17 @@ export default function RobotListFilters({
               : "More filters"}
           </Button>
           <Popover
-            id={popoverId}
             open={moreAnchor !== null}
             anchorEl={moreAnchor}
             onClose={closeMoreFilters}
             anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
             transformOrigin={{ vertical: "top", horizontal: "left" }}
-            aria-labelledby={`${popoverId}-title`}
             slotProps={{
               paper: {
+                id: popoverId,
+                role: "dialog",
+                "aria-modal": true,
+                "aria-labelledby": popoverTitleId,
                 sx: { p: 2, width: 280, maxWidth: "calc(100vw - 32px)" },
               },
             }}
@@ -353,7 +356,7 @@ export default function RobotListFilters({
                 direction="row"
                 sx={{ alignItems: "center", justifyContent: "space-between" }}
               >
-                <Typography id={`${popoverId}-title`} variant="subtitle1">
+                <Typography id={popoverTitleId} variant="subtitle1">
                   More filters
                 </Typography>
                 <IconButton

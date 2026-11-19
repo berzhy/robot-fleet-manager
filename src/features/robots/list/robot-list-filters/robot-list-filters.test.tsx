@@ -230,7 +230,7 @@ test("chip removal and Clear filters cancel pending search", async () => {
   expect(screen.queryByText("Location: Munich")).not.toBeInTheDocument();
 });
 
-test("selecting in more filters closes it, applies immediately and counts active criteria", () => {
+test("more filters opens a named dialog and applies a selection immediately", () => {
   function Controls() {
     const [filters, setFilters] = useState<RobotFilters>({ view: "all" });
     const searchInputRef = useRef<HTMLInputElement>(null);
@@ -248,14 +248,25 @@ test("selecting in more filters closes it, applies immediately and counts active
   }
   render(<Controls />);
 
-  fireEvent.click(screen.getByRole("button", { name: "More filters" }));
+  const trigger = screen.getByRole("button", { name: "More filters" });
+  expect(trigger).toHaveAttribute("aria-haspopup", "dialog");
+  expect(trigger).toHaveAttribute("aria-expanded", "false");
 
-  fireEvent.mouseDown(screen.getByRole("combobox", { name: "Manufacturer" }));
+  fireEvent.click(trigger);
+
+  const dialog = screen.getByRole("dialog", { name: "More filters" });
+  expect(trigger).toHaveAttribute("aria-expanded", "true");
+  expect(trigger).toHaveAttribute("aria-controls", dialog.id);
+  expect(dialog).toHaveAttribute("aria-modal", "true");
+
+  fireEvent.mouseDown(
+    within(dialog).getByRole("combobox", { name: "Manufacturer" }),
+  );
   fireEvent.click(screen.getByRole("option", { name: "Maker" }));
 
   expect(screen.getByText("Manufacturer: Maker")).toBeVisible();
   expect(
-    screen.queryByRole("button", { name: "Close more filters" }),
+    screen.queryByRole("dialog", { name: "More filters" }),
   ).not.toBeInTheDocument();
   expect(
     screen.getByRole("button", { name: "More filters (1)" }),
