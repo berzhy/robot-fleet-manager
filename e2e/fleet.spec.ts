@@ -106,14 +106,16 @@ async function registeredRobots(request: APIRequestContext) {
 async function addRobot(page: Page): Promise<Robot> {
   const created = page.waitForResponse(
     (response) =>
-      new URL(response.url()).pathname === "/api/robots" &&
+      new URL(response.url()).pathname === "/api/robots/batch" &&
       response.request().method() === "POST",
   );
   await page.getByTestId("fleet-add-robot").click();
 
   const response = await created;
   expect(response.status()).toBe(201);
-  const robot = (await response.json()) as Robot;
+  const {
+    items: [robot],
+  } = (await response.json()) as { items: Robot[] };
 
   const row = page.getByTestId(`robot-row-${robot.id}`);
   await expect(row).toBeVisible();
@@ -169,7 +171,7 @@ test("keyboard explanations and Stop/Retry requests follow reported activity", a
 
   await page.getByRole("menuitem", { name: "Stop activity" }).click();
   await expect(page.getByTestId("fleet-notification")).toContainText(
-    "Stop requested",
+    "Stop activity requested for",
   );
   const stopped = (await (
     await request.get(`/api/robots/${robot.id}`)
@@ -194,7 +196,7 @@ test("keyboard explanations and Stop/Retry requests follow reported activity", a
   await row.getByTestId("robot-actions").click();
   await page.getByRole("menuitem", { name: "Retry activity" }).click();
   await expect(page.getByTestId("fleet-notification")).toContainText(
-    "Retry requested",
+    "Retry activity requested for",
   );
   expect(
     await (await request.get(`/api/robots/${robot.id}`)).json(),
@@ -220,6 +222,18 @@ async function seedFleet(request: APIRequestContext, count = 1) {
   });
   expect(response.status()).toBe(201);
   return ((await response.json()) as { items: Robot[] }).items;
+}
+
+// The URL change applies in a later render, and until then the previous view's
+// rows stay clickable; a menu opened on one closes when the new rows load.
+async function showView(page: Page, name: string) {
+  await page.getByRole("button", { name, exact: true }).click();
+  await expect(
+    page.getByRole("button", { name, exact: true, pressed: true }),
+  ).toBeVisible();
+  await expect(page.getByTestId("fleet-loading")).not.toHaveText(
+    "Loading robots",
+  );
 }
 
 async function chooseFilter(page: Page, label: string, value: string) {
@@ -419,12 +433,8 @@ test("live filtered recovery closes the action menu and restores focus", async (
   await sendProblem(request, robot, true);
   await page.goto("/robots");
 
-  await page
-    .getByRole("button", { name: "Needs attention", exact: true })
-    .click();
+  await showView(page, "Needs attention");
   const row = page.getByTestId(`robot-row-${robot.id}`);
-  await expect(row).toBeVisible();
-
   await row.getByTestId("robot-actions").click();
   await expect(page.getByRole("menu")).toBeVisible();
 
@@ -450,9 +460,7 @@ test("delete confirmation keeps the selected robot after it leaves the filtered 
   const [robot, otherRobot] = await seedFleet(request, 2);
   await sendProblem(request, robot, true);
   await page.goto("/robots");
-  await page
-    .getByRole("button", { name: "Needs attention", exact: true })
-    .click();
+  await showView(page, "Needs attention");
 
   const row = page.getByTestId(`robot-row-${robot.id}`);
   await row.getByRole("button", { name: `Actions for ${robot.name}` }).click();
@@ -656,4 +664,122 @@ test("search debounce closes an unmounted action menu and the new view keeps pol
   await expect
     .poll(() => requests, { timeout: 10000 })
     .toBeGreaterThan(previous);
+});
+
+test("the URL keeps the list view across shared links, reloads and Back", async ({
+  page,
+  request,
+}) => {
+  await seedFleet(request, 25);
+  const listResponses: number[] = [];
+  page.on("response", (response) => {
+    if (new URL(response.url()).pathname === "/api/robots") {
+      listResponses.push(response.status());
+    }
+  });
+
+  const view = "/robots?search=Filter&site=Munich&pageSize=20&page=1";
+  const summary = page.getByTestId("fleet-page-summary");
+  const search = page.getByRole("textbox", { name: "Search robots" });
+
+  async function expectSharedView() {
+    await expect(summary).toHaveText("21–25 of 25");
+    await expect(search).toHaveValue("Filter");
+    await expect(page.getByTestId("fleet-chip-search")).toHaveText(
+      "Search: Filter",
+    );
+    await expect(
+      page.getByText("Location: Munich", { exact: true }),
+    ).toBeVisible();
+  }
+
+  await page.goto(view);
+  await expectSharedView();
+
+  await page.reload();
+  await expectSharedView();
+
+  const row = page.getByTestId("fleet-table").locator("tbody tr").first();
+  await row.getByTestId("robot-link").click();
+  await expect(page.getByTestId("robot-details")).toBeVisible();
+  await page.goBack();
+  await expectSharedView();
+  expect(new URL(page.url()).search).toBe(new URL(view, page.url()).search);
+
+  // Invalid fields fall back one by one; the valid location filter stays.
+  await page.goto("/robots?view=bogus&site=Munich&page=-1&pageSize=7");
+  await expect(summary).toHaveText("1–10 of 25");
+  await expect(
+    page.getByText("Location: Munich", { exact: true }),
+  ).toBeVisible();
+  expect(listResponses).not.toContain(400);
+});
+
+test("the breadcrumb opens the full list with an empty search box", async ({
+  page,
+  request,
+}) => {
+  const [robot] = await seedFleet(request);
+  const search = page.getByRole("textbox", { name: "Search robots" });
+  const breadcrumb = page
+    .getByRole("navigation", { name: "Breadcrumb" })
+    .getByRole("link", { name: "Robots", exact: true });
+
+  // An applied search, then leave through a robot and come back via the breadcrumb.
+  await page.goto("/robots?search=Filter");
+  await page.getByRole("link", { name: robot.name }).click();
+  await breadcrumb.click();
+  await expect(search).toHaveValue("");
+
+  // Text typed but not yet applied is not applied after returning.
+  await search.fill("Zed");
+  await page.getByRole("link", { name: robot.name }).click();
+  await breadcrumb.click();
+  await expect(search).toHaveValue("");
+  await page.waitForTimeout(500);
+  await expect(page).toHaveURL("/robots");
+  await expect(page.getByRole("link", { name: robot.name })).toBeVisible();
+});
+
+test("a typed search survives opening a robot and going Back", async ({
+  page,
+  request,
+}) => {
+  const [robot] = await seedFleet(request);
+  const search = page.getByRole("textbox", { name: "Search robots" });
+
+  await page.goto("/robots");
+  await search.fill("Filter");
+  await expect(page).toHaveURL("/robots?search=Filter");
+
+  await page.getByRole("link", { name: robot.name }).click();
+  await expect(page.getByTestId("robot-details")).toBeVisible();
+  await page.goBack();
+
+  await expect(search).toHaveValue("Filter");
+  await expect(page.getByTestId("fleet-chip-search")).toHaveText(
+    "Search: Filter",
+  );
+});
+
+test("a search applied while a robot page loads does not cancel the navigation", async ({
+  page,
+  request,
+}) => {
+  const [robot] = await seedFleet(request);
+  await page.goto("/robots");
+  await expect(page.getByRole("link", { name: robot.name })).toBeVisible();
+
+  // Hold the details page longer than the search debounce.
+  await page.route(`**/robots/${robot.id}**`, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    await route.continue();
+  });
+
+  await page.getByRole("textbox", { name: "Search robots" }).fill("Filter");
+  await page.getByRole("link", { name: robot.name }).click();
+
+  await expect(page.getByTestId("robot-details")).toBeVisible({
+    timeout: 5_000,
+  });
 });

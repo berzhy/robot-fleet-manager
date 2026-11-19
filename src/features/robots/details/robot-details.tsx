@@ -11,21 +11,14 @@ import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
-import { useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 
-import {
-  actionLabels,
-  actionUnavailable,
-  type RobotAction,
-} from "@/modules/robots/robot-actions";
 import { robotProblemDetails } from "@/modules/robots/robot-problems";
-import type { RobotContext } from "@/modules/robots/robot";
 import { connectionStatus } from "@/modules/telemetry/freshness";
 
-import ActionNotification from "../action-notification";
-import { isRequestTimeout } from "../api/robot-api";
+import { useRobotWriteLock } from "../api/robot-mutations";
 import ConnectionStatus from "../connection-status/connection-status";
-import useRobotMutations from "../hooks/use-robot-mutations";
+import useRobotCommand from "../use-robot-command";
 import {
   formatActivity,
   formatBattery,
@@ -39,63 +32,22 @@ import RobotLogs from "./robot-logs";
 import RobotProfile from "./robot-profile";
 import useLiveRobot from "./use-live-robot";
 
-export default function RobotDetails(initial: RobotContext) {
+export default function RobotDetails({ robotId }: { robotId: string }) {
   const tabId = useId();
   const [tab, setTab] = useState<"overview" | "logs">("overview");
-  const { command } = useRobotMutations();
-  const pending = command.isPending;
-  const inFlight = useRef(false);
-  const [notice, setNotice] = useState<{
-    severity: "success" | "error";
-    message: string;
-  } | null>(null);
+  const requestAction = useRobotCommand();
+  const { isWritePending } = useRobotWriteLock();
   const {
     robot,
     siteRobots,
     missing,
-    interrupted,
-    refreshing,
-    unverified,
+    refreshFailed,
     verifiedAt: evaluatedAt,
-  } = useLiveRobot(initial, pending);
+  } = useLiveRobot(robotId);
 
   const connection = connectionStatus(robot.lastReceivedAt, evaluatedAt);
   const stale = connection === "Delayed" || connection === "Offline";
-  const waitingForVerification = unverified || refreshing || !evaluatedAt;
 
-  async function act(action: RobotAction) {
-    if (inFlight.current || waitingForVerification) {
-      return;
-    }
-
-    const reason = actionUnavailable(robot, action, Date.now());
-    if (reason) {
-      setNotice({
-        severity: "error",
-        message: `${reason}. Check the latest report before trying again.`,
-      });
-      return;
-    }
-
-    inFlight.current = true;
-    setNotice(null);
-    try {
-      await command.mutateAsync({ id: robot.id, action });
-      setNotice({
-        severity: "success",
-        message: `${actionLabels[action]} requested.`,
-      });
-    } catch (error) {
-      setNotice({
-        severity: "error",
-        message: isRequestTimeout(error)
-          ? "The command timed out. Its outcome is uncertain; checking reported activity."
-          : "Unable to request activity change. Please try again.",
-      });
-    } finally {
-      inFlight.current = false;
-    }
-  }
   return (
     <Stack
       data-testid="robot-details"
@@ -129,7 +81,7 @@ export default function RobotDetails(initial: RobotContext) {
         </Alert>
       ) : (
         <>
-          {interrupted && (
+          {refreshFailed && (
             <Alert data-testid="robot-refresh-warning" severity="warning">
               Live updates interrupted. Showing last-known data and connection
               states.
@@ -148,20 +100,16 @@ export default function RobotDetails(initial: RobotContext) {
                     data-testid="robot-connection"
                   >
                     <ConnectionStatus
-                      status={
-                        robot.lastReceivedAt === null
-                          ? "Unknown"
-                          : evaluatedAt
-                            ? connection
-                            : "Checking"
-                      }
-                      unverified={unverified}
+                      status={connection}
+                      unverified={refreshFailed}
                     />
                   </Typography>
                 </Box>
                 <Box sx={{ minWidth: 120 }}>
                   <Typography variant="body2" color="text.secondary">
-                    {stale || unverified ? "Last reported battery" : "Battery"}
+                    {stale || refreshFailed
+                      ? "Last reported battery"
+                      : "Battery"}
                   </Typography>
                   <Typography
                     component="p"
@@ -181,7 +129,7 @@ export default function RobotDetails(initial: RobotContext) {
                 </Box>
                 <Box>
                   <Typography variant="body2" color="text.secondary">
-                    {stale || unverified
+                    {stale || refreshFailed
                       ? "Last reported activity"
                       : "Activity"}
                   </Typography>
@@ -217,9 +165,9 @@ export default function RobotDetails(initial: RobotContext) {
               <ActivityControls
                 robot={robot}
                 evaluatedAt={evaluatedAt}
-                unverified={waitingForVerification}
-                pending={pending}
-                onAction={(action) => void act(action)}
+                unverified={refreshFailed}
+                pending={isWritePending}
+                onAction={(action) => requestAction(robot, action)}
               />
             </Stack>
           </Paper>
@@ -263,7 +211,7 @@ export default function RobotDetails(initial: RobotContext) {
                 robot={robot}
                 peers={siteRobots}
                 evaluatedAt={evaluatedAt}
-                unverified={unverified}
+                unverified={refreshFailed}
               />
               <RobotProfile robot={robot} />
             </Box>
@@ -275,12 +223,9 @@ export default function RobotDetails(initial: RobotContext) {
             hidden={tab !== "logs"}
             tabIndex={0}
           >
-            <RobotLogs robot={initial.robot} />
+            <RobotLogs robot={robot} />
           </Box>
         </>
-      )}
-      {notice && (
-        <ActionNotification {...notice} onClose={() => setNotice(null)} />
       )}
     </Stack>
   );

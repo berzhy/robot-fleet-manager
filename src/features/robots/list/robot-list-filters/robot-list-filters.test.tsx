@@ -1,41 +1,67 @@
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
+import { useRef, type ReactNode } from "react";
 import { afterEach, expect, test, vi } from "vitest";
-import { useRef, useState } from "react";
 
-import type { RobotFilters } from "@/modules/robots/robot-filters";
+import type { RobotPage } from "@/modules/robots/robot";
+import { render } from "@/query/test-utils";
+
+import { pageMetadata } from "../../test-fixtures";
 
 import RobotListFilters from "./robot-list-filters";
 import RobotStatusFilters from "./robot-status-filters";
 
-test("dropdowns, tiles and removable chips share one selection", () => {
-  function Controls() {
-    const [filters, setFilters] = useState<RobotFilters>({ view: "all" });
-    const searchInputRef = useRef<HTMLInputElement>(null);
+const filterPage: RobotPage = {
+  items: [],
+  total: 12,
+  page: 0,
+  pageSize: 10,
+  ...pageMetadata(12),
+  summary: { all: 12, offline: 3, "needs-attention": 5, "low-battery": 2 },
+  filterOptions: { sites: ["Munich", "Berlin"], manufacturers: ["Maker"] },
+};
 
-    return (
-      <>
-        <RobotStatusFilters
-          filters={filters}
-          onChange={setFilters}
-          summary={{
-            all: 12,
-            offline: 3,
-            "needs-attention": 5,
-            "low-battery": 2,
-          }}
-        />
-        <RobotListFilters
-          search=""
-          searchInputRef={searchInputRef}
-          onSearchChange={vi.fn()}
-          filters={filters}
-          onChange={setFilters}
-          options={{ sites: ["Munich", "Berlin"], manufacturers: ["Maker"] }}
-        />
-      </>
-    );
-  }
-  render(<Controls />);
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
+
+/** Renders filters for a URL view, with the robot API answering `filterPage`. */
+function renderFilters(ui: ReactNode, query = "") {
+  window.history.replaceState(null, "", `/robots${query}`);
+  const fetcher = vi.fn(() => Promise.resolve(Response.json(filterPage)));
+  vi.stubGlobal("fetch", fetcher);
+  render(ui);
+  return fetcher;
+}
+
+async function filterOptionsLoaded() {
+  await waitFor(() =>
+    expect(
+      screen.getByRole("combobox", { name: "Location" }),
+    ).not.toHaveAttribute("aria-disabled", "true"),
+  );
+}
+
+function ListFilters() {
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  return <RobotListFilters searchInputRef={searchInputRef} />;
+}
+
+test("dropdowns, tiles and removable chips share one selection", async () => {
+  renderFilters(
+    <>
+      <RobotStatusFilters />
+      <ListFilters />
+    </>,
+  );
+  await filterOptionsLoaded();
 
   fireEvent.mouseDown(screen.getByRole("combobox", { name: "Location" }));
   fireEvent.click(screen.getByRole("option", { name: "Munich" }));
@@ -74,39 +100,23 @@ test("dropdowns, tiles and removable chips share one selection", () => {
   expect(screen.queryByText("Connection: Offline")).not.toBeInTheDocument();
 });
 
-test("selecting the active tile does not restart its query", () => {
-  const change = vi.fn();
-  render(<RobotStatusFilters filters={{ view: "all" }} onChange={change} />);
+test("selecting the active tile does not restart its query", async () => {
+  const fetcher = renderFilters(<RobotStatusFilters />);
+  await waitFor(() => expect(fetcher).toHaveBeenCalledOnce());
 
   fireEvent.click(screen.getByRole("button", { name: "All robots" }));
 
-  expect(change).not.toHaveBeenCalled();
+  expect(window.location.search).toBe("");
+  expect(fetcher).toHaveBeenCalledOnce();
 
   fireEvent.click(screen.getByRole("button", { name: "Offline" }));
 
-  expect(change).toHaveBeenCalledWith({ view: "offline" });
+  expect(window.location.search).toBe("?view=offline");
 });
 
-test("type selection creates a removable chip without clearing other filters", () => {
-  function Controls() {
-    const [filters, setFilters] = useState<RobotFilters>({
-      view: "offline",
-      site: "Munich",
-    });
-    const searchInputRef = useRef<HTMLInputElement>(null);
-
-    return (
-      <RobotListFilters
-        search=""
-        searchInputRef={searchInputRef}
-        onSearchChange={vi.fn()}
-        filters={filters}
-        onChange={setFilters}
-        options={{ sites: ["Munich"], manufacturers: [] }}
-      />
-    );
-  }
-  render(<Controls />);
+test("type selection creates a removable chip without clearing other filters", async () => {
+  renderFilters(<ListFilters />, "?site=Munich&view=offline");
+  await filterOptionsLoaded();
 
   fireEvent.mouseDown(screen.getByRole("combobox", { name: "Type" }));
   fireEvent.click(screen.getByRole("option", { name: "Inspection robot" }));
@@ -125,31 +135,9 @@ test("type selection creates a removable chip without clearing other filters", (
   );
 });
 
-afterEach(() => vi.useRealTimers());
-
-function SearchControls() {
-  const [filters, setFilters] = useState<RobotFilters>({
-    view: "all",
-    site: "Munich",
-  });
-  const [search, setSearch] = useState("");
-  const searchInputRef = useRef<HTMLInputElement>(null);
-
-  return (
-    <RobotListFilters
-      filters={filters}
-      search={search}
-      searchInputRef={searchInputRef}
-      onSearchChange={setSearch}
-      onChange={setFilters}
-      options={{ sites: ["Munich"], manufacturers: [] }}
-    />
-  );
-}
-
 test("search waits for two characters and debounce, supports composition and clears immediately", async () => {
   vi.useFakeTimers();
-  render(<SearchControls />);
+  renderFilters(<ListFilters />, "?site=Munich");
   const field = screen.getByRole("textbox", { name: "Search robots" });
 
   fireEvent.change(field, { target: { value: "r" } });
@@ -197,7 +185,7 @@ test("search waits for two characters and debounce, supports composition and cle
 
 test("chip removal and Clear filters cancel pending search", async () => {
   vi.useFakeTimers();
-  render(<SearchControls />);
+  renderFilters(<ListFilters />, "?site=Munich");
   const field = screen.getByRole("textbox", { name: "Search robots" });
 
   fireEvent.change(field, { target: { value: "Robot" } });
@@ -230,23 +218,9 @@ test("chip removal and Clear filters cancel pending search", async () => {
   expect(screen.queryByText("Location: Munich")).not.toBeInTheDocument();
 });
 
-test("more filters opens a named dialog and applies a selection immediately", () => {
-  function Controls() {
-    const [filters, setFilters] = useState<RobotFilters>({ view: "all" });
-    const searchInputRef = useRef<HTMLInputElement>(null);
-
-    return (
-      <RobotListFilters
-        search=""
-        searchInputRef={searchInputRef}
-        onSearchChange={vi.fn()}
-        filters={filters}
-        onChange={setFilters}
-        options={{ sites: ["Munich"], manufacturers: ["Maker"] }}
-      />
-    );
-  }
-  render(<Controls />);
+test("more filters opens a named dialog and applies a selection immediately", async () => {
+  renderFilters(<ListFilters />);
+  await filterOptionsLoaded();
 
   const trigger = screen.getByRole("button", { name: "More filters" });
   expect(trigger).toHaveAttribute("aria-haspopup", "dialog");

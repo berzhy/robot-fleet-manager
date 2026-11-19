@@ -9,7 +9,10 @@ import { afterEach, expect, test, vi } from "vitest";
 
 import { render } from "@/query/test-utils";
 import type { Robot } from "@/modules/robots/robot";
-import { createRobotSchema } from "@/modules/robots/robot-validation";
+import {
+  createRobotBatchSchema,
+  createRobotSchema,
+} from "@/modules/robots/robot-validation";
 
 import { pageMetadata } from "../test-fixtures";
 import RobotList from "./robot-list";
@@ -40,6 +43,10 @@ function response(items: Robot[], total = items.length, page = 0) {
     pageSize: 10,
     ...pageMetadata(total),
   });
+}
+
+function createdResponse(robots: Robot[]) {
+  return Response.json({ items: robots }, { status: 201 });
 }
 
 afterEach(() => {
@@ -83,17 +90,18 @@ test("both add buttons share pending state; empty creation reloads and restores 
   const options = fetcher.mock.calls[1][1] as RequestInit;
   expect(fetcher).toHaveBeenNthCalledWith(
     2,
-    "/api/robots",
+    "/api/robots/batch",
     expect.objectContaining({
       method: "POST",
       headers: { "Content-Type": "application/json" },
     }),
   );
   expect(
-    createRobotSchema.safeParse(JSON.parse(options.body as string)).success,
+    createRobotBatchSchema.safeParse(JSON.parse(options.body as string))
+      .success,
   ).toBe(true);
 
-  act(() => complete(Response.json(robot, { status: 201 })));
+  act(() => complete(createdResponse([robot])));
   await screen.findByTestId("robot-row-new");
   expect(screen.getByTestId("fleet-notification")).toHaveRole("status");
   expect(screen.getByTestId("fleet-notification")).toHaveTextContent(
@@ -122,7 +130,7 @@ test.each(["HTTP", "network"])(
     }
     fetcher
       .mockResolvedValueOnce(response([robot]))
-      .mockResolvedValueOnce(Response.json(robot, { status: 201 }))
+      .mockResolvedValueOnce(createdResponse([robot]))
       .mockResolvedValue(response([robot]));
     vi.stubGlobal("fetch", fetcher);
     render(<RobotList />);
@@ -194,7 +202,7 @@ test("creation locks pagination and deletion, then refreshes the current later p
     within(screen.getByTestId("robot-row-new")).getByTestId("robot-actions"),
   ).toBeDisabled();
 
-  act(() => complete(Response.json(robot, { status: 201 })));
+  act(() => complete(createdResponse([robot])));
   await waitFor(() =>
     expect(screen.getByTestId("fleet-notification")).toHaveTextContent(
       "“New robot” added.",
@@ -219,7 +227,7 @@ test("successful creation followed by failed reload keeps success and restores f
     vi
       .fn()
       .mockResolvedValueOnce(response([]))
-      .mockResolvedValueOnce(Response.json(robot, { status: 201 }))
+      .mockResolvedValueOnce(createdResponse([robot]))
       .mockResolvedValueOnce(new Response(null, { status: 500 })),
   );
   render(<RobotList />);
@@ -362,7 +370,7 @@ test("addition outside the selected view retains filters and reports success wit
     .fn()
     .mockResolvedValueOnce(response([robot]))
     .mockResolvedValueOnce(filtered())
-    .mockResolvedValueOnce(Response.json(robot, { status: 201 }))
+    .mockResolvedValueOnce(createdResponse([robot]))
     .mockImplementation(() => Promise.resolve(filtered()));
   vi.stubGlobal("fetch", fetcher);
   render(<RobotList />);

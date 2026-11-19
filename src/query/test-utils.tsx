@@ -4,9 +4,15 @@ import {
   type RenderOptions,
   type RenderHookOptions,
 } from "@testing-library/react";
-import { notifyManager, QueryClientProvider } from "@tanstack/react-query";
+import {
+  notifyManager,
+  QueryClientProvider,
+  type QueryKey,
+} from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { afterEach } from "vitest";
+
+import { NotificationProvider } from "@/shared/notifications/notification-provider";
 
 import { createQueryClient } from "./query-client";
 
@@ -22,24 +28,41 @@ afterEach(() => {
   clients.length = 0;
 });
 
-function createWrapper() {
+/** Cache entries to start with, as a server-rendered page hydrates them. */
+type QueryData = [QueryKey, unknown][];
+
+function createWrapper(queryData: QueryData = []) {
   const client = createQueryClient();
   clients.push(client);
+  for (const [key, data] of queryData) {
+    client.setQueryData(key, data);
+  }
 
   return function Wrapper({ children }: { children: ReactNode }) {
     return (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+      <QueryClientProvider client={client}>
+        <NotificationProvider>{children}</NotificationProvider>
+      </QueryClientProvider>
     );
   };
 }
 
-export function render(ui: ReactNode, options?: RenderOptions) {
-  return rtlRender(ui, { wrapper: createWrapper(), ...options });
+export function render(
+  ui: ReactNode,
+  { queryData, ...options }: RenderOptions & { queryData?: QueryData } = {},
+) {
+  return rtlRender(ui, { wrapper: createWrapper(queryData), ...options });
 }
 
 export function renderHook<Result, Props>(
   callback: (props: Props) => Result,
-  options?: RenderHookOptions<Props>,
+  {
+    queryData,
+    ...options
+  }: RenderHookOptions<Props> & { queryData?: QueryData } = {},
 ) {
-  return rtlRenderHook(callback, { wrapper: createWrapper(), ...options });
+  return rtlRenderHook(callback, {
+    wrapper: createWrapper(queryData),
+    ...options,
+  });
 }

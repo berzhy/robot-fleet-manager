@@ -5,81 +5,39 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import type { RobotFilters } from "@/modules/robots/robot-filters";
-import { robotPageSize } from "@/modules/robots/robot";
+import { robotFilterSearchParams } from "@/modules/robots/robot-list-params";
 
 import { robotListOptions } from "../api/robot-queries";
 
-export type RobotListStatus = "loading" | "error" | "success";
+import useRobotListView, { setRobotListPage } from "./use-robot-list-view";
 
-function lastRobotPage(total: number, size: number) {
-  return Math.max(0, Math.ceil(total / size) - 1);
-}
+type RobotListStatus = "loading" | "error" | "success";
 
-export default function useRobotList(paused = false) {
+// No local state or effects, so any part of the list can call it; React Query
+// shares one request between them.
+export default function useRobotList() {
   const client = useQueryClient();
+  const view = useRobotListView();
 
-  const [request, setRequest] = useState<{
-    page: number;
-    pageSize: number;
-    filters: RobotFilters;
-  }>({
-    page: 0,
-    pageSize: robotPageSize,
-    filters: { view: "all" },
-  });
-
-  const options = useMemo(
-    () => robotListOptions(request.page, request.pageSize, request.filters),
-    [request],
-  );
-
-  const [announcement, setAnnouncement] = useState("");
-  const [announce, setAnnounce] = useState(false);
-
-  const query = useQuery({
-    ...options,
-    enabled: !paused,
-    refetchInterval: 5000,
-    refetchIntervalInBackground: false,
-    placeholderData: keepPreviousData,
-  });
+  const options = robotListOptions(view);
+  const query = useQuery({ ...options, placeholderData: keepPreviousData });
 
   const snapshot = query.data;
-  const total = snapshot?.total ?? 0;
-  const page = Math.min(request.page, lastRobotPage(total, request.pageSize));
-  const outOfRange = Boolean(
+  const page = Math.min(
+    view.page,
+    lastRobotPage(snapshot?.total ?? 0, view.pageSize),
+  );
+  const isOutOfRange = Boolean(
+    snapshot &&
     !query.isPlaceholderData &&
-    query.data &&
-    request.page > lastRobotPage(query.data.total, request.pageSize),
+    view.page > lastRobotPage(snapshot.total, view.pageSize),
   );
 
-  useEffect(() => {
-    if (paused) {
-      void client.cancelQueries({ queryKey: options.queryKey, exact: true });
-    }
-  }, [client, options.queryKey, paused]);
-
-  if (outOfRange) {
-    setRequest((previous) => ({ ...previous, page }));
-  } else if (query.data && !query.isPlaceholderData && announce) {
-    setAnnouncement(
-      `${query.data.total} ${query.data.total === 1 ? "robot" : "robots"} found.`,
-    );
-    setAnnounce(false);
-  }
-
-  function refresh() {
-    void client.invalidateQueries({
-      queryKey: options.queryKey,
-      exact: true,
-    });
-  }
-
   const status: RobotListStatus =
-    outOfRange || query.isPlaceholderData
+    isOutOfRange || query.isPlaceholderData
       ? "loading"
       : snapshot
         ? "success"
@@ -87,23 +45,63 @@ export default function useRobotList(paused = false) {
           ? "error"
           : "loading";
 
+  function refresh() {
+    void client.invalidateQueries({ queryKey: options.queryKey, exact: true });
+  }
+
   return {
     status,
-    announcement,
+    snapshot,
     page,
-    pageSize: request.pageSize,
-    setPage: (page: number) =>
-      setRequest((previous) => ({ ...previous, page })),
-    setPageSize: (pageSize: number) =>
-      setRequest((previous) => ({ ...previous, page: 0, pageSize })),
-    setFilters: (filters: RobotFilters) => {
-      setAnnounce(true);
-      setAnnouncement("");
-      setRequest((previous) => ({ ...previous, page: 0, filters }));
-    },
+    isOutOfRange,
     refresh,
     refreshFailed: query.isRefetchError,
-    snapshot,
-    filters: request.filters,
   };
+}
+
+type RobotList = ReturnType<typeof useRobotList>;
+
+// Correcting the URL, not just the shown page, keeps polling and shared links
+// on a page that exists.
+export function useRobotListPageCorrection({
+  page,
+  isOutOfRange,
+}: Pick<RobotList, "page" | "isOutOfRange">) {
+  useEffect(() => {
+    if (isOutOfRange) {
+      setRobotListPage(page);
+    }
+  }, [isOutOfRange, page]);
+}
+
+// Screen readers hear the count after a filter change, not after every poll.
+export function useRobotListAnnouncement(
+  filters: RobotFilters,
+  { status, snapshot }: Pick<RobotList, "status" | "snapshot">,
+) {
+  const filtersKey = robotFilterSearchParams(filters).toString();
+
+  const [announced, setAnnounced] = useState({
+    filtersKey,
+    text: "",
+    isWaiting: false,
+  });
+
+  if (announced.filtersKey !== filtersKey) {
+    // Clear at once, so the same count is announced again.
+    setAnnounced({ filtersKey, text: "", isWaiting: true });
+  } else if (announced.isWaiting && status === "success" && snapshot) {
+    const robots = snapshot.total === 1 ? "robot" : "robots";
+    setAnnounced({
+      filtersKey,
+      text: `${snapshot.total} ${robots} found.`,
+      isWaiting: false,
+    });
+  }
+
+  return announced.text;
+}
+
+function lastRobotPage(total: number, size: number) {
+  return Math.max(0, Math.ceil(total / size) - 1);
 }

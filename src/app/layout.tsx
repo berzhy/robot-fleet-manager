@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import QueryProvider from "@/query/query-provider";
+import { NotificationProvider } from "@/shared/notifications/notification-provider";
 
 import AppShell from "@/app-shell/app-shell";
 import AppThemeProvider from "@/theme/theme-provider";
@@ -35,7 +36,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <AppRouterCacheProvider options={{ enableCssLayer: true }}>
           <AppThemeProvider>
             <QueryProvider>
-              <AppShell>{children}</AppShell>
+              <NotificationProvider>
+                <AppShell>{children}</AppShell>
+              </NotificationProvider>
             </QueryProvider>
           </AppThemeProvider>
         </AppRouterCacheProvider>

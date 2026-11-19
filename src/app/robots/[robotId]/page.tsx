@@ -41,7 +41,7 @@ async function RobotContent({
 
   return (
     <HydrationBoundary state={dehydrate(client)}>
-      <RobotDetails {...snapshot} />
+      <RobotDetails robotId={robotId} />
     </HydrationBoundary>
   );
 }

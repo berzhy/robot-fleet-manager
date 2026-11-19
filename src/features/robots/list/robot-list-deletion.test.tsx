@@ -145,8 +145,8 @@ test("pending deletion blocks duplicate submission and dismissal; failure permit
   expect(fetcher).toHaveBeenCalledTimes(2);
 
   act(() => resolve(new Response(null, { status: 404 })));
-  const error = await screen.findByTestId("fleet-notification");
-  expect(error).toHaveRole("alert");
+  const error = await within(dialog).findByRole("alert");
+  expect(error).toHaveAttribute("data-testid", "fleet-notification");
   expect(error).toHaveTextContent(
     "Unable to delete “Atlas”. Please try again.",
   );
@@ -225,10 +225,18 @@ test("successful deletion stays successful when the table refresh fails", async 
   render(<RobotList />);
 
   const dialog = await openDelete();
+  const confirm = within(dialog).getByTestId("delete-robot-confirm");
   await act(async () => {
-    fireEvent.click(within(dialog).getByTestId("delete-robot-confirm"));
+    fireEvent.click(confirm);
     await Promise.resolve();
   });
+
+  // The deletion is accepted, but the dialog stays pending until the refresh settles.
+  await waitFor(() => expect(finishRefresh).toBeDefined());
+  expect(confirm).toBeDisabled();
+  expect(screen.queryByTestId("fleet-notification")).not.toBeInTheDocument();
+
+  act(() => finishRefresh(new Response(null, { status: 500 })));
   await waitFor(() =>
     expect(screen.getByTestId("fleet-notification")).toHaveTextContent(
       "“Atlas” deleted.",
@@ -237,16 +245,11 @@ test("successful deletion stays successful when the table refresh fails", async 
   await waitFor(() =>
     expect(screen.queryByTestId("delete-robot-dialog")).not.toBeInTheDocument(),
   );
-  expect(screen.getByTestId("robot-row-one")).toBeInTheDocument();
-  expect(screen.getByRole("textbox", { name: "Search robots" })).toHaveFocus();
-
-  act(() => finishRefresh(new Response(null, { status: 500 })));
-  expect(await screen.findByTestId("fleet-refresh-warning")).toHaveTextContent(
+  expect(screen.getByTestId("fleet-refresh-warning")).toHaveTextContent(
     "Live updates interrupted",
   );
-  expect(screen.getByTestId("fleet-notification")).toHaveTextContent(
-    "“Atlas” deleted.",
-  );
+  expect(screen.getByTestId("robot-row-one")).toBeInTheDocument();
+  expect(screen.getByRole("textbox", { name: "Search robots" })).toHaveFocus();
 });
 
 test("an already removed robot closes confirmation and refreshes the fleet", async () => {
@@ -352,6 +355,33 @@ async function openDeleteAll() {
   return screen.findByRole("dialog", { name: "Delete all robots?" });
 }
 
+test("opening the delete dialog clears an earlier notice", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn((url: string, init?: RequestInit) =>
+      Promise.resolve(
+        url === "/api/robots/batch" && init?.method === "POST"
+          ? Response.json({ items: [robot] }, { status: 201 })
+          : response([robot]),
+      ),
+    ),
+  );
+  render(<RobotList />);
+
+  await screen.findByTestId("robot-row-one");
+  await act(async () => {
+    fireEvent.click(screen.getByTestId("fleet-add-robot"));
+    await Promise.resolve();
+  });
+  expect(await screen.findByTestId("fleet-notification")).toHaveTextContent(
+    "“Atlas” added.",
+  );
+
+  await openDelete();
+
+  expect(screen.queryByTestId("fleet-notification")).not.toBeInTheDocument();
+});
+
 test("bulk deletion explains fleet-wide scope and cancellation makes no DELETE request", async () => {
   const fetcher = vi
     .fn()
@@ -421,7 +451,7 @@ test("bulk deletion blocks duplicate clicks and dismissal, supports retry and re
   expect(fetcher).toHaveBeenCalledTimes(2);
 
   act(() => resolve(new Response(null, { status: 500 })));
-  expect(await screen.findByRole("alert")).toHaveTextContent(
+  expect(await within(dialog).findByRole("alert")).toHaveTextContent(
     "Unable to delete all robots. Please try again.",
   );
   expect(screen.getByTestId("robot-row-one")).toBeInTheDocument();
@@ -431,6 +461,8 @@ test("bulk deletion blocks duplicate clicks and dismissal, supports retry and re
     fireEvent.click(confirm);
     await Promise.resolve();
   });
+  // The retry starts without the previous attempt's error.
+  expect(within(dialog).queryByRole("alert")).not.toBeInTheDocument();
   await screen.findByTestId("fleet-empty");
   await waitFor(() => expect(dialog).not.toBeInTheDocument());
   expect(screen.getByTestId("fleet-notification")).toHaveTextContent(
@@ -480,4 +512,54 @@ test("an uncertain delete timeout refreshes the fleet with the dialog still open
       (call: unknown[]) => (call[1] as RequestInit)?.method === "DELETE",
     ),
   ).toHaveLength(1);
+});
+
+test("deleting all robots from a later page never shows cached rows as current", async () => {
+  const cached = { ...robot, id: "cached", name: "Bishop" };
+  let deleted = false;
+  let releaseFirstPage: ((response: Response) => void) | undefined;
+  vi.stubGlobal(
+    "fetch",
+    vi.fn((url: string, init?: RequestInit) => {
+      if (init?.method === "DELETE") {
+        deleted = true;
+        return Promise.resolve(new Response(null, { status: 204 }));
+      }
+      const page = new URL(url, "http://localhost").searchParams.get("page");
+      if (!deleted) {
+        return Promise.resolve(
+          page === "1" ? response([robot], 11, 1) : response([cached], 11),
+        );
+      }
+      if (page === "1") {
+        return Promise.resolve(response([], 0, 1));
+      }
+      // Hold the corrected first page so the cached rows would be visible.
+      return new Promise<Response>((resolve) => (releaseFirstPage = resolve));
+    }),
+  );
+  render(<RobotList />);
+
+  await screen.findByTestId("robot-row-cached");
+  await act(async () => {
+    fireEvent.click(screen.getByTestId("fleet-next-page"));
+    await Promise.resolve();
+  });
+  await screen.findByTestId("robot-row-one");
+
+  const dialog = await openDeleteAll();
+  await act(async () => {
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Delete all robots" }),
+    );
+    await Promise.resolve();
+  });
+  await waitFor(() => expect(releaseFirstPage).toBeDefined());
+  expect(screen.queryByTestId("robot-row-cached")).not.toBeInTheDocument();
+
+  act(() => releaseFirstPage!(response([])));
+  expect(await screen.findByTestId("fleet-empty")).toBeInTheDocument();
+  expect(screen.getByTestId("fleet-notification")).toHaveTextContent(
+    "All robots deleted.",
+  );
 });

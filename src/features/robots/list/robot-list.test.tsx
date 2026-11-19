@@ -5,6 +5,7 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
+import { Activity } from "react";
 import { afterEach, expect, test, vi } from "vitest";
 
 import { render } from "@/query/test-utils";
@@ -257,4 +258,139 @@ test("switching summary tiles preserves counts while refreshing and updates them
   await waitFor(() => expect(tiles).toHaveAttribute("aria-busy", "false"));
   expect(all).toHaveTextContent("11");
   expect(offline).toHaveTextContent("3");
+});
+
+test("a shared search link fills the search box and keeps its search", async () => {
+  window.history.replaceState(null, "", "/robots?search=Atlas&view=offline");
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() => Promise.resolve(Response.json(page([robot])))),
+  );
+  render(<RobotList />);
+
+  await screen.findByTestId("robot-row-one");
+  expect(screen.getByRole("textbox", { name: "Search robots" })).toHaveValue(
+    "Atlas",
+  );
+
+  // Longer than the search debounce: the draft must not clear the URL's search.
+  await act(() => new Promise((resolve) => setTimeout(resolve, 400)));
+
+  expect(window.location.search).toBe("?search=Atlas&view=offline");
+  expect(screen.getByText("Search: Atlas")).toBeVisible();
+});
+
+async function waitPastSearchDebounce() {
+  await act(() => new Promise((resolve) => setTimeout(resolve, 400)));
+}
+
+test("the search box follows a search change from outside", async () => {
+  window.history.replaceState(null, "", "/robots?search=Atlas");
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() => Promise.resolve(Response.json(page([robot])))),
+  );
+  render(<RobotList />);
+  const box = screen.getByRole("textbox", { name: "Search robots" });
+  expect(box).toHaveValue("Atlas");
+
+  // A link to the plain list, as the breadcrumb does.
+  act(() => window.history.replaceState(null, "", "/robots"));
+
+  expect(box).toHaveValue("");
+  await waitPastSearchDebounce();
+  expect(window.location.search).toBe("");
+});
+
+test("unsent search text is dropped while the list is hidden", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() => Promise.resolve(Response.json(page([robot])))),
+  );
+  const { rerender } = render(
+    <Activity mode="visible">
+      <RobotList />
+    </Activity>,
+  );
+  fireEvent.change(screen.getByRole("textbox", { name: "Search robots" }), {
+    target: { value: "Zed" },
+  });
+
+  // Leave before the debounce applies it, then come back.
+  rerender(
+    <Activity mode="hidden">
+      <RobotList />
+    </Activity>,
+  );
+  rerender(
+    <Activity mode="visible">
+      <RobotList />
+    </Activity>,
+  );
+  await waitPastSearchDebounce();
+
+  expect(screen.getByRole("textbox", { name: "Search robots" })).toHaveValue(
+    "",
+  );
+  expect(window.location.search).toBe("");
+});
+
+test("applying a search keeps the typed text, including a trailing space", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() => Promise.resolve(Response.json(page([robot])))),
+  );
+  render(<RobotList />);
+  const box = screen.getByRole("textbox", { name: "Search robots" });
+
+  fireEvent.change(box, { target: { value: "Robot " } });
+  await waitPastSearchDebounce();
+
+  expect(window.location.search).toBe("?search=Robot");
+  expect(box).toHaveValue("Robot ");
+});
+
+test("typing while an applied search reaches the router is kept", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() => Promise.resolve(Response.json(page([robot])))),
+  );
+  render(<RobotList />);
+  const box = screen.getByRole("textbox", { name: "Search robots" });
+
+  // Hold the router's URL-change signal, as Next delivers it in a later transition.
+  const dispatch = window.dispatchEvent.bind(window);
+  const held: Event[] = [];
+  const spy = vi
+    .spyOn(window, "dispatchEvent")
+    .mockImplementation((event) =>
+      event.type === "test:url-change"
+        ? (held.push(event), true)
+        : dispatch(event),
+    );
+
+  fireEvent.change(box, { target: { value: "Atl" } });
+  await waitPastSearchDebounce();
+  expect(window.location.search).toBe("?search=Atl");
+
+  fireEvent.change(box, { target: { value: "Atla" } });
+  spy.mockRestore();
+  act(() => held.forEach((event) => window.dispatchEvent(event)));
+
+  expect(box).toHaveValue("Atla");
+});
+
+test("an outside change clears a draft too short to apply", () => {
+  window.history.replaceState(null, "", "/robots?search=Atlas");
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() => Promise.resolve(Response.json(page([robot])))),
+  );
+  render(<RobotList />);
+  const box = screen.getByRole("textbox", { name: "Search robots" });
+
+  fireEvent.change(box, { target: { value: "A" } });
+  act(() => window.history.replaceState(null, "", "/robots"));
+
+  expect(box).toHaveValue("");
 });

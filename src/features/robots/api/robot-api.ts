@@ -1,12 +1,12 @@
-import type { RobotFilters } from "@/modules/robots/robot-filters";
+import { z } from "zod";
+
 import type { RobotAction } from "@/modules/robots/robot-actions";
-import type { CreateRobotInput } from "@/modules/robots/robot-validation";
 import {
-  robotPageSize,
-  type Robot,
-  type RobotPage,
-  type RobotContext,
-} from "@/modules/robots/robot";
+  robotFilterSearchParams,
+  type RobotListParams,
+} from "@/modules/robots/robot-list-params";
+import type { CreateRobotInput } from "@/modules/robots/robot-validation";
+import type { Robot, RobotContext, RobotPage } from "@/modules/robots/robot";
 
 const requestTimeoutMs = 5_000;
 
@@ -15,6 +15,50 @@ function requestSignal(signal?: AbortSignal) {
   return signal ? AbortSignal.any([signal, timeout]) : timeout;
 }
 
+/** A failed API response, with the server's error code and message when it sent them. */
+export class ApiError extends Error {
+  constructor(
+    readonly status: number,
+    readonly code: string | undefined,
+    message: string,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
+// Our routes answer { error: { code, message } }, but a missing route or a proxy
+// can answer with anything, so the body is checked rather than trusted.
+const errorBodySchema = z.object({
+  error: z.object({
+    code: z.string().optional(),
+    message: z.string().optional(),
+  }),
+});
+
+async function apiError(response: Response, fallbackMessage: string) {
+  const body: unknown = await response.json().catch((error: unknown) => {
+    // An empty or non-JSON body; a timeout while reading still rejects.
+    if (error instanceof SyntaxError) {
+      return null;
+    }
+    throw error;
+  });
+  const { error } = errorBodySchema.safeParse(body).data ?? {};
+
+  return new ApiError(
+    response.status,
+    error?.code,
+    error?.message ?? fallbackMessage,
+  );
+}
+
+/** The server reports that the robot does not exist (any more). */
+export function isRobotNotFound(error: unknown) {
+  return error instanceof ApiError && error.code === "NOT_FOUND";
+}
+
+/** A timeout aborts the request in the browser, so there is no response to read. */
 export function isRequestTimeout(error: unknown) {
   return (
     (error instanceof Error || error instanceof DOMException) &&
@@ -23,20 +67,14 @@ export function isRequestTimeout(error: unknown) {
 }
 
 export async function getRobots(
-  page: number,
-  pageSize = robotPageSize,
+  { page, pageSize, filters }: RobotListParams,
   signal?: AbortSignal,
-  filters: RobotFilters = { view: "all" },
 ): Promise<RobotPage> {
   const params = new URLSearchParams({
     page: String(page),
     pageSize: String(pageSize),
+    ...Object.fromEntries(robotFilterSearchParams(filters)),
   });
-  for (const [key, value] of Object.entries(filters)) {
-    if (value !== undefined && !(key === "view" && value === "all")) {
-      params.set(key, value);
-    }
-  }
 
   const response = await fetch(`/api/robots?${params}`, {
     signal: requestSignal(signal),
@@ -44,7 +82,7 @@ export async function getRobots(
   });
 
   if (!response.ok) {
-    throw new Error("Unable to load robots.");
+    throw await apiError(response, "Unable to load robots.");
   }
   return response.json() as Promise<RobotPage>;
 }
@@ -58,42 +96,12 @@ export async function deleteRobot(id: string) {
     return "deleted";
   }
 
-  if (response.status === 404) {
-    const body: unknown = await response.json().catch((error: unknown) => {
-      if (error instanceof SyntaxError) {
-        return null;
-      }
-      throw error;
-    });
-    const error =
-      typeof body === "object" && body !== null && "error" in body
-        ? body.error
-        : null;
-
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "code" in error &&
-      error.code === "NOT_FOUND"
-    ) {
-      return "already-removed";
-    }
+  const error = await apiError(response, "Unable to delete robot.");
+  // Checked by code, not status: a 404 from a missing route is a failure, not a removal.
+  if (isRobotNotFound(error)) {
+    return "already-removed";
   }
-
-  throw new Error("Unable to delete robot.");
-}
-
-export async function createRobot(input: CreateRobotInput): Promise<Robot> {
-  const response = await fetch("/api/robots", {
-    method: "POST",
-    signal: requestSignal(),
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
-  if (response.status !== 201) {
-    throw new Error("Unable to add robot.");
-  }
-  return response.json() as Promise<Robot>;
+  throw error;
 }
 
 export async function createRobots(
@@ -106,7 +114,7 @@ export async function createRobots(
     body: JSON.stringify({ robots }),
   });
   if (response.status !== 201) {
-    throw new Error("Unable to add robots.");
+    throw await apiError(response, "Unable to add robots.");
   }
   const result = (await response.json()) as { items: Robot[] };
   return result.items;
@@ -126,23 +134,20 @@ export async function sendRobotAction(
     },
   );
   if (response.status !== 202) {
-    throw new Error("Unable to request robot action.");
+    throw await apiError(response, "Unable to request robot action.");
   }
 }
 
 export async function getRobotContext(
   id: string,
   signal?: AbortSignal,
-): Promise<RobotContext | null> {
+): Promise<RobotContext> {
   const response = await fetch(
     `/api/robots/${encodeURIComponent(id)}/context`,
     { cache: "no-store", signal: requestSignal(signal) },
   );
-  if (response.status === 404) {
-    return null;
-  }
   if (!response.ok) {
-    throw new Error("Unable to refresh robot context.");
+    throw await apiError(response, "Unable to refresh robot context.");
   }
   return response.json() as Promise<RobotContext>;
 }
@@ -153,6 +158,6 @@ export async function deleteAllRobots(): Promise<void> {
     signal: requestSignal(),
   });
   if (response.status !== 204) {
-    throw new Error("Unable to delete all robots.");
+    throw await apiError(response, "Unable to delete all robots.");
   }
 }

@@ -3,19 +3,18 @@ import FiberManualRecordOutlinedIcon from "@mui/icons-material/FiberManualRecord
 import Stack from "@mui/material/Stack";
 import type { connectionStatus } from "@/modules/telemetry/freshness";
 
-type Status = ReturnType<typeof connectionStatus> | "Checking";
+type Status = ReturnType<typeof connectionStatus>;
 const colors = {
   Online: "success.main",
   Delayed: "warning.dark",
   Offline: "text.secondary",
   Unknown: "text.secondary",
-  Checking: "text.secondary",
 } as const;
 
 /** Decorative dot; visible connection text must accompany it somewhere in the view. */
 export function ConnectionIndicator({ status }: { status: Status }) {
   const Icon =
-    status === "Unknown" || status === "Checking"
+    status === "Unknown"
       ? FiberManualRecordOutlinedIcon
       : FiberManualRecordIcon;
   return (

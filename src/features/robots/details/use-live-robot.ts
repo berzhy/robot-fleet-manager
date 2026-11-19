@@ -1,61 +1,23 @@
 "use client";
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
-import type { RobotContext } from "@/modules/robots/robot";
-
+import { isRobotNotFound } from "../api/robot-api";
 import { robotContextOptions } from "../api/robot-queries";
 
-export default function useLiveRobot(initial: RobotContext, paused = false) {
-  const client = useQueryClient();
-
-  const options = useMemo(
-    () => robotContextOptions(initial.robot.id),
-    [initial.robot.id],
-  );
-  const count = () =>
-    client.getQueryState(options.queryKey)?.dataUpdateCount ?? 0;
-
-  const [refreshAfter, setRefreshAfter] = useState<number | null>(null);
-  const [wasPaused, setWasPaused] = useState(paused);
-
-  // Commands pause polling via `paused`; when it releases, stay in the
-  // refreshing state until a fresh response reconciles reported data.
-  if (paused !== wasPaused) {
-    setWasPaused(paused);
-
-    if (!paused) {
-      setRefreshAfter(count());
-    }
-  }
-
+export default function useLiveRobot(robotId: string) {
   const query = useQuery({
-    ...options,
-    initialData: initial,
-    enabled: (q) => !paused && q.state.data !== null,
-    refetchInterval: 5000,
-    refetchIntervalInBackground: false,
-    notifyOnChangeProps: "all",
+    ...robotContextOptions(robotId),
+    // A deleted robot stays deleted: no more polls or refetches on focus.
+    enabled: (contextQuery) => !isRobotNotFound(contextQuery.state.error),
   });
 
-  useEffect(() => {
-    if (paused) {
-      void client.cancelQueries({ queryKey: options.queryKey, exact: true });
-    }
-  }, [client, options.queryKey, paused]);
+  // The page prefetches the context on the server, so the cache already holds it.
+  if (!query.data) {
+    throw new Error(`Robot ${robotId} rendered without a prefetched context.`);
+  }
 
-  const missing = query.data === null;
-
-  return {
-    ...(query.data ?? initial),
-    missing,
-    interrupted: query.isError,
-    refreshing:
-      refreshAfter !== null &&
-      count() <= refreshAfter &&
-      !query.isError &&
-      !missing,
-    unverified: query.isError,
-  };
+  // A failed refetch keeps the last data, so a deleted robot still shows its name.
+  const missing = isRobotNotFound(query.error);
+  return { ...query.data, missing, refreshFailed: query.isError && !missing };
 }

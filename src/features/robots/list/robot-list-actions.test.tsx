@@ -51,7 +51,9 @@ test.each([202, 409, 500])(
 
     const notice = await screen.findByTestId("fleet-notification");
     expect(notice).toHaveTextContent(
-      status === 202 ? "Stop requested" : "Unable to request action",
+      status === 202
+        ? "Stop activity requested for"
+        : "Unable to request stop activity for",
     );
     expect(fetcher).toHaveBeenCalledWith(
       "/api/robots/control/actions",
@@ -108,6 +110,6 @@ test("pending action prevents overlapping mutations without replacing the table"
 
   finish(new Response(null, { status: 202 }));
   expect(await screen.findByTestId("fleet-notification")).toHaveTextContent(
-    "Stop requested",
+    "Stop activity requested for",
   );
 });

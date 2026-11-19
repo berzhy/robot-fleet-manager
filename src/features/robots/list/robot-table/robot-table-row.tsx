@@ -10,7 +10,6 @@ import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import type { FocusEventHandler } from "react";
 
-import type { RobotAction } from "@/modules/robots/robot-actions";
 import { robotProblemDetails } from "@/modules/robots/robot-problems";
 import type { Robot } from "@/modules/robots/robot";
 import { connectionStatus } from "@/modules/telemetry/freshness";
@@ -35,18 +34,14 @@ export default function RobotTableRow({
   onFocusCapture,
   robot,
   rowHeight,
-  onAction,
   onDelete,
-  adding,
 }: {
   search?: string;
-  adding: boolean;
   evaluatedAt: number;
   unverified: boolean;
   onFocusCapture: FocusEventHandler<HTMLTableRowElement>;
   robot: Robot;
   rowHeight: number;
-  onAction: (robot: Robot, action: RobotAction) => void;
   onDelete: (robot: Robot, trigger: HTMLButtonElement) => void;
 }) {
   const connection = connectionStatus(robot.lastReceivedAt, evaluatedAt);
@@ -186,12 +181,10 @@ export default function RobotTableRow({
       </TableCell>
       <TableCell align="right" sx={{ position: "relative" }}>
         <RobotTableRowMenu
-          disabled={adding}
           robot={robot}
           evaluatedAt={evaluatedAt}
           unverified={unverified}
           onDelete={onDelete}
-          onAction={onAction}
         />
       </TableCell>
     </TableRow>

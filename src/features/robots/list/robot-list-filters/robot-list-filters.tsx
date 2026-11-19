@@ -1,3 +1,5 @@
+"use client";
+
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowDropUpIcon from "@mui/icons-material/ArrowDropUp";
 import CloseIcon from "@mui/icons-material/Close";
@@ -15,21 +17,25 @@ import {
   useEffect,
   useEffectEvent,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type RefObject,
 } from "react";
 
 import { integrationTypes, robotTypes } from "@/modules/robots/robot";
-import {
-  type FilterOptions,
-  type RobotFilters,
-} from "@/modules/robots/robot-filters";
+import type { RobotFilters } from "@/modules/robots/robot-filters";
+import { appliedSearch } from "@/modules/robots/robot-list-params";
 
 import {
   formatIntegrationType,
   formatRobotType,
 } from "../../utils/robot-formatters";
+import useRobotList from "../use-robot-list";
+import useRobotListView, {
+  clearRobotListFilters,
+  setRobotListFilters,
+} from "../use-robot-list-view";
 
 const searchDebounceMs = 300;
 
@@ -44,20 +50,40 @@ function formatFilterValue(key: keyof RobotFilters, value: string) {
 }
 
 export default function RobotListFilters({
-  filters,
-  search,
   searchInputRef,
-  onSearchChange,
-  options,
-  onChange,
 }: {
-  filters: RobotFilters;
-  search: string;
   searchInputRef: RefObject<HTMLInputElement | null>;
-  onSearchChange: (value: string) => void;
-  options?: FilterOptions;
-  onChange: (filters: RobotFilters) => void;
 }) {
+  const { filters } = useRobotListView();
+  const options = useRobotList().snapshot?.filterOptions;
+
+  // The box holds what the user types; the URL holds the applied search.
+  const [search, setSearch] = useState(filters.search ?? "");
+  const [urlSearch, setUrlSearch] = useState(filters.search);
+  const [ownSearch, setOwnSearch] = useState(filters.search);
+
+  // Next re-renders URL readers a moment after replaceState, so the box may be
+  // ahead of the URL. Only a URL search this box did not apply (a link, Back)
+  // replaces what the user typed.
+  if (filters.search !== urlSearch) {
+    setUrlSearch(filters.search);
+    if (filters.search !== ownSearch) {
+      setOwnSearch(filters.search);
+      setSearch(filters.search ?? "");
+    }
+  }
+
+  // Next keeps this page alive while hidden. Drop unsent text so it is not
+  // applied on return; the box then reads the URL again.
+  useLayoutEffect(
+    () => () => {
+      setSearch("");
+      setUrlSearch(undefined);
+      setOwnSearch(undefined);
+    },
+    [],
+  );
+
   const [composing, setComposing] = useState(false);
   const [moreAnchor, setMoreAnchor] = useState<HTMLElement | null>(null);
   const [openFilter, setOpenFilter] = useState<{
@@ -71,10 +97,9 @@ export default function RobotListFilters({
   const popoverTitleId = `${popoverId}-title`;
 
   const applySearch = useEffectEvent((value: string) => {
-    const normalized = value.trim();
-    const applied = normalized.length >= 2 ? normalized : undefined;
-    if (applied !== filters.search) {
-      onChange({ ...filters, search: applied });
+    const applied = appliedSearch(value);
+    if (applied !== ownSearch) {
+      writeSearch(applied);
     }
   });
 
@@ -83,14 +108,34 @@ export default function RobotListFilters({
       return;
     }
     const timer = setTimeout(() => applySearch(search), searchDebounceMs);
-    return () => clearTimeout(timer);
+
+    // Writing the URL cancels a navigation already under way, so a click on a
+    // link (the user is leaving) drops the pending search.
+    function cancelOnLinkClick(event: MouseEvent) {
+      if (event.target instanceof Element && event.target.closest("a[href]")) {
+        clearTimeout(timer);
+      }
+    }
+    document.addEventListener("click", cancelOnLinkClick, { capture: true });
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("click", cancelOnLinkClick, {
+        capture: true,
+      });
+    };
   }, [search, composing]);
+
+  function writeSearch(value: string | undefined) {
+    setOwnSearch(value);
+    setRobotListFilters({ search: value });
+  }
 
   function clearSearch() {
     searchInputRef.current?.focus();
-    onSearchChange("");
-    if (filters.search !== undefined) {
-      onChange({ ...filters, search: undefined });
+    setSearch("");
+    if (ownSearch !== undefined) {
+      writeSearch(undefined);
     }
   }
 
@@ -165,9 +210,11 @@ export default function RobotListFilters({
               );
 
     if (key === "search") {
-      onSearchChange("");
+      setSearch("");
+      writeSearch(undefined);
+    } else {
+      setRobotListFilters({ [key]: key === "view" ? "all" : undefined });
     }
-    onChange({ ...filters, [key]: key === "view" ? "all" : undefined });
 
     if (next instanceof HTMLElement && next.getAttribute("role") === "button") {
       next.focus();
@@ -208,8 +255,7 @@ export default function RobotListFilters({
           },
         }}
         onChange={(event) => {
-          onChange({
-            ...filters,
+          setRobotListFilters({
             [field.key]: event.target.value || undefined,
           });
           if (inPopover) {
@@ -265,7 +311,7 @@ export default function RobotListFilters({
           }
           onChange={(event) => {
             const value = event.target.value;
-            onSearchChange(value);
+            setSearch(value);
             if (!value) {
               clearSearch();
             }
@@ -400,8 +446,9 @@ export default function RobotListFilters({
           <Button
             size="small"
             onClick={() => {
-              onSearchChange("");
-              onChange({ view: "all" });
+              setSearch("");
+              setOwnSearch(undefined);
+              clearRobotListFilters();
               container.current?.ownerDocument
                 .querySelector<HTMLElement>('[data-view="all"]')
                 ?.focus();

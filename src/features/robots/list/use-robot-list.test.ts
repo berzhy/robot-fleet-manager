@@ -6,7 +6,29 @@ import type { RobotPage } from "@/modules/robots/robot";
 
 import { getRobots } from "../api/robot-api";
 import { pageMetadata } from "../test-fixtures";
-import useRobotList from "./use-robot-list";
+import useRobotList, {
+  useRobotListAnnouncement,
+  useRobotListPageCorrection,
+} from "./use-robot-list";
+import useRobotListView, {
+  clearRobotListFilters,
+  setRobotListFilters,
+  setRobotListPage,
+  setRobotListPageSize,
+} from "./use-robot-list-view";
+
+// The list hooks as RobotList composes them.
+function useListUnderTest() {
+  const view = useRobotListView();
+  const list = useRobotList();
+  useRobotListPageCorrection(list);
+
+  return {
+    ...view,
+    ...list,
+    announcement: useRobotListAnnouncement(view.filters, list),
+  };
+}
 
 vi.mock("../api/robot-api");
 
@@ -27,10 +49,10 @@ test("aborts old requests and ignores their late responses", async () => {
       pageSize: 10,
       ...pageMetadata(),
     });
-  const { result } = renderHook(() => useRobotList());
-  const signal = vi.mocked(getRobots).mock.calls[0][2];
+  const { result } = renderHook(() => useListUnderTest());
+  const signal = vi.mocked(getRobots).mock.calls[0][1];
 
-  act(() => result.current.setPage(1));
+  act(() => setRobotListPage(1));
   expect(signal?.aborted).toBe(true);
   await waitFor(() => expect(result.current.status).toBe("success"));
 
@@ -56,18 +78,25 @@ test("page size changes cancel old requests and reload preserves the selection",
     pageSize: 20,
     ...pageMetadata(),
   });
-  const { result } = renderHook(() => useRobotList());
+  const { result } = renderHook(() => useListUnderTest());
   await waitFor(() => expect(result.current.status).toBe("success"));
 
-  act(() => result.current.setPageSize(20));
+  act(() => setRobotListPageSize(20));
   await waitFor(() => expect(result.current.status).toBe("success"));
   expect(result.current.pageSize).toBe(20);
 
   act(() => result.current.refresh());
   await waitFor(() => expect(result.current.status).toBe("success"));
-  expect(getRobots).toHaveBeenLastCalledWith(0, 20, expect.any(AbortSignal), {
-    view: "all",
-  });
+  expect(getRobots).toHaveBeenLastCalledWith(
+    {
+      page: 0,
+      pageSize: 20,
+      filters: {
+        view: "all",
+      },
+    },
+    expect.any(AbortSignal),
+  );
 });
 
 test("failed page correction retains only cached destination data under the corrected pager", async () => {
@@ -94,10 +123,10 @@ test("failed page correction retains only cached destination data under the corr
       ...pageMetadata(),
     })
     .mockRejectedValueOnce(new Error("correction failed"));
-  const { result } = renderHook(() => useRobotList());
+  const { result } = renderHook(() => useListUnderTest());
   await waitFor(() => expect(result.current.status).toBe("success"));
 
-  act(() => result.current.setPage(1));
+  act(() => setRobotListPage(1));
   await waitFor(() => expect(result.current.status).toBe("success"));
 
   act(() => result.current.refresh());
@@ -105,9 +134,16 @@ test("failed page correction retains only cached destination data under the corr
   expect(result.current.status).toBe("success");
   expect(result.current.snapshot?.page).toBe(0);
   expect(result.current.page).toBe(0);
-  expect(getRobots).toHaveBeenLastCalledWith(0, 10, expect.any(AbortSignal), {
-    view: "all",
-  });
+  expect(getRobots).toHaveBeenLastCalledWith(
+    {
+      page: 0,
+      pageSize: 10,
+      filters: {
+        view: "all",
+      },
+    },
+    expect.any(AbortSignal),
+  );
 });
 
 test("filter changes cancel old scope requests and reset page while retaining page size", async () => {
@@ -120,10 +156,10 @@ test("filter changes cancel old scope requests and reset page while retaining pa
     ...pageMetadata(30),
   };
   vi.mocked(getRobots).mockResolvedValue(response);
-  const { result } = renderHook(() => useRobotList());
+  const { result } = renderHook(() => useListUnderTest());
   await waitFor(() => expect(result.current.status).toBe("success"));
 
-  act(() => result.current.setPageSize(10));
+  act(() => setRobotListPageSize(10));
   await waitFor(() => expect(result.current.status).toBe("success"));
 
   vi.mocked(getRobots).mockReturnValueOnce(
@@ -131,10 +167,10 @@ test("filter changes cancel old scope requests and reset page while retaining pa
       stale = resolve;
     }),
   );
-  act(() => result.current.setPage(2));
-  const oldSignal = vi.mocked(getRobots).mock.lastCall![2];
+  act(() => setRobotListPage(2));
+  const oldSignal = vi.mocked(getRobots).mock.lastCall![1];
   act(() =>
-    result.current.setFilters({
+    setRobotListFilters({
       view: "offline",
       site: "Berlin",
       search: "Boston",
@@ -142,11 +178,18 @@ test("filter changes cancel old scope requests and reset page while retaining pa
   );
   await waitFor(() => expect(result.current.status).toBe("success"));
   expect(oldSignal?.aborted).toBe(true);
-  expect(getRobots).toHaveBeenLastCalledWith(0, 10, expect.any(AbortSignal), {
-    view: "offline",
-    site: "Berlin",
-    search: "Boston",
-  });
+  expect(getRobots).toHaveBeenLastCalledWith(
+    {
+      page: 0,
+      pageSize: 10,
+      filters: {
+        view: "offline",
+        site: "Berlin",
+        search: "Boston",
+      },
+    },
+    expect.any(AbortSignal),
+  );
 
   await act(async () => {
     stale({ ...response, total: 999 });
@@ -165,13 +208,13 @@ test("zero matching results correct a later page and preserve filters", async ()
     ...pageMetadata(21),
   };
   vi.mocked(getRobots).mockResolvedValue(response);
-  const { result } = renderHook(() => useRobotList());
+  const { result } = renderHook(() => useListUnderTest());
   await waitFor(() => expect(result.current.status).toBe("success"));
 
-  act(() => result.current.setFilters({ view: "low-battery" }));
+  act(() => setRobotListFilters({ view: "low-battery" }));
   await waitFor(() => expect(result.current.status).toBe("success"));
 
-  act(() => result.current.setPage(1));
+  act(() => setRobotListPage(1));
   await waitFor(() => expect(result.current.status).toBe("success"));
 
   vi.mocked(getRobots).mockResolvedValue({ ...response, items: [], total: 0 });
@@ -180,9 +223,16 @@ test("zero matching results correct a later page and preserve filters", async ()
   await waitFor(() => expect(result.current.page).toBe(0));
   await waitFor(() => expect(result.current.status).toBe("success"));
   expect(result.current.filters.view).toBe("low-battery");
-  expect(getRobots).toHaveBeenLastCalledWith(0, 10, expect.any(AbortSignal), {
-    view: "low-battery",
-  });
+  expect(getRobots).toHaveBeenLastCalledWith(
+    {
+      page: 0,
+      pageSize: 10,
+      filters: {
+        view: "low-battery",
+      },
+    },
+    expect.any(AbortSignal),
+  );
 });
 
 test("announces explicit search results but keeps background refreshes quiet", async () => {
@@ -194,11 +244,11 @@ test("announces explicit search results but keeps background refreshes quiet", a
     ...pageMetadata(2),
   };
   vi.mocked(getRobots).mockResolvedValue(response);
-  const { result } = renderHook(() => useRobotList());
+  const { result } = renderHook(() => useListUnderTest());
   await waitFor(() => expect(result.current.status).toBe("success"));
   expect(result.current.announcement).toBe("");
 
-  act(() => result.current.setFilters({ view: "all", search: "Boston" }));
+  act(() => setRobotListFilters({ view: "all", search: "Boston" }));
   await waitFor(() =>
     expect(result.current.announcement).toBe("2 robots found."),
   );
@@ -228,10 +278,10 @@ test("uncached filters keep summary data while their previous rows remain hidden
         }),
     );
 
-  const { result } = renderHook(() => useRobotList());
+  const { result } = renderHook(() => useListUnderTest());
   await waitFor(() => expect(result.current.status).toBe("success"));
 
-  act(() => result.current.setFilters({ view: "offline" }));
+  act(() => setRobotListFilters({ view: "offline" }));
 
   expect(result.current.status).toBe("loading");
   expect(result.current.snapshot?.summary).toEqual(initial.summary);
@@ -265,13 +315,13 @@ test("returning to a cached filter shows only that scope and retains it after re
         }),
     );
 
-  const { result } = renderHook(() => useRobotList());
+  const { result } = renderHook(() => useListUnderTest());
   await waitFor(() => expect(result.current.status).toBe("success"));
 
-  act(() => result.current.setFilters({ view: "offline" }));
+  act(() => setRobotListFilters({ view: "offline" }));
   await waitFor(() => expect(result.current.snapshot?.total).toBe(5));
 
-  act(() => result.current.setFilters({ view: "all" }));
+  act(() => setRobotListFilters({ view: "all" }));
 
   expect(result.current.status).toBe("success");
   expect(result.current.snapshot?.total).toBe(30);
@@ -296,14 +346,116 @@ test("equivalent filters do not issue an extra request", async () => {
     pageSize: 10,
     ...pageMetadata(),
   });
-  const { result } = renderHook(() => useRobotList());
+  const { result } = renderHook(() => useListUnderTest());
   await waitFor(() => expect(result.current.status).toBe("success"));
 
   await act(async () => {
-    result.current.setFilters({ view: "all" });
+    setRobotListFilters({ view: "all" });
     await Promise.resolve();
   });
 
   expect(getRobots).toHaveBeenCalledTimes(1);
   expect(result.current.status).toBe("success");
+});
+
+function emptyPage(total = 0): RobotPage {
+  return {
+    items: [],
+    total,
+    page: 0,
+    pageSize: 10,
+    ...pageMetadata(total),
+  };
+}
+
+test("the URL's view drives the first request", () => {
+  window.history.replaceState(
+    null,
+    "",
+    "/robots?view=offline&site=Munich&pageSize=20&page=1",
+  );
+  vi.mocked(getRobots).mockResolvedValue(emptyPage(30));
+
+  renderHook(() => useListUnderTest());
+
+  expect(getRobots).toHaveBeenCalledWith(
+    { page: 1, pageSize: 20, filters: { view: "offline", site: "Munich" } },
+    expect.any(AbortSignal),
+  );
+});
+
+test("a filter change writes a short URL and returns to the first page", async () => {
+  window.history.replaceState(null, "", "/robots?page=2");
+  vi.mocked(getRobots).mockResolvedValue(emptyPage(30));
+  const { result } = renderHook(() => useListUnderTest());
+  await waitFor(() => expect(result.current.status).toBe("success"));
+
+  act(() => setRobotListFilters({ view: "offline", search: "Atlas" }));
+
+  expect(window.location.pathname).toBe("/robots");
+  expect(window.location.search).toBe("?search=Atlas&view=offline");
+
+  act(() => clearRobotListFilters());
+
+  expect(window.location.search).toBe("");
+});
+
+test("two filter changes in the same tick both land", async () => {
+  vi.mocked(getRobots).mockResolvedValue(emptyPage());
+  const { result } = renderHook(() => useListUnderTest());
+  await waitFor(() => expect(result.current.status).toBe("success"));
+
+  act(() => {
+    setRobotListFilters({ search: "Atlas" });
+    setRobotListFilters({ view: "offline" });
+  });
+
+  expect(result.current.filters).toEqual({
+    view: "offline",
+    search: "Atlas",
+  });
+});
+
+test("an out-of-range page in the URL is corrected to the last page", async () => {
+  window.history.replaceState(null, "", "/robots?page=9");
+  vi.mocked(getRobots).mockResolvedValue(emptyPage(15));
+  const { result } = renderHook(() => useListUnderTest());
+
+  await waitFor(() => expect(window.location.search).toBe("?page=1"));
+  await waitFor(() => expect(result.current.status).toBe("success"));
+  expect(result.current.page).toBe(1);
+});
+
+test("switching filters and back before results load still announces", async () => {
+  let finishOffline!: (page: RobotPage) => void;
+  vi.mocked(getRobots).mockImplementation(({ filters }) =>
+    filters.view === "offline"
+      ? new Promise((resolve) => {
+          finishOffline = resolve;
+        })
+      : Promise.resolve(emptyPage(3)),
+  );
+  const { result } = renderHook(() => useListUnderTest());
+  await waitFor(() => expect(result.current.status).toBe("success"));
+  expect(result.current.announcement).toBe("");
+
+  act(() => setRobotListFilters({ view: "offline" }));
+  act(() => setRobotListFilters({ view: "all" }));
+
+  await waitFor(() =>
+    expect(result.current.announcement).toBe("3 robots found."),
+  );
+  finishOffline(emptyPage());
+});
+
+test("a filter change keeps query parameters and the fragment the list does not own", async () => {
+  window.history.replaceState(null, "", "/robots?source=bookmark#main-content");
+  vi.mocked(getRobots).mockResolvedValue(emptyPage());
+  const { result } = renderHook(() => useListUnderTest());
+  await waitFor(() => expect(result.current.status).toBe("success"));
+
+  act(() => setRobotListFilters({ view: "offline" }));
+
+  expect(window.location.search).toBe("?source=bookmark&view=offline");
+  expect(window.location.hash).toBe("#main-content");
 });
