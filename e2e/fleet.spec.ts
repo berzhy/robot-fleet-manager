@@ -734,3 +734,46 @@ test("the breadcrumb opens the full list with an empty search box", async ({
   await expect(page).toHaveURL("/robots");
   await expect(page.getByRole("link", { name: robot.name })).toBeVisible();
 });
+
+test("a typed search survives opening a robot and going Back", async ({
+  page,
+  request,
+}) => {
+  const [robot] = await seedFleet(request);
+  const search = page.getByRole("textbox", { name: "Search robots" });
+
+  await page.goto("/robots");
+  await search.fill("Filter");
+  await expect(page).toHaveURL("/robots?search=Filter");
+
+  await page.getByRole("link", { name: robot.name }).click();
+  await expect(page.getByTestId("robot-details")).toBeVisible();
+  await page.goBack();
+
+  await expect(search).toHaveValue("Filter");
+  await expect(page.getByTestId("fleet-chip-search")).toHaveText(
+    "Search: Filter",
+  );
+});
+
+test("a search applied while a robot page loads does not cancel the navigation", async ({
+  page,
+  request,
+}) => {
+  const [robot] = await seedFleet(request);
+  await page.goto("/robots");
+  await expect(page.getByRole("link", { name: robot.name })).toBeVisible();
+
+  // Hold the details page longer than the search debounce.
+  await page.route(`**/robots/${robot.id}**`, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    await route.continue();
+  });
+
+  await page.getByRole("textbox", { name: "Search robots" }).fill("Filter");
+  await page.getByRole("link", { name: robot.name }).click();
+
+  await expect(page.getByTestId("robot-details")).toBeVisible({
+    timeout: 5_000,
+  });
+});

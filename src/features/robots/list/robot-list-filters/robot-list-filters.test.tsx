@@ -5,7 +5,7 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import { afterEach, expect, test, vi } from "vitest";
 
 import type { RobotPage } from "@/modules/robots/robot";
@@ -49,16 +49,9 @@ async function filterOptionsLoaded() {
 }
 
 function ListFilters() {
-  const [search, setSearch] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  return (
-    <RobotListFilters
-      search={search}
-      searchInputRef={searchInputRef}
-      onSearchChange={setSearch}
-    />
-  );
+  return <RobotListFilters searchInputRef={searchInputRef} />;
 }
 
 test("dropdowns, tiles and removable chips share one selection", async () => {

@@ -5,9 +5,8 @@ import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
-import { appliedSearch } from "@/modules/robots/robot-list-params";
 import { useNotifications } from "@/shared/notifications/notification-provider";
 
 import { isRequestTimeout } from "../api/robot-api";
@@ -56,31 +55,10 @@ export default function RobotList() {
   } | null>(null);
 
   const { filters } = useRobotListView();
-  const { status, refreshFailed } = useRobotList();
-  const announcement = useRobotListAnnouncement();
-  useRobotListPageCorrection();
-
-  // What the user types. The applied search (debounced, 2+ characters) lives in the URL.
-  const [search, setSearch] = useState(filters.search ?? "");
-  // The URL search the box last agreed with. When the URL moves to a search the
-  // box's text would not apply (a link, Back), the box follows it.
-  const [syncedSearch, setSyncedSearch] = useState(filters.search);
-  if (filters.search !== syncedSearch) {
-    setSyncedSearch(filters.search);
-    if (filters.search !== appliedSearch(search)) {
-      setSearch(filters.search ?? "");
-    }
-  }
-
-  // Next keeps this page alive while hidden. Forget unsent text so it is not
-  // applied on return; the box then re-reads the URL.
-  useLayoutEffect(
-    () => () => {
-      setSearch("");
-      setSyncedSearch(undefined);
-    },
-    [],
-  );
+  const list = useRobotList();
+  const { status, refreshFailed } = list;
+  const announcement = useRobotListAnnouncement(filters, list);
+  useRobotListPageCorrection(list);
 
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
@@ -261,21 +239,15 @@ export default function RobotList() {
           <Stack spacing={2}>
             <RobotStatusFilters />
             <Divider />
-            <RobotListFilters
-              search={search}
-              searchInputRef={searchInputRef}
-              onSearchChange={setSearch}
-            />
+            <RobotListFilters searchInputRef={searchInputRef} />
           </Stack>
         }
         onClearFilters={() => {
           focusSearch();
-          setSearch("");
           clearRobotListFilters();
         }}
         onClearSearch={() => {
           focusSearch();
-          setSearch("");
           setRobotListFilters({ search: undefined });
         }}
         onRowFocusLost={confirmation ? undefined : focusSearch}

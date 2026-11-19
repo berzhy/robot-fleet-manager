@@ -33,13 +33,13 @@ export default function RobotStatusFilters() {
   const { filters } = useRobotListView();
   const { status, snapshot } = useRobotList();
   const summary = snapshot?.summary;
-  const updating = status === "loading";
+  const isUpdating = status === "loading";
 
   return (
     <Box
       role="group"
       aria-label="Robot status filters"
-      aria-busy={updating}
+      aria-busy={isUpdating}
       sx={{
         display: "grid",
         gridTemplateColumns: { xs: "repeat(2, 1fr)", md: "repeat(4, 1fr)" },

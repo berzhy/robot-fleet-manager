@@ -5,11 +5,11 @@ import { useSearchParams } from "next/navigation";
 import type { RobotFilters } from "@/modules/robots/robot-filters";
 import {
   parseRobotListParams,
+  robotListParamKeys,
   robotListSearchParams,
   type RobotListParams,
 } from "@/modules/robots/robot-list-params";
 
-/** The list's view (filters, page, page size), read from the URL. */
 export default function useRobotListView(): RobotListParams {
   return parseRobotListParams(useSearchParams());
 }
@@ -34,18 +34,26 @@ export function clearRobotListFilters() {
   updateView((current) => ({ ...current, page: 0, filters: { view: "all" } }));
 }
 
-// Writes merge into window.location rather than a render's snapshot: Next
-// re-renders URL readers after replaceState inside a transition, so a second
-// change in the same tick would otherwise drop the first.
+// The native history API, not router.replace: a router navigation re-renders the
+// page on the server, while React Query already owns this data. Writes start
+// from window.location rather than a render's snapshot because Next re-renders
+// URL readers in a later transition, so a second change in the same tick would
+// otherwise drop the first.
 function updateView(change: (current: RobotListParams) => RobotListParams) {
-  const current = parseRobotListParams(
-    new URLSearchParams(window.location.search),
-  );
-  const query = robotListSearchParams(change(current)).toString();
+  const searchParams = new URLSearchParams(window.location.search);
+  const next = change(parseRobotListParams(searchParams));
 
+  for (const key of robotListParamKeys) {
+    searchParams.delete(key);
+  }
+  for (const [key, value] of robotListSearchParams(next)) {
+    searchParams.set(key, value);
+  }
+
+  const query = searchParams.toString();
   window.history.replaceState(
     null,
     "",
-    query ? `?${query}` : window.location.pathname,
+    `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`,
   );
 }

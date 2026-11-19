@@ -701,8 +701,9 @@ test("page correction after a hidden fleet shrinks immediately verifies the dest
   vi.stubGlobal("fetch", fetcher);
 
   const { result } = renderHook(() => {
-    useRobotListPageCorrection();
-    return useRobotList();
+    const list = useRobotList();
+    useRobotListPageCorrection(list);
+    return list;
   });
   await tick();
   act(() => setRobotListPage(2));

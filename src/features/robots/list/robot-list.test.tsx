@@ -349,3 +349,48 @@ test("applying a search keeps the typed text, including a trailing space", async
   expect(window.location.search).toBe("?search=Robot");
   expect(box).toHaveValue("Robot ");
 });
+
+test("typing while an applied search reaches the router is kept", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() => Promise.resolve(Response.json(page([robot])))),
+  );
+  render(<RobotList />);
+  const box = screen.getByRole("textbox", { name: "Search robots" });
+
+  // Hold the router's URL-change signal, as Next delivers it in a later transition.
+  const dispatch = window.dispatchEvent.bind(window);
+  const held: Event[] = [];
+  const spy = vi
+    .spyOn(window, "dispatchEvent")
+    .mockImplementation((event) =>
+      event.type === "test:url-change"
+        ? (held.push(event), true)
+        : dispatch(event),
+    );
+
+  fireEvent.change(box, { target: { value: "Atl" } });
+  await waitPastSearchDebounce();
+  expect(window.location.search).toBe("?search=Atl");
+
+  fireEvent.change(box, { target: { value: "Atla" } });
+  spy.mockRestore();
+  act(() => held.forEach((event) => window.dispatchEvent(event)));
+
+  expect(box).toHaveValue("Atla");
+});
+
+test("an outside change clears a draft too short to apply", () => {
+  window.history.replaceState(null, "", "/robots?search=Atlas");
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() => Promise.resolve(Response.json(page([robot])))),
+  );
+  render(<RobotList />);
+  const box = screen.getByRole("textbox", { name: "Search robots" });
+
+  fireEvent.change(box, { target: { value: "A" } });
+  act(() => window.history.replaceState(null, "", "/robots"));
+
+  expect(box).toHaveValue("");
+});

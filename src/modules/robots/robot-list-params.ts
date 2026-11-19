@@ -27,9 +27,12 @@ const robotListParamsSchema = z.object({
   view: z.enum(fleetViews).catch("all"),
 });
 
+/** The query parameters this list owns; any others in the URL are left alone. */
+export const robotListParamKeys = robotListParamsSchema.keyof().options;
+
 /** The search a typed text applies: trimmed, 2–100 characters, otherwise none. */
 export function appliedSearch(text: string) {
-  return robotListParamsSchema.shape.search.parse(text);
+  return robotFiltersSchema.shape.search.safeParse(text).data;
 }
 
 export function parseRobotListParams(
@@ -61,7 +64,7 @@ export function robotListSearchParams({
   return searchParams;
 }
 
-/** Filters as query parameters; the "all" view and empty values are left out. */
+/** Filters as query parameters; the "all" view and unset filters are left out. */
 export function robotFilterSearchParams(filters: RobotFilters) {
   const searchParams = new URLSearchParams();
 

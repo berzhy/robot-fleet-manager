@@ -3,14 +3,23 @@ import "@testing-library/jest-dom/vitest";
 import { useSyncExternalStore } from "react";
 import { afterEach, vi } from "vitest";
 
-// Next's router re-renders useSearchParams readers after history.replaceState.
-// Tests run without that router, so a wrapped replaceState signals the change.
+// Stands in for Next's router: useSearchParams keeps the URL it last heard
+// about, and hears of a replaceState through an event, as Next applies it in a
+// later transition. A test can hold that event to reproduce the gap.
 const urlChange = "test:url-change";
+let routerSearch = window.location.search;
+
 const replaceState = window.history.replaceState.bind(window.history);
 window.history.replaceState = (...args) => {
   replaceState(...args);
   window.dispatchEvent(new Event(urlChange));
 };
+
+for (const type of [urlChange, "popstate"]) {
+  window.addEventListener(type, () => {
+    routerSearch = window.location.search;
+  });
+}
 
 function subscribe(onChange: () => void) {
   window.addEventListener(urlChange, onChange);
@@ -26,7 +35,7 @@ vi.mock("next/navigation", async (importOriginal) => ({
   useSearchParams: () =>
     new URLSearchParams(
       // The string is the snapshot: a new URLSearchParams each read would never settle.
-      useSyncExternalStore(subscribe, () => window.location.search),
+      useSyncExternalStore(subscribe, () => routerSearch),
     ),
 }));
 

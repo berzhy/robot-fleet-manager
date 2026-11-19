@@ -19,12 +19,14 @@ import useRobotListView, {
 
 // The list hooks as RobotList composes them.
 function useListUnderTest() {
-  useRobotListPageCorrection();
+  const view = useRobotListView();
+  const list = useRobotList();
+  useRobotListPageCorrection(list);
 
   return {
-    ...useRobotListView(),
-    ...useRobotList(),
-    announcement: useRobotListAnnouncement(),
+    ...view,
+    ...list,
+    announcement: useRobotListAnnouncement(view.filters, list),
   };
 }
 
@@ -422,4 +424,38 @@ test("an out-of-range page in the URL is corrected to the last page", async () =
   await waitFor(() => expect(window.location.search).toBe("?page=1"));
   await waitFor(() => expect(result.current.status).toBe("success"));
   expect(result.current.page).toBe(1);
+});
+
+test("switching filters and back before results load still announces", async () => {
+  let finishOffline!: (page: RobotPage) => void;
+  vi.mocked(getRobots).mockImplementation(({ filters }) =>
+    filters.view === "offline"
+      ? new Promise((resolve) => {
+          finishOffline = resolve;
+        })
+      : Promise.resolve(emptyPage(3)),
+  );
+  const { result } = renderHook(() => useListUnderTest());
+  await waitFor(() => expect(result.current.status).toBe("success"));
+  expect(result.current.announcement).toBe("");
+
+  act(() => setRobotListFilters({ view: "offline" }));
+  act(() => setRobotListFilters({ view: "all" }));
+
+  await waitFor(() =>
+    expect(result.current.announcement).toBe("3 robots found."),
+  );
+  finishOffline(emptyPage());
+});
+
+test("a filter change keeps query parameters and the fragment the list does not own", async () => {
+  window.history.replaceState(null, "", "/robots?source=bookmark#main-content");
+  vi.mocked(getRobots).mockResolvedValue(emptyPage());
+  const { result } = renderHook(() => useListUnderTest());
+  await waitFor(() => expect(result.current.status).toBe("success"));
+
+  act(() => setRobotListFilters({ view: "offline" }));
+
+  expect(window.location.search).toBe("?source=bookmark&view=offline");
+  expect(window.location.hash).toBe("#main-content");
 });
