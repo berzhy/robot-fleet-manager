@@ -37,6 +37,8 @@ export default function DeleteRobotDialog({
       open={open}
       aria-labelledby={`${id}-title`}
       aria-describedby={`${id}-description`}
+      // The delete flow returns focus itself: after a delete, the button that
+      // opened the dialog may be gone with its row.
       disableRestoreFocus
       onClose={() => {
         if (!pending) {

@@ -194,15 +194,23 @@ export default function RobotListFilters({
     });
   }
 
+  // The view toggles live in RobotStatusFilters, a sibling component.
+  function allRobotsViewButton() {
+    return container.current?.ownerDocument.querySelector<HTMLElement>(
+      '[data-view="all"]',
+    );
+  }
+
+  // The removed chip unmounts with focus on it: move to the next chip, so
+  // keyboard users can clear one after another, or else to the filter's field.
   function remove(key: keyof RobotFilters, button: HTMLElement) {
     const next = (button.closest('[role="button"]') ?? button)
       .nextElementSibling;
-    const doc = container.current?.ownerDocument;
     const field =
       key === "search"
         ? searchInputRef.current
         : key === "view"
-          ? doc?.querySelector<HTMLElement>('[data-view="all"]')
+          ? allRobotsViewButton()
           : key === "manufacturer" || key === "integrationType"
             ? moreButtonRef.current
             : container.current?.querySelector<HTMLElement>(
@@ -449,9 +457,8 @@ export default function RobotListFilters({
               setSearch("");
               setOwnSearch(undefined);
               clearRobotListFilters();
-              container.current?.ownerDocument
-                .querySelector<HTMLElement>('[data-view="all"]')
-                ?.focus();
+              // This button goes away with the chips.
+              allRobotsViewButton()?.focus();
             }}
           >
             Clear filters
