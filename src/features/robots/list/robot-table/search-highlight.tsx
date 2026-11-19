@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 export default function SearchHighlight({
   text,
   search,
@@ -8,19 +10,23 @@ export default function SearchHighlight({
   if (!search) {
     return text;
   }
-  const query = search.toLowerCase();
-  const value = text.toLowerCase();
-  const parts = [];
+
+  const literalSearch = search.replace(/[.*+?^$(){}|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(literalSearch, "giu");
+  const parts: ReactNode[] = [];
   let offset = 0;
-  let match = value.indexOf(query);
-  while (match !== -1) {
-    parts.push(text.slice(offset, match));
+
+  for (const match of text.matchAll(pattern)) {
+    const start = match.index;
+    const matchedText = match[0];
+
     parts.push(
-      <mark key={match}>{text.slice(match, match + search.length)}</mark>,
+      text.slice(offset, start),
+      <mark key={start}>{matchedText}</mark>,
     );
-    offset = match + search.length;
-    match = value.indexOf(query, offset);
+    offset = start + matchedText.length;
   }
+
   parts.push(text.slice(offset));
   return parts;
 }
