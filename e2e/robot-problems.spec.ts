@@ -38,7 +38,7 @@ test("investigates a reported problem and retries it from robot details", async 
   }
 
   await report(false);
-  await page.goto("/");
+  await page.goto("/robots");
   await page
     .getByRole("button", { name: "Needs attention", exact: true })
     .click();
@@ -46,6 +46,7 @@ test("investigates a reported problem and retries it from robot details", async 
   const row = page.getByTestId(`robot-row-${robot.id}`);
   await expect(row).toContainText("Sensor obstructed");
   await row.getByRole("link", { name: robot.name, exact: true }).click();
+  await expect(page).toHaveURL(`/robots/${robot.id}`);
 
   const details = page.getByTestId("robot-details");
   const alert = details.getByRole("alert");

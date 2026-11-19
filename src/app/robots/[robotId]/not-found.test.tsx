@@ -11,5 +11,5 @@ test("unknown robot state offers dashboard navigation", () => {
   const back = screen.getByTestId("robot-not-found-back");
   expect(back).toHaveRole("link");
   expect(back).toHaveAccessibleName("Back to fleet dashboard");
-  expect(back).toHaveAttribute("href", "/");
+  expect(back).toHaveAttribute("href", "/robots");
 });

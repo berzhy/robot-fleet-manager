@@ -10,7 +10,7 @@ import { usePathname } from "next/navigation";
 import { Suspense } from "react";
 
 const sections = [
-  { label: "Fleet", href: "/", icon: PrecisionManufacturingIcon },
+  { label: "Fleet", href: "/robots", icon: PrecisionManufacturingIcon },
   { label: "Skills", href: "/skills", icon: ExtensionIcon },
   { label: "Integrations", href: "/integrations", icon: HubIcon },
 ];
@@ -44,10 +44,8 @@ function NavigationLinks({
   return (
     <List component="nav" aria-label="Main navigation">
       {sections.map(({ label, href, icon: Icon }) => {
-        const selected =
-          href === "/"
-            ? pathname === "/" || pathname.startsWith("/robots/")
-            : pathname === href || pathname.startsWith(`${href}/`);
+        const selected = pathname === href || pathname.startsWith(`${href}/`);
+
         return (
           <ListItemButton
             key={href}

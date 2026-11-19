@@ -23,7 +23,7 @@ test("loading rows follow the page size when the viewport shrinks", async ({
 
   try {
     await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto("/");
+    await page.goto("/robots");
     await expect(scrollContainer).toHaveAttribute("aria-busy", "true");
     await expect(rows).toHaveCount(robotPageSize);
 
@@ -41,7 +41,7 @@ test("loading rows follow the page size when the viewport shrinks", async ({
 });
 
 test("adds two robots and deletes one", async ({ page, request }) => {
-  await page.goto("/");
+  await page.goto("/robots");
   await expect(page.getByTestId("fleet-empty")).toBeVisible();
 
   const first = await addRobot(page);
@@ -128,7 +128,7 @@ test("keyboard explanations and Stop/Retry requests follow reported activity", a
   page,
   request,
 }) => {
-  await page.goto("/");
+  await page.goto("/robots");
   const robot = await addRobot(page);
   const row = page.getByTestId(`robot-row-${robot.id}`);
 
@@ -298,7 +298,7 @@ test("combines dropdowns and tiles, removes chips and retries a failed filter re
   }
 
   await reportFleet();
-  await page.goto("/");
+  await page.goto("/robots");
   const rows = page.getByTestId("fleet-table").locator("tbody tr");
   await expect(rows).toHaveCount(6);
 
@@ -369,7 +369,7 @@ for (const filter of ["Location", "Manufacturer"] as const) {
     const { items } = (await created.json()) as { items: Robot[] };
     const [atlas] = items;
 
-    await page.goto("/");
+    await page.goto("/robots");
     if (filter === "Manufacturer")
       await page.getByRole("button", { name: "More filters" }).click();
 
@@ -414,7 +414,7 @@ test("live filtered recovery closes the action menu and restores focus", async (
 }) => {
   const [robot] = await seedFleet(request);
   await sendProblem(request, robot, true);
-  await page.goto("/");
+  await page.goto("/robots");
 
   await page
     .getByRole("button", { name: "Needs attention", exact: true })
@@ -446,7 +446,7 @@ test("delete confirmation keeps the selected robot after it leaves the filtered 
 }) => {
   const [robot, otherRobot] = await seedFleet(request, 2);
   await sendProblem(request, robot, true);
-  await page.goto("/");
+  await page.goto("/robots");
   await page
     .getByRole("button", { name: "Needs attention", exact: true })
     .click();
@@ -481,7 +481,7 @@ test("deleting the last filtered page corrects pagination and retains filters", 
   request,
 }) => {
   await seedFleet(request, 11);
-  await page.goto("/");
+  await page.goto("/robots");
   await chooseFilter(page, "Location", "Munich");
 
   await page.getByTestId("fleet-next-page").click();
@@ -507,7 +507,7 @@ test("search combines with filters and tiles, clears through chips and recovers 
 }) => {
   const robots = await seedFleet(request, 2);
   await sendProblem(request, robots[0], true);
-  await page.goto("/");
+  await page.goto("/robots");
 
   await chooseFilter(page, "Location", "Munich");
   await page
@@ -590,7 +590,7 @@ test("delete all clears robots outside the active search and allows adding again
     records.push((await response.json()) as Robot);
   }
 
-  await page.goto("/");
+  await page.goto("/robots");
   await expect(page.getByTestId(`robot-row-${records[1].id}`)).toBeVisible();
 
   await page
@@ -626,7 +626,7 @@ test("search debounce closes an unmounted action menu and the new view keeps pol
 }) => {
   const [robot] = await seedFleet(request, 1);
   await page.clock.install();
-  await page.goto("/");
+  await page.goto("/robots");
   const row = page.getByTestId(`robot-row-${robot.id}`);
   await expect(row).toBeVisible();
   await page.clock.pauseAt(new Date(Date.now() + 1000));

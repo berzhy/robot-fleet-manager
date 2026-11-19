@@ -32,7 +32,7 @@ In a second terminal:
 npm run simulator
 ```
 
-Open http://localhost:3000. Run one simulator and keep it running while trying the dashboard. Fleet data is saved locally in `data/fleet.sqlite`.
+Open http://localhost:3000 to reach the fleet dashboard at `/robots`. Run one simulator and keep it running while trying the dashboard. Fleet data is saved locally in `data/fleet.sqlite`.
 
 ## Checks
 

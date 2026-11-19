@@ -42,7 +42,7 @@ test("details show fields, missing values, and breadcrumbs", async () => {
   const breadcrumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
   expect(
     within(breadcrumbs).getByRole("link", { name: "Fleet dashboard" }),
-  ).toHaveAttribute("href", "/");
+  ).toHaveAttribute("href", "/robots");
   expect(within(breadcrumbs).getByText(robot.name)).toHaveAttribute(
     "aria-current",
     "page",

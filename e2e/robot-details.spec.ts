@@ -155,6 +155,20 @@ test("detail context and controls follow reported telemetry", async ({
     .getByRole("navigation", { name: "Breadcrumb" })
     .getByRole("link", { name: "Fleet dashboard" })
     .click();
+  await expect(page).toHaveURL("/robots");
   await expect(page.getByTestId(`robot-row-${selected.id}`)).toBeVisible();
   expect(browserErrors).toEqual([]);
+});
+
+test("a missing robot links back to the fleet list", async ({ page }) => {
+  await page.goto("/robots/missing-robot");
+  await expect(
+    page.getByRole("heading", { name: "Robot not found" }),
+  ).toBeVisible();
+
+  await page.getByRole("link", { name: "Back to fleet dashboard" }).click();
+  await expect(page).toHaveURL("/robots");
+  await expect(
+    page.getByRole("heading", { name: "Fleet dashboard" }),
+  ).toBeVisible();
 });

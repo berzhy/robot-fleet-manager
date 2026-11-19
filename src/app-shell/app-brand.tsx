@@ -11,7 +11,7 @@ export default function AppBrand({ onNavigate }: { onNavigate?: () => void }) {
     <Tooltip title="Fleet Orchestrator">
       <Link
         component={NextLink}
-        href="/"
+        href="/robots"
         aria-label="Fleet Orchestrator"
         onClick={onNavigate}
       >

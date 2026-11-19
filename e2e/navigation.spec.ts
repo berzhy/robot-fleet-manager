@@ -4,12 +4,20 @@ import { test } from "./fixtures";
 test("desktop sections support navigation, history, direct loads and themes", async ({
   page,
 }) => {
-  await page.goto("/");
-  const navigation = page.getByRole("navigation", { name: "Main navigation" });
+  await page.goto("/?source=bookmark");
+  await expect(page).toHaveURL("/robots?source=bookmark");
 
+  const navigation = page.getByRole("navigation", { name: "Main navigation" });
+  const fleetLink = navigation.getByRole("link", {
+    name: "Fleet",
+    exact: true,
+  });
+
+  await expect(fleetLink).toHaveAttribute("href", "/robots");
+  await expect(fleetLink).toHaveAttribute("aria-current", "page");
   await expect(
-    navigation.getByRole("link", { name: "Fleet", exact: true }),
-  ).toHaveAttribute("aria-current", "page");
+    page.getByRole("link", { name: "Fleet Orchestrator" }),
+  ).toHaveAttribute("href", "/robots");
   await expect(
     page.getByRole("button", { name: "Open navigation" }),
   ).toBeHidden();
@@ -50,7 +58,8 @@ test("desktop sections support navigation, history, direct loads and themes", as
     page.getByRole("heading", { level: 1, name: "Integrations" }),
   ).toBeVisible();
 
-  await navigation.getByRole("link", { name: "Fleet", exact: true }).click();
+  await fleetLink.click();
+  await expect(page).toHaveURL("/robots");
   await expect(
     page.getByRole("heading", { name: "Fleet dashboard" }),
   ).toBeVisible();

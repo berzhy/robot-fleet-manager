@@ -11,7 +11,11 @@ export default function RobotNotFound() {
       <Typography data-testid="robot-not-found" component="h1" variant="h4">
         Robot not found
       </Typography>
-      <Link data-testid="robot-not-found-back" component={NextLink} href="/">
+      <Link
+        data-testid="robot-not-found-back"
+        component={NextLink}
+        href="/robots"
+      >
         Back to fleet dashboard
       </Link>
     </Stack>
