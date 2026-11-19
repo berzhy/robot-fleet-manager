@@ -6,6 +6,7 @@ import {
   formatRobotType,
   formatIntegrationType,
   formatActivity,
+  formatConnection,
 } from "@/modules/robots/robot-labels";
 import {
   robotProblemCodes,
@@ -38,19 +39,21 @@ export function robotSearchCondition(
 
   const connectionSearches = (
     [
-      ["Online", sql`${latestTelemetry.receivedAt} >= ${onlineCutoff}`],
+      ["online", sql`${latestTelemetry.receivedAt} >= ${onlineCutoff}`],
       [
-        "Delayed",
+        "delayed",
         and(
           sql`${latestTelemetry.receivedAt} < ${onlineCutoff}`,
           sql`${latestTelemetry.receivedAt} >= ${delayedCutoff}`,
         ),
       ],
-      ["Offline", offline],
-      ["Unknown", sql`${latestTelemetry.receivedAt} is null`],
+      ["offline", offline],
+      ["unknown", sql`${latestTelemetry.receivedAt} is null`],
     ] as const
   )
-    .filter(([label]) => label.toLowerCase().includes(query))
+    .filter(([status]) =>
+      formatConnection(status).toLowerCase().includes(query),
+    )
     .map(([, condition]) => condition);
 
   return pattern === undefined

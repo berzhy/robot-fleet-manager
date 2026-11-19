@@ -42,7 +42,7 @@ export default function RobotDetails({ robotId }: { robotId: string }) {
   } = useLiveRobot(robotId);
 
   const connection = connectionStatus(robot.lastReceivedAt, evaluatedAt);
-  const stale = connection === "Delayed" || connection === "Offline";
+  const stale = connection === "delayed" || connection === "offline";
 
   return (
     <Stack

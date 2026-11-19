@@ -22,7 +22,7 @@ export function actionUnavailable(
   action: RobotAction,
   now: number,
 ): string | null {
-  if (connectionStatus(robot.lastReceivedAt, now) !== "Online") {
+  if (connectionStatus(robot.lastReceivedAt, now) !== "online") {
     return "Robot must be online";
   }
 

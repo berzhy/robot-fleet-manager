@@ -37,7 +37,7 @@ export default function LocationMap({
   const selectedArea = areaName(robot.area);
   const stale =
     unverified ||
-    ["Delayed", "Offline"].includes(
+    ["delayed", "offline"].includes(
       connectionStatus(robot.lastReceivedAt, evaluatedAt),
     );
   const groups = zones.map((zone) => ({
@@ -123,7 +123,7 @@ export default function LocationMap({
                 opacity={
                   unverified ||
                   connectionStatus(peer.lastReceivedAt, evaluatedAt) !==
-                    "Online"
+                    "online"
                     ? 0.35
                     : 0.8
                 }

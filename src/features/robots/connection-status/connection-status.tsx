@@ -1,20 +1,20 @@
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import FiberManualRecordOutlinedIcon from "@mui/icons-material/FiberManualRecordOutlined";
 import Stack from "@mui/material/Stack";
-import type { connectionStatus } from "@/modules/telemetry/freshness";
+import { formatConnection } from "@/modules/robots/robot-labels";
+import type { ConnectionStatus } from "@/modules/telemetry/freshness";
 
-type Status = ReturnType<typeof connectionStatus>;
 const colors = {
-  Online: "success.main",
-  Delayed: "warning.dark",
-  Offline: "text.secondary",
-  Unknown: "text.secondary",
-} as const;
+  online: "success.main",
+  delayed: "warning.dark",
+  offline: "text.secondary",
+  unknown: "text.secondary",
+} satisfies Record<ConnectionStatus, string>;
 
 /** Decorative dot; visible connection text must accompany it somewhere in the view. */
-export function ConnectionIndicator({ status }: { status: Status }) {
+export function ConnectionIndicator({ status }: { status: ConnectionStatus }) {
   const Icon =
-    status === "Unknown"
+    status === "unknown"
       ? FiberManualRecordOutlinedIcon
       : FiberManualRecordIcon;
   return (
@@ -30,7 +30,7 @@ export default function ConnectionStatus({
   status,
   unverified = false,
 }: {
-  status: Status;
+  status: ConnectionStatus;
   unverified?: boolean;
 }) {
   return (
@@ -42,7 +42,7 @@ export default function ConnectionStatus({
     >
       <ConnectionIndicator status={status} />
       <span>
-        {status}
+        {formatConnection(status)}
         {unverified ? " (unverified)" : ""}
       </span>
     </Stack>
