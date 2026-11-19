@@ -34,8 +34,9 @@ export default function ActivityControls({
   return (
     <Stack
       direction="row"
+      spacing={1}
       useFlexGap
-      sx={{ flexWrap: "wrap", gap: 1 }}
+      sx={{ flexWrap: "wrap" }}
       role="group"
       aria-label="Activity controls"
       aria-busy={pending}

@@ -25,15 +25,12 @@ export default function RobotTableNoResultsState({
         <>
           <Typography
             role="status"
-            sx={{ overflowWrap: "anywhere", textAlign: "center" }}
+            align="center"
+            sx={{ overflowWrap: "anywhere" }}
           >
             {`No robots match “${search}”.`}
           </Typography>
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ textAlign: "center" }}
-          >
+          <Typography variant="body2" color="text.secondary" align="center">
             Search matches name, ID, manufacturer, location, area, type,
             integration, activity, problem, connection and battery.
           </Typography>

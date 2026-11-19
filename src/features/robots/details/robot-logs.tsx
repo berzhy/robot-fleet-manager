@@ -12,12 +12,12 @@ export default function RobotLogs({ robot }: { robot: Robot }) {
       <Typography component="h2" variant="h6" sx={{ mb: 2 }}>
         Logs
       </Typography>
-      <Box
+      <Typography
         component="pre"
+        variant="body2"
         sx={{
           m: 0,
           minHeight: 320,
-          typography: "body2",
           fontFamily: "var(--font-geist-mono), monospace",
           lineHeight: 1.8,
           whiteSpace: "pre-wrap",
@@ -45,7 +45,7 @@ export default function RobotLogs({ robot }: { robot: Robot }) {
             {"\n"}
           </Box>
         ))}
-      </Box>
+      </Typography>
     </Paper>
   );
 }

@@ -232,10 +232,10 @@ export default function RobotListFilters({
     <Stack ref={container} spacing={3}>
       <Stack
         direction="row"
+        spacing={2}
         useFlexGap
         sx={{
           flexWrap: "wrap",
-          gap: 2,
           alignItems: "flex-start",
           justifyContent: "space-between",
         }}
@@ -288,10 +288,10 @@ export default function RobotListFilters({
         />
         <Stack
           direction="row"
+          spacing={2}
           useFlexGap
           sx={{
             flexWrap: { xs: "wrap", md: "nowrap" },
-            gap: 2,
             alignItems: "flex-end",
             justifyContent: "flex-end",
             flexGrow: 1,
@@ -364,8 +364,9 @@ export default function RobotListFilters({
       {chips.length > 0 && (
         <Stack
           direction="row"
+          spacing={1}
           useFlexGap
-          sx={{ flexWrap: "wrap", gap: 1, alignItems: "center" }}
+          sx={{ flexWrap: "wrap", alignItems: "center" }}
         >
           {chips.map((chip) => (
             <Chip

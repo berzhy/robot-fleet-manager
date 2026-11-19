@@ -119,14 +119,15 @@ export default function LocationMap({
                 cx={zone.peersX + (index % 4) * 13}
                 cy={zone.peersY + Math.floor(index / 4) * 13}
                 r="4"
+                opacity={
+                  unverified ||
+                  connectionStatus(peer.lastReceivedAt, evaluatedAt) !==
+                    "Online"
+                    ? 0.35
+                    : 0.8
+                }
                 sx={(theme) => ({
                   fill: (theme.vars ?? theme).palette.text.secondary,
-                  opacity:
-                    unverified ||
-                    connectionStatus(peer.lastReceivedAt, evaluatedAt) !==
-                      "Online"
-                      ? 0.35
-                      : 0.8,
                 })}
               />
             ))}

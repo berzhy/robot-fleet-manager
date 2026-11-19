@@ -244,11 +244,11 @@ export default function RobotList() {
     <Stack spacing={2} sx={{ flex: 1, minHeight: 0 }}>
       <Stack
         direction="row"
+        spacing={2}
         useFlexGap
         sx={{
           flexShrink: 0,
           flexWrap: "wrap",
-          gap: 2,
           alignItems: "center",
           justifyContent: "space-between",
         }}

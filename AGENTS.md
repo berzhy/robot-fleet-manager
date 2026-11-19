@@ -1,5 +1,7 @@
 Pay extra attention to architecture, structure, code cleanlines and code quality! No "AI slop" please!
 
+Prefer dedicated MUI props (`spacing`, `align`, `variant`) and native props (SVG `opacity`). Use `sx` for custom styles.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 ## This is NOT the Next.js you know
