@@ -66,9 +66,6 @@ export function robotSearchCondition(
           latestTelemetry.problemCode,
           sql`coalesce(${latestTelemetry.activity}, 'unknown')`,
         ].map((column) => sql`${column} like ${pattern} escape '\\'`),
-        ...(query.length >= 8
-          ? [sql`${robots.id} like ${pattern} escape '\\'`]
-          : []),
         ...robotTypes
           .filter((type) => formatRobotType(type).toLowerCase().includes(query))
           .map((type) => eq(robots.type, type)),

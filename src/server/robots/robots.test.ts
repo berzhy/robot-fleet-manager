@@ -691,8 +691,6 @@ test("search matches metadata and displayed labels before pagination and scopes 
 
   for (const search of [
     "SURVEY",
-    robot.id,
-    robot.id.slice(0, 8),
     "Maker",
     "Munich",
     "Inspection robot",
@@ -712,8 +710,6 @@ test("search matches metadata and displayed labels before pagination and scopes 
     expect(result.items.map((item) => item.id)).toEqual([robot.id]);
     expect(result.summary.all).toBe(
       [
-        robot.id,
-        robot.id.slice(0, 8),
         "Loading bay",
         "Needs attention",
         "Path blocked",
@@ -732,9 +728,15 @@ test("search matches metadata and displayed labels before pagination and scopes 
     listRobots(db, 1, 10, { view: "all", search: "survey" }),
   ).toMatchObject({ total: 12, items: [expect.anything(), expect.anything()] });
 
-  expect(listRobots(db, 0, 10, { view: "all", search: "missing" }).total).toBe(
-    0,
-  );
+  for (const search of ["missing", robot.id, robot.id.slice(0, 8)]) {
+    const result = listRobots(db, 0, 10, { view: "all", search });
+
+    expect(result).toMatchObject({
+      items: [],
+      total: 0,
+      summary: { all: 0 },
+    });
+  }
 });
 
 test("search treats SQL wildcards and escapes literally and validates trimmed input", async () => {
