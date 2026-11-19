@@ -2,7 +2,7 @@ import type { Robot } from "@/modules/robots/robot";
 import {
   formatIntegrationType,
   formatRobotType,
-} from "../utils/robot-formatters";
+} from "@/modules/robots/robot-labels";
 
 type LogEntry = { time: string; level: "INFO" | "WARN"; message: string };
 

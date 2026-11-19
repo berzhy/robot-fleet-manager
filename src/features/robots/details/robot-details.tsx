@@ -13,18 +13,14 @@ import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import { useId, useState } from "react";
 
+import { formatActivity, formatRobotType } from "@/modules/robots/robot-labels";
 import { robotProblemDetails } from "@/modules/robots/robot-problems";
 import { connectionStatus } from "@/modules/telemetry/freshness";
 
 import { useRobotWriteLock } from "../api/robot-mutations";
 import ConnectionStatus from "../connection-status/connection-status";
 import useRobotCommand from "../use-robot-command";
-import {
-  formatActivity,
-  formatBattery,
-  formatRobotTimestamp,
-  formatRobotType,
-} from "../utils/robot-formatters";
+import { formatBattery, formatRobotTimestamp } from "../utils/robot-formatters";
 
 import ActivityControls from "./activity-controls";
 import LocationMap from "./location-map";

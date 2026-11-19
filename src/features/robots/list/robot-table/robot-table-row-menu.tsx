@@ -11,6 +11,7 @@ import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
+import type SvgIcon from "@mui/material/SvgIcon";
 import Tooltip from "@mui/material/Tooltip";
 import { useId, useState } from "react";
 
@@ -18,11 +19,19 @@ import {
   actionLabels,
   actionUnavailable,
   robotActions,
+  type RobotAction,
 } from "@/modules/robots/robot-actions";
 import type { Robot } from "@/modules/robots/robot";
 
 import { useRobotWriteLock } from "../../api/robot-mutations";
 import useRobotCommand from "../../use-robot-command";
+
+const actionIcons = {
+  start: PlayArrowIcon,
+  stop: StopIcon,
+  "return-to-base": HomeIcon,
+  retry: ReplayIcon,
+} satisfies Record<RobotAction, typeof SvgIcon>;
 
 export default function RobotTableRowMenu({
   robot,
@@ -64,12 +73,7 @@ export default function RobotTableRowMenu({
           const reason = unverified
             ? "Refresh robot connection before requesting an action"
             : actionUnavailable(robot, action, evaluatedAt);
-          const Icon = {
-            start: PlayArrowIcon,
-            stop: StopIcon,
-            "return-to-base": HomeIcon,
-            retry: ReplayIcon,
-          }[action];
+          const Icon = actionIcons[action];
           return (
             <Tooltip
               key={action}

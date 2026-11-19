@@ -10,17 +10,19 @@ import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import type { FocusEventHandler } from "react";
 
+import {
+  formatActivity,
+  formatIntegrationType,
+  formatRobotType,
+} from "@/modules/robots/robot-labels";
 import { robotProblemDetails } from "@/modules/robots/robot-problems";
 import type { Robot } from "@/modules/robots/robot";
 import { connectionStatus } from "@/modules/telemetry/freshness";
 
 import { ConnectionIndicator } from "../../connection-status/connection-status";
 import {
-  formatActivity,
-  formatRobotType,
-  formatIntegrationType,
-  formatBattery,
   formatAddedParts,
+  formatBattery,
   formatRobotTimestamp,
 } from "../../utils/robot-formatters";
 

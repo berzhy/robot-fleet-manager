@@ -1,7 +1,6 @@
 import { expect, test } from "vitest";
 
 import {
-  formatActivity,
   formatBattery,
   formatRobotTimestamp,
   formatAddedParts,
@@ -11,11 +10,6 @@ test("battery formatting distinguishes missing data from zero and rounds percent
   expect(formatBattery(null)).toBe("Unknown");
   expect(formatBattery(0)).toBe("0%");
   expect(formatBattery(82.6)).toBe("83%");
-});
-
-test("activity formatting includes charging and unknown states", () => {
-  expect(formatActivity("charging")).toBe("Charging");
-  expect(formatActivity("unknown")).toBe("Unknown");
 });
 
 test("Registered uses a consistent Berlin date and time across server and browser locales", () => {
