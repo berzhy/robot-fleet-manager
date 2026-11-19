@@ -224,6 +224,18 @@ async function seedFleet(request: APIRequestContext, count = 1) {
   return ((await response.json()) as { items: Robot[] }).items;
 }
 
+// The URL change applies in a later render, and until then the previous view's
+// rows stay clickable; a menu opened on one closes when the new rows load.
+async function showView(page: Page, name: string) {
+  await page.getByRole("button", { name, exact: true }).click();
+  await expect(
+    page.getByRole("button", { name, exact: true, pressed: true }),
+  ).toBeVisible();
+  await expect(page.getByTestId("fleet-loading")).not.toHaveText(
+    "Loading robots",
+  );
+}
+
 async function chooseFilter(page: Page, label: string, value: string) {
   const secondary = label === "Manufacturer" || label === "Integration";
   if (secondary) {
@@ -421,12 +433,8 @@ test("live filtered recovery closes the action menu and restores focus", async (
   await sendProblem(request, robot, true);
   await page.goto("/robots");
 
-  await page
-    .getByRole("button", { name: "Needs attention", exact: true })
-    .click();
+  await showView(page, "Needs attention");
   const row = page.getByTestId(`robot-row-${robot.id}`);
-  await expect(row).toBeVisible();
-
   await row.getByTestId("robot-actions").click();
   await expect(page.getByRole("menu")).toBeVisible();
 
@@ -452,9 +460,7 @@ test("delete confirmation keeps the selected robot after it leaves the filtered 
   const [robot, otherRobot] = await seedFleet(request, 2);
   await sendProblem(request, robot, true);
   await page.goto("/robots");
-  await page
-    .getByRole("button", { name: "Needs attention", exact: true })
-    .click();
+  await showView(page, "Needs attention");
 
   const row = page.getByTestId(`robot-row-${robot.id}`);
   await row.getByRole("button", { name: `Actions for ${robot.name}` }).click();
