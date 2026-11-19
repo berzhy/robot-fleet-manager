@@ -26,7 +26,16 @@ import RobotListFilters from "./robot-list-filters/robot-list-filters";
 import RobotStatusFilters from "./robot-list-filters/robot-status-filters";
 import RobotTable from "./robot-table/robot-table";
 import useAddRobotFocus from "./use-add-robot-focus";
-import useRobotList from "./use-robot-list";
+import useRobotList, {
+  useRobotListAnnouncement,
+  useRobotListPageCorrection,
+} from "./use-robot-list";
+import useRobotListView, {
+  clearRobotListFilters,
+  setRobotListFilters,
+  setRobotListPage,
+  setRobotListPageSize,
+} from "./use-robot-list-view";
 
 type DeleteTarget =
   { kind: "robot"; id: string; name: string } | { kind: "all" };
@@ -50,20 +59,10 @@ export default function RobotList() {
     open: boolean;
   } | null>(null);
 
-  const {
-    status,
-    announcement,
-    page,
-    pageSize,
-    setPage,
-    setPageSize,
-    refresh,
-    refreshFailed,
-    snapshot,
-    filters,
-    setFilters,
-    clearFilters,
-  } = useRobotList();
+  const { filters, pageSize } = useRobotListView();
+  const { status, snapshot, page, refresh, refreshFailed } = useRobotList();
+  const announcement = useRobotListAnnouncement();
+  useRobotListPageCorrection();
 
   // What the user types. The applied search (debounced, 2+ characters) lives in the URL.
   const [search, setSearch] = useState(filters.search ?? "");
@@ -269,7 +268,7 @@ export default function RobotList() {
           <Stack spacing={2}>
             <RobotStatusFilters
               filters={filters}
-              onChange={setFilters}
+              onChange={setRobotListFilters}
               summary={snapshot?.summary}
               updating={status === "loading"}
             />
@@ -279,8 +278,8 @@ export default function RobotList() {
               search={search}
               searchInputRef={searchInputRef}
               onSearchChange={setSearch}
-              onChange={setFilters}
-              onClearFilters={clearFilters}
+              onChange={setRobotListFilters}
+              onClearFilters={clearRobotListFilters}
               options={snapshot?.filterOptions}
             />
           </Stack>
@@ -288,19 +287,19 @@ export default function RobotList() {
         onClearFilters={() => {
           focusSearch();
           setSearch("");
-          clearFilters();
+          clearRobotListFilters();
         }}
         onClearSearch={() => {
           focusSearch();
           setSearch("");
-          setFilters({ search: undefined });
+          setRobotListFilters({ search: undefined });
         }}
         onRowFocusLost={confirmation ? undefined : focusSearch}
         unverified={refreshFailed}
         page={page}
         pageSize={pageSize}
-        onPageSizeChange={setPageSize}
-        onPageChange={setPage}
+        onPageSizeChange={setRobotListPageSize}
+        onPageChange={setRobotListPage}
         onRetry={refresh}
         onAction={requestAction}
         onDelete={({ id, name }, trigger) =>

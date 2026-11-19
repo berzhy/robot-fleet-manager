@@ -5,72 +5,40 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import type { RobotFilters } from "@/modules/robots/robot-filters";
-import {
-  parseRobotListParams,
-  robotListSearchParams,
-  type RobotListParams,
-} from "@/modules/robots/robot-list-params";
+import { robotFilterSearchParams } from "@/modules/robots/robot-list-params";
 
 import { robotListOptions } from "../api/robot-queries";
 
+import useRobotListView, { setRobotListPage } from "./use-robot-list-view";
+
 export type RobotListStatus = "loading" | "error" | "success";
 
-function lastRobotPage(total: number, size: number) {
-  return Math.max(0, Math.ceil(total / size) - 1);
-}
-
+/**
+ * The robot page for the URL's view. No local state or effects, so any part of
+ * the list can call it; React Query shares one request between them.
+ */
 export default function useRobotList() {
   const client = useQueryClient();
+  const view = useRobotListView();
 
-  const request = parseRobotListParams(useSearchParams());
-
-  const options = robotListOptions(request);
-
-  const [announcement, setAnnouncement] = useState("");
-  const [announce, setAnnounce] = useState(false);
-
+  const options = robotListOptions(view);
   const query = useQuery({ ...options, placeholderData: keepPreviousData });
 
   const snapshot = query.data;
-  const total = snapshot?.total ?? 0;
-  const page = Math.min(request.page, lastRobotPage(total, request.pageSize));
-  const outOfRange = Boolean(
+  const page = Math.min(
+    view.page,
+    lastRobotPage(snapshot?.total ?? 0, view.pageSize),
+  );
+  const isOutOfRange = Boolean(
+    snapshot &&
     !query.isPlaceholderData &&
-    query.data &&
-    request.page > lastRobotPage(query.data.total, request.pageSize),
+    view.page > lastRobotPage(snapshot.total, view.pageSize),
   );
 
-  if (query.data && !query.isPlaceholderData && announce) {
-    setAnnouncement(
-      `${query.data.total} ${query.data.total === 1 ? "robot" : "robots"} found.`,
-    );
-    setAnnounce(false);
-  }
-
-  useEffect(() => {
-    if (outOfRange) {
-      updateRequest((current) => ({ ...current, page }));
-    }
-  }, [outOfRange, page]);
-
-  function refresh() {
-    void client.invalidateQueries({
-      queryKey: options.queryKey,
-      exact: true,
-    });
-  }
-
-  function announceNextResult() {
-    setAnnounce(true);
-    setAnnouncement("");
-  }
-
   const status: RobotListStatus =
-    outOfRange || query.isPlaceholderData
+    isOutOfRange || query.isPlaceholderData
       ? "loading"
       : snapshot
         ? "success"
@@ -78,50 +46,52 @@ export default function useRobotList() {
           ? "error"
           : "loading";
 
+  function refresh() {
+    void client.invalidateQueries({ queryKey: options.queryKey, exact: true });
+  }
+
   return {
     status,
-    announcement,
+    snapshot,
     page,
-    pageSize: request.pageSize,
-    setPage: (page: number) =>
-      updateRequest((current) => ({ ...current, page })),
-    setPageSize: (pageSize: number) =>
-      updateRequest((current) => ({ ...current, page: 0, pageSize })),
-    setFilters: (changes: Partial<RobotFilters>) => {
-      announceNextResult();
-      updateRequest((current) => ({
-        ...current,
-        page: 0,
-        filters: { ...current.filters, ...changes },
-      }));
-    },
-    clearFilters: () => {
-      announceNextResult();
-      updateRequest((current) => ({
-        ...current,
-        page: 0,
-        filters: { view: "all" },
-      }));
-    },
+    isOutOfRange,
     refresh,
     refreshFailed: query.isRefetchError,
-    snapshot,
-    filters: request.filters,
   };
 }
 
-// The URL is the list's state. Changes merge into window.location rather than
-// this render's snapshot: Next re-renders after replaceState inside a
-// transition, so a second change in the same tick would otherwise drop the first.
-function updateRequest(change: (current: RobotListParams) => RobotListParams) {
-  const current = parseRobotListParams(
-    new URLSearchParams(window.location.search),
-  );
-  const query = robotListSearchParams(change(current)).toString();
+/** Moves the URL to the last page when the current one no longer exists. */
+export function useRobotListPageCorrection() {
+  const { page, isOutOfRange } = useRobotList();
 
-  window.history.replaceState(
-    null,
-    "",
-    query ? `?${query}` : window.location.pathname,
-  );
+  useEffect(() => {
+    if (isOutOfRange) {
+      setRobotListPage(page);
+    }
+  }, [isOutOfRange, page]);
+}
+
+/** The result count to announce after the filters change, not after polls. */
+export function useRobotListAnnouncement() {
+  const { filters } = useRobotListView();
+  const { status, snapshot } = useRobotList();
+  const filtersKey = robotFilterSearchParams(filters).toString();
+
+  const [announced, setAnnounced] = useState({ filtersKey, text: "" });
+
+  if (announced.filtersKey !== filtersKey) {
+    if (status === "success" && snapshot) {
+      const robots = snapshot.total === 1 ? "robot" : "robots";
+      setAnnounced({ filtersKey, text: `${snapshot.total} ${robots} found.` });
+    } else if (announced.text) {
+      // Clear while loading, so the same count is announced again.
+      setAnnounced({ ...announced, text: "" });
+    }
+  }
+
+  return announced.text;
+}
+
+function lastRobotPage(total: number, size: number) {
+  return Math.max(0, Math.ceil(total / size) - 1);
 }

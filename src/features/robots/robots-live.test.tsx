@@ -10,7 +10,13 @@ import { useCreateRobots, useSendRobotAction } from "./api/robot-mutations";
 import RobotDetails from "./details/robot-details";
 import useLiveRobot from "./details/use-live-robot";
 import RobotList from "./list/robot-list";
-import useRobotList from "./list/use-robot-list";
+import useRobotList, {
+  useRobotListPageCorrection,
+} from "./list/use-robot-list";
+import {
+  setRobotListFilters,
+  setRobotListPage,
+} from "./list/use-robot-list-view";
 import { pageMetadata } from "./test-fixtures";
 
 const robot: Robot = {
@@ -694,9 +700,12 @@ test("page correction after a hidden fleet shrinks immediately verifies the dest
   });
   vi.stubGlobal("fetch", fetcher);
 
-  const { result } = renderHook(() => useRobotList());
+  const { result } = renderHook(() => {
+    useRobotListPageCorrection();
+    return useRobotList();
+  });
   await tick();
-  act(() => result.current.setPage(2));
+  act(() => setRobotListPage(2));
   await tick();
   await tick(20000);
   expect(result.current.page).toBe(2);
@@ -817,7 +826,7 @@ test("a write that settles during the first read for new filters refetches inste
     await vi.advanceTimersByTimeAsync(0);
   });
   await act(async () => {
-    result.current.list.setFilters({ view: "offline" });
+    setRobotListFilters({ view: "offline" });
     await vi.advanceTimersByTimeAsync(0);
   });
   const firstOfflineRead = reads.at(-1)!;
