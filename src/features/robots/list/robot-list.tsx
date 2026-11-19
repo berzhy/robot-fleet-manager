@@ -5,8 +5,9 @@ import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import { useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
+import { appliedSearch } from "@/modules/robots/robot-list-params";
 import { useNotifications } from "@/shared/notifications/notification-provider";
 
 import { isRequestTimeout } from "../api/robot-api";
@@ -64,8 +65,27 @@ export default function RobotList() {
     clearFilters,
   } = useRobotList();
 
-  // The typed draft; the debounced, applied search lives in the URL.
+  // What the user types. The applied search (debounced, 2+ characters) lives in the URL.
   const [search, setSearch] = useState(filters.search ?? "");
+  // The URL search the box last agreed with. When the URL moves to a search the
+  // box's text would not apply (a link, Back), the box follows it.
+  const [syncedSearch, setSyncedSearch] = useState(filters.search);
+  if (filters.search !== syncedSearch) {
+    setSyncedSearch(filters.search);
+    if (filters.search !== appliedSearch(search)) {
+      setSearch(filters.search ?? "");
+    }
+  }
+
+  // Next keeps this page alive while hidden. Forget unsent text so it is not
+  // applied on return; the box then re-reads the URL.
+  useLayoutEffect(
+    () => () => {
+      setSearch("");
+      setSyncedSearch(undefined);
+    },
+    [],
+  );
 
   const [deleteError, setDeleteError] = useState<string | null>(null);
 

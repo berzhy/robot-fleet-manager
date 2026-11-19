@@ -25,6 +25,7 @@ import {
   type FilterOptions,
   type RobotFilters,
 } from "@/modules/robots/robot-filters";
+import { appliedSearch } from "@/modules/robots/robot-list-params";
 
 import {
   formatIntegrationType,
@@ -73,8 +74,7 @@ export default function RobotListFilters({
   const popoverTitleId = `${popoverId}-title`;
 
   const applySearch = useEffectEvent((value: string) => {
-    const normalized = value.trim();
-    const applied = normalized.length >= 2 ? normalized : undefined;
+    const applied = appliedSearch(value);
     if (applied !== filters.search) {
       onChange({ search: applied });
     }

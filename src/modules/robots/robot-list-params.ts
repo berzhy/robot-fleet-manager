@@ -27,6 +27,11 @@ const robotListParamsSchema = z.object({
   view: z.enum(fleetViews).catch("all"),
 });
 
+/** The search a typed text applies: trimmed, 2–100 characters, otherwise none. */
+export function appliedSearch(text: string) {
+  return robotListParamsSchema.shape.search.parse(text);
+}
+
 export function parseRobotListParams(
   searchParams: URLSearchParams,
 ): RobotListParams {
