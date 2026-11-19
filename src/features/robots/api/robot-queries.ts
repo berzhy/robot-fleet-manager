@@ -26,5 +26,9 @@ export function robotContextOptions(id: string) {
     queryKey: robotKeys.context(id),
     queryFn: ({ signal }) => getRobotContext(id, signal),
     refetchInterval: robotPollIntervalMs,
+    // The page renders with server data; it stays fresh until the first poll
+    // instead of being fetched again on mount. Writes still refetch at once,
+    // since invalidation marks data stale regardless.
+    staleTime: robotPollIntervalMs,
   });
 }

@@ -2,21 +2,22 @@
 
 import { useQuery } from "@tanstack/react-query";
 
-import type { RobotContext } from "@/modules/robots/robot";
-
+import { isRobotNotFound } from "../api/robot-api";
 import { robotContextOptions } from "../api/robot-queries";
 
-export default function useLiveRobot(initial: RobotContext) {
+export default function useLiveRobot(robotId: string) {
   const query = useQuery({
-    ...robotContextOptions(initial.robot.id),
-    initialData: initial,
-    // A deleted robot is cached as null; stop polling for it.
-    enabled: (contextQuery) => contextQuery.state.data !== null,
+    ...robotContextOptions(robotId),
+    // A deleted robot stays deleted: no more polls or refetches on focus.
+    enabled: (contextQuery) => !isRobotNotFound(contextQuery.state.error),
   });
 
-  return {
-    ...(query.data ?? initial),
-    missing: query.data === null,
-    refreshFailed: query.isError,
-  };
+  // The page prefetches the context on the server, so the cache already holds it.
+  if (!query.data) {
+    throw new Error(`Robot ${robotId} rendered without a prefetched context.`);
+  }
+
+  // A failed refetch keeps the last data, so a deleted robot still shows its name.
+  const missing = isRobotNotFound(query.error);
+  return { ...query.data, missing, refreshFailed: query.isError && !missing };
 }

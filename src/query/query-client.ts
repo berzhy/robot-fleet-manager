@@ -4,13 +4,14 @@ export function createQueryClient() {
   return new QueryClient({
     defaultOptions: {
       queries: {
+        // Polling already asks again every few seconds; a retry would only
+        // delay the "Live updates interrupted" warning.
         retry: false,
-        staleTime: 0,
+        // Run and fail visibly when the browser reports it is offline, rather
+        // than pausing in silence.
         networkMode: "always",
-        refetchOnReconnect: true,
-        refetchOnWindowFocus: true,
       },
-      mutations: { retry: false, networkMode: "always" },
+      mutations: { networkMode: "always" },
     },
   });
 }

@@ -7,6 +7,7 @@ import {
   getRobots,
   getRobotContext,
   deleteRobot as dataDeleteRobot,
+  isRobotNotFound,
   sendRobotAction,
 } from "./robot-api";
 
@@ -148,16 +149,31 @@ test("creates robots in one batch POST and requires a 201 response", async () =>
 test("detail requests encode IDs, support cancellation, and distinguish deletion from failure", async () => {
   const fetcher = vi
     .fn()
+    .mockResolvedValueOnce(
+      Response.json(
+        { error: { code: "NOT_FOUND", message: "Robot not found." } },
+        { status: 404 },
+      ),
+    )
     .mockResolvedValueOnce(new Response(null, { status: 404 }))
     .mockResolvedValueOnce(new Response(null, { status: 500 }));
   vi.stubGlobal("fetch", fetcher);
 
   const controller = new AbortController();
-  expect(await getRobotContext("robot/id", controller.signal)).toBeNull();
+  const deleted = await getRobotContext("robot/id", controller.signal).catch(
+    (error: unknown) => error,
+  );
+  expect(isRobotNotFound(deleted)).toBe(true);
   expect(fetcher).toHaveBeenCalledWith("/api/robots/robot%2Fid/context", {
     cache: "no-store",
     signal: expect.any(AbortSignal) as AbortSignal,
   });
+
+  // A 404 without the server's code is a missing route, not a deleted robot.
+  const missingRoute = await getRobotContext("robot").catch(
+    (error: unknown) => error,
+  );
+  expect(isRobotNotFound(missingRoute)).toBe(false);
 
   await expect(getRobotContext("failure")).rejects.toThrow(
     "Unable to refresh robot context.",

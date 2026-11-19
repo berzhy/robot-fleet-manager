@@ -2,10 +2,11 @@ import { act, fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 
 import { renderHook, render } from "@/query/test-utils";
-import type { Robot } from "@/modules/robots/robot";
+import type { Robot, RobotContext } from "@/modules/robots/robot";
 import type { CreateRobotInput } from "@/modules/robots/robot-validation";
 
 import { useCreateRobots, useSendRobotAction } from "./api/robot-mutations";
+import { robotKeys } from "./api/robot-queries";
 
 import RobotDetails from "./details/robot-details";
 import useLiveRobot from "./details/use-live-robot";
@@ -79,6 +80,19 @@ function liveFetcher() {
   return vi.fn<(url: string, init?: RequestInit) => Promise<Response>>((url) =>
     Promise.resolve(url.includes("/context") ? robotContext(50) : page(50)),
   );
+}
+
+function robotNotFound() {
+  return Response.json(
+    { error: { code: "NOT_FOUND", message: "Robot not found." } },
+    { status: 404 },
+  );
+}
+
+function renderDetails(context: RobotContext) {
+  return render(<RobotDetails robotId={context.robot.id} />, {
+    queryData: [[robotKeys.context(context.robot.id), context]],
+  });
 }
 
 test("quiet polling preserves DOM and focus, retains failed data, and recovers", async () => {
@@ -167,13 +181,11 @@ test.each(["fleet", "detail"] as const)(
     const fetcher = liveFetcher();
     vi.stubGlobal("fetch", fetcher);
 
-    render(
-      surface === "fleet" ? (
-        <RobotList />
-      ) : (
-        <RobotDetails robot={robot} siteRobots={[]} verifiedAt={evaluatedAt} />
-      ),
-    );
+    if (surface === "fleet") {
+      render(<RobotList />);
+    } else {
+      renderDetails({ robot, siteRobots: [], verifiedAt: evaluatedAt });
+    }
     await tick();
 
     if (surface === "fleet") {
@@ -240,6 +252,20 @@ test("a stale in-flight poll cannot overwrite an explicit refresh", async () => 
   expect(result.current.refreshFailed).toBe(false);
 });
 
+test("details render with the page's data and first ask again at the next poll", async () => {
+  vi.useFakeTimers();
+  const fetcher = liveFetcher();
+  vi.stubGlobal("fetch", fetcher);
+  renderDetails({ robot, siteRobots: [], verifiedAt: Date.now() });
+  await tick();
+
+  expect(screen.getByTestId("robot-details")).toBeInTheDocument();
+  expect(fetcher).not.toHaveBeenCalled();
+
+  await tick(5000);
+  expect(fetcher).toHaveBeenCalledTimes(1);
+});
+
 test("detail refreshes while Logs is selected and stops when its robot is deleted", async () => {
   vi.useFakeTimers();
   vi.stubGlobal(
@@ -248,23 +274,18 @@ test("detail refreshes while Logs is selected and stops when its robot is delete
       .fn()
       .mockResolvedValueOnce(
         Response.json({
-          robot: { ...robot, batteryPercent: 45 },
+          robot: { ...robot, batteryPercent: 42, site: "Berlin" },
           siteRobots: [],
           verifiedAt: Date.now(),
         }),
       )
-      .mockImplementationOnce(() =>
-        Promise.resolve(
-          Response.json({
-            robot: { ...robot, batteryPercent: 42 },
-            siteRobots: [],
-            verifiedAt: Date.now(),
-          }),
-        ),
-      )
-      .mockResolvedValueOnce(new Response(null, { status: 404 })),
+      .mockResolvedValueOnce(robotNotFound()),
   );
-  render(<RobotDetails robot={robot} siteRobots={[]} verifiedAt={0} />);
+  renderDetails({
+    robot: { ...robot, batteryPercent: 45 },
+    siteRobots: [],
+    verifiedAt: 0,
+  });
   await tick();
 
   expect(
@@ -276,6 +297,9 @@ test("detail refreshes while Logs is selected and stops when its robot is delete
   await tick(5000);
   expect(logs).toHaveAttribute("aria-selected", "true");
   expect(screen.getByTestId("robot-battery")).toHaveTextContent("42%");
+  expect(screen.getByRole("tabpanel", { name: "Logs" })).toHaveTextContent(
+    "Location configuration loaded: Berlin",
+  );
 
   await tick(5000);
   expect(screen.getByTestId("robot-unavailable")).toHaveTextContent(
@@ -285,7 +309,7 @@ test("detail refreshes while Logs is selected and stops when its robot is delete
   setPageVisibility(true);
   setPageVisibility(false);
   await tick(10000);
-  expect(fetch).toHaveBeenCalledTimes(3);
+  expect(fetch).toHaveBeenCalledTimes(2);
 });
 
 test("connection classification stays on the last fleet snapshot between refreshes", async () => {
@@ -326,10 +350,10 @@ test("a confirmed detail deletion clears an earlier refresh warning", async () =
     vi
       .fn()
       .mockResolvedValueOnce(new Response(null, { status: 500 }))
-      .mockResolvedValueOnce(new Response(null, { status: 404 })),
+      .mockResolvedValueOnce(robotNotFound()),
   );
-  render(<RobotDetails robot={robot} siteRobots={[]} verifiedAt={0} />);
-  await tick();
+  renderDetails({ robot: robot, siteRobots: [], verifiedAt: 0 });
+  await tick(5000);
 
   expect(screen.getByTestId("robot-refresh-warning")).toHaveTextContent(
     "Live updates interrupted",
@@ -342,14 +366,12 @@ test("a confirmed detail deletion clears an earlier refresh warning", async () =
   expect(screen.queryByTestId("robot-refresh-warning")).not.toBeInTheDocument();
 });
 
-test("failed initial detail refresh keeps server-verified connection information", async () => {
+test("a failed first detail poll keeps server-verified connection information", async () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date(Date.parse(robot.lastReceivedAt!) + 20000));
   vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("unavailable")));
-  render(
-    <RobotDetails robot={robot} siteRobots={[]} verifiedAt={Date.now()} />,
-  );
-  await tick();
+  renderDetails({ robot: robot, siteRobots: [], verifiedAt: Date.now() });
+  await tick(5000);
 
   expect(
     within(screen.getByTestId("robot-details")).getByTestId("robot-connection"),
@@ -420,15 +442,21 @@ test("fleet and detail retain snapshots after a request timeout and recover on t
     );
   });
   vi.stubGlobal("fetch", fetcher);
-  const { result } = renderHook(() => ({
-    fleet: useRobotList(),
-    detail: useLiveRobot({ robot, siteRobots: [], verifiedAt: Date.now() }),
-  }));
+  const context = {
+    robot: { ...robot, batteryPercent: 45 },
+    siteRobots: [],
+    verifiedAt: Date.now(),
+  };
+  const { result } = renderHook(
+    () => ({ fleet: useRobotList(), detail: useLiveRobot(robot.id) }),
+    { queryData: [[robotKeys.context(robot.id), context]] },
+  );
   await tick();
 
+  // The details came with the page, so their first request is the first poll.
   stalled = true;
   await tick(5000);
-  expect(fetcher).toHaveBeenCalledTimes(4);
+  expect(fetcher).toHaveBeenCalledTimes(3);
 
   await act(async () => {
     timeout.abort(new DOMException("Request timed out", "TimeoutError"));
@@ -443,12 +471,12 @@ test("fleet and detail retain snapshots after a request timeout and recover on t
   expect(result.current.detail.robot.batteryPercent).toBe(45);
 
   await tick(4999);
-  expect(fetcher).toHaveBeenCalledTimes(4);
+  expect(fetcher).toHaveBeenCalledTimes(3);
 
   stalled = false;
   timeout = new AbortController();
   await tick(1);
-  expect(fetcher).toHaveBeenCalledTimes(6);
+  expect(fetcher).toHaveBeenCalledTimes(5);
   expect(result.current.fleet.refreshFailed).toBe(false);
   expect(result.current.detail.refreshFailed).toBe(false);
 });
@@ -469,11 +497,21 @@ test("unmount cancels outstanding fleet and detail requests without restarting p
       }),
   );
   vi.stubGlobal("fetch", fetcher);
-  const { unmount } = renderHook(() => ({
-    fleet: useRobotList(),
-    detail: useLiveRobot({ robot, siteRobots: [], verifiedAt: Date.now() }),
-  }));
+  const { unmount } = renderHook(
+    () => ({ fleet: useRobotList(), detail: useLiveRobot(robot.id) }),
+    {
+      queryData: [
+        [
+          robotKeys.context(robot.id),
+          { robot, siteRobots: [], verifiedAt: Date.now() },
+        ],
+      ],
+    },
+  );
+  expect(signals).toHaveLength(1);
 
+  // The details came with the page, so their first request is the first poll.
+  await tick(5000);
   expect(signals).toHaveLength(2);
   expect(signals.every((signal) => !signal.aborted)).toBe(true);
 
@@ -535,9 +573,11 @@ test.each(["fleet", "detail"] as const)(
     }
 
     let completeRefresh!: (value: Response) => void;
-    const fetcher = vi
-      .fn()
-      .mockResolvedValueOnce(response(45))
+    const fetcher = vi.fn();
+    if (screenName === "fleet") {
+      fetcher.mockResolvedValueOnce(response(45));
+    }
+    fetcher
       .mockImplementationOnce(
         () =>
           new Promise<Response>((resolve) => {
@@ -549,14 +589,18 @@ test.each(["fleet", "detail"] as const)(
 
     vi.stubGlobal("fetch", fetcher);
 
-    render(
-      screenName === "fleet" ? (
-        <RobotList />
-      ) : (
-        <RobotDetails robot={robot} siteRobots={[]} verifiedAt={Date.now()} />
-      ),
-    );
+    if (screenName === "fleet") {
+      render(<RobotList />);
+    } else {
+      renderDetails({
+        robot: { ...robot, batteryPercent: 45 },
+        siteRobots: [],
+        verifiedAt: Date.now(),
+      });
+    }
     await tick();
+    // The list fetches on mount, the details come with the page; count from here.
+    fetcher.mockClear();
 
     const container = screen.getByTestId(
       screenName === "fleet" ? "robot-row-live" : "robot-details",
@@ -568,15 +612,14 @@ test.each(["fleet", "detail"] as const)(
         : "robot-refresh-warning";
 
     expect(battery).toHaveTextContent("45%");
-    expect(fetcher).toHaveBeenCalledTimes(1);
 
     setPageVisibility(true);
     await tick(15000);
-    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(fetcher).not.toHaveBeenCalled();
 
     setPageVisibility(false);
     await tick();
-    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(fetcher).toHaveBeenCalledTimes(1);
     expect(battery).toBeInTheDocument();
     expect(battery).toHaveTextContent("45%");
 
@@ -592,12 +635,13 @@ test.each(["fleet", "detail"] as const)(
     });
     expect(battery).toHaveTextContent("44%");
 
+    // Returning refreshes data older than one poll interval.
     setPageVisibility(true);
-    await tick();
+    await tick(5000);
     setPageVisibility(false);
     await tick();
 
-    expect(fetcher).toHaveBeenCalledTimes(3);
+    expect(fetcher).toHaveBeenCalledTimes(2);
     expect(battery).toBeInTheDocument();
     expect(battery).toHaveTextContent("44%");
     expect(screen.getByTestId(warningId)).toHaveTextContent(
@@ -605,11 +649,11 @@ test.each(["fleet", "detail"] as const)(
     );
 
     setPageVisibility(true);
-    await tick();
+    await tick(5000);
     setPageVisibility(false);
     await tick();
 
-    expect(fetcher).toHaveBeenCalledTimes(4);
+    expect(fetcher).toHaveBeenCalledTimes(3);
     expect(battery).toHaveTextContent("40%");
     expect(screen.queryByTestId(warningId)).not.toBeInTheDocument();
   },
@@ -633,9 +677,11 @@ test.each(["fleet", "detail"] as const)(
 
     let complete!: (response: Response) => void;
     let signal!: AbortSignal;
-    const fetcher = vi
-      .fn()
-      .mockResolvedValueOnce(response(45))
+    const fetcher = vi.fn();
+    if (screenName === "fleet") {
+      fetcher.mockResolvedValueOnce(response(45));
+    }
+    fetcher
       .mockImplementationOnce((_url: string, options: RequestInit) => {
         signal = options.signal!;
         return new Promise<Response>((resolve) => {
@@ -645,14 +691,18 @@ test.each(["fleet", "detail"] as const)(
       .mockImplementation(() => Promise.resolve(response(40)));
 
     vi.stubGlobal("fetch", fetcher);
-    render(
-      screenName === "fleet" ? (
-        <RobotList />
-      ) : (
-        <RobotDetails robot={robot} siteRobots={[]} verifiedAt={Date.now()} />
-      ),
-    );
+    if (screenName === "fleet") {
+      render(<RobotList />);
+    } else {
+      renderDetails({
+        robot: { ...robot, batteryPercent: 45 },
+        siteRobots: [],
+        verifiedAt: Date.now(),
+      });
+    }
     await tick();
+    // The list fetches on mount, the details come with the page; count from here.
+    fetcher.mockClear();
     await tick(5000);
 
     const container = screen.getByTestId(
@@ -660,7 +710,7 @@ test.each(["fleet", "detail"] as const)(
     );
     const battery = within(container).getByTestId("robot-battery");
 
-    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(fetcher).toHaveBeenCalledTimes(1);
     setPageVisibility(true);
     await tick();
     expect(signal.aborted).toBe(false);
@@ -672,11 +722,11 @@ test.each(["fleet", "detail"] as const)(
     expect(battery).toHaveTextContent("44%");
 
     await tick(10000);
-    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(fetcher).toHaveBeenCalledTimes(1);
 
     setPageVisibility(false);
     await tick();
-    expect(fetcher).toHaveBeenCalledTimes(3);
+    expect(fetcher).toHaveBeenCalledTimes(2);
     expect(battery).toHaveTextContent("40%");
   },
 );
@@ -761,12 +811,21 @@ test("a command cancels the poll in flight and stays pending until fresh data la
   const { fetcher, reads, acceptWrite } = deferredFetch();
   vi.stubGlobal("fetch", fetcher);
 
-  const initial = { robot, siteRobots: [], verifiedAt: Date.now() };
-  const { result } = renderHook(() => ({
-    detail: useLiveRobot(initial),
-    command: useSendRobotAction(),
-  }));
-  await tick();
+  const { result } = renderHook(
+    () => ({
+      detail: useLiveRobot(robot.id),
+      command: useSendRobotAction(),
+    }),
+    {
+      queryData: [
+        [
+          robotKeys.context(robot.id),
+          { robot, siteRobots: [], verifiedAt: Date.now() },
+        ],
+      ],
+    },
+  );
+  await tick(5000);
   expect(reads).toHaveLength(1);
 
   await act(async () => {

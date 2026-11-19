@@ -14,7 +14,6 @@ import NextLink from "next/link";
 import { useId, useState } from "react";
 
 import { robotProblemDetails } from "@/modules/robots/robot-problems";
-import type { RobotContext } from "@/modules/robots/robot";
 import { connectionStatus } from "@/modules/telemetry/freshness";
 
 import { useRobotWriteLock } from "../api/robot-mutations";
@@ -33,7 +32,7 @@ import RobotLogs from "./robot-logs";
 import RobotProfile from "./robot-profile";
 import useLiveRobot from "./use-live-robot";
 
-export default function RobotDetails(initial: RobotContext) {
+export default function RobotDetails({ robotId }: { robotId: string }) {
   const tabId = useId();
   const [tab, setTab] = useState<"overview" | "logs">("overview");
   const requestAction = useRobotCommand();
@@ -44,7 +43,7 @@ export default function RobotDetails(initial: RobotContext) {
     missing,
     refreshFailed,
     verifiedAt: evaluatedAt,
-  } = useLiveRobot(initial);
+  } = useLiveRobot(robotId);
 
   const connection = connectionStatus(robot.lastReceivedAt, evaluatedAt);
   const stale = connection === "Delayed" || connection === "Offline";
@@ -224,7 +223,7 @@ export default function RobotDetails(initial: RobotContext) {
             hidden={tab !== "logs"}
             tabIndex={0}
           >
-            <RobotLogs robot={initial.robot} />
+            <RobotLogs robot={robot} />
           </Box>
         </>
       )}

@@ -53,6 +53,11 @@ async function apiError(response: Response, fallbackMessage: string) {
   );
 }
 
+/** The server reports that the robot does not exist (any more). */
+export function isRobotNotFound(error: unknown) {
+  return error instanceof ApiError && error.code === "NOT_FOUND";
+}
+
 /** A timeout aborts the request in the browser, so there is no response to read. */
 export function isRequestTimeout(error: unknown) {
   return (
@@ -92,8 +97,8 @@ export async function deleteRobot(id: string) {
   }
 
   const error = await apiError(response, "Unable to delete robot.");
-  // A 404 from a missing route, not the robot, is a failure rather than a removal.
-  if (error.code === "NOT_FOUND") {
+  // Checked by code, not status: a 404 from a missing route is a failure, not a removal.
+  if (isRobotNotFound(error)) {
     return "already-removed";
   }
   throw error;
@@ -136,14 +141,11 @@ export async function sendRobotAction(
 export async function getRobotContext(
   id: string,
   signal?: AbortSignal,
-): Promise<RobotContext | null> {
+): Promise<RobotContext> {
   const response = await fetch(
     `/api/robots/${encodeURIComponent(id)}/context`,
     { cache: "no-store", signal: requestSignal(signal) },
   );
-  if (response.status === 404) {
-    return null;
-  }
   if (!response.ok) {
     throw await apiError(response, "Unable to refresh robot context.");
   }

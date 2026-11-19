@@ -8,7 +8,9 @@ import {
 import { expect, test, vi, afterEach } from "vitest";
 
 import { render } from "@/query/test-utils";
-import type { Robot } from "@/modules/robots/robot";
+import type { Robot, RobotContext } from "@/modules/robots/robot";
+
+import { robotKeys } from "../api/robot-queries";
 
 import ActivityControls from "./activity-controls";
 import RobotDetails from "./robot-details";
@@ -32,8 +34,14 @@ const robot: Robot = {
   createdAt: "2026-11-14T12:00:00.000Z",
 };
 
+function renderDetails(context: RobotContext) {
+  return render(<RobotDetails robotId={context.robot.id} />, {
+    queryData: [[robotKeys.context(context.robot.id), context]],
+  });
+}
+
 test("details show fields, missing values, and breadcrumbs", async () => {
-  render(<RobotDetails robot={robot} siteRobots={[]} verifiedAt={0} />);
+  renderDetails({ robot: robot, siteRobots: [], verifiedAt: 0 });
 
   const details = within(screen.getByTestId("robot-details"));
   expect(
@@ -175,9 +183,7 @@ test.each([
         }),
       ),
     );
-    render(
-      <RobotDetails robot={online} siteRobots={[]} verifiedAt={Date.now()} />,
-    );
+    renderDetails({ robot: online, siteRobots: [], verifiedAt: Date.now() });
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent(`${label}. ${guidance}`);
@@ -209,7 +215,6 @@ test.each([
     let resolveRefresh!: (response: Response) => void;
     const fetcher = vi
       .fn()
-      .mockResolvedValueOnce(context())
       .mockImplementationOnce(
         () => new Promise<Response>((resolve) => (resolveAction = resolve)),
       )
@@ -218,9 +223,7 @@ test.each([
       )
       .mockImplementation(() => Promise.resolve(context()));
     vi.stubGlobal("fetch", fetcher);
-    render(
-      <RobotDetails robot={online} siteRobots={[]} verifiedAt={Date.now()} />,
-    );
+    renderDetails({ robot: online, siteRobots: [], verifiedAt: Date.now() });
     await act(async () => {});
 
     await act(async () => {
@@ -262,7 +265,7 @@ test.each([
       await Promise.resolve();
     });
 
-    expect(fetcher).toHaveBeenCalledTimes(3);
+    expect(fetcher).toHaveBeenCalledTimes(2);
 
     await act(async () => {
       resolveRefresh(context());
@@ -311,9 +314,7 @@ test("activity requests are guarded while pending and telemetry confirms the cha
       );
     });
   vi.stubGlobal("fetch", fetcher);
-  render(
-    <RobotDetails robot={online} siteRobots={[]} verifiedAt={Date.now()} />,
-  );
+  renderDetails({ robot: online, siteRobots: [], verifiedAt: Date.now() });
 
   const stop = screen.getByRole("button", {
     name: "Stop activity",
@@ -406,9 +407,11 @@ test("a command result is reported after leaving the details screen", async () =
           ),
     ),
   );
-  const { rerender } = render(
-    <RobotDetails robot={online} siteRobots={[]} verifiedAt={Date.now()} />,
-  );
+  const { rerender } = renderDetails({
+    robot: online,
+    siteRobots: [],
+    verifiedAt: Date.now(),
+  });
 
   const stop = screen.getByRole("button", { name: "Stop activity" });
   await waitFor(() => expect(stop).toHaveAttribute("aria-disabled", "false"));
@@ -439,7 +442,6 @@ test("activity controls stay disabled until the command refresh lands", async ()
 
   let resolveAction!: (value: Response) => void;
   let resolveRefresh: ((value: Response) => void) | undefined;
-  let refreshes = 0;
 
   const fetcher = vi.fn((_url: string, init?: RequestInit) => {
     if (init?.method === "POST") {
@@ -447,23 +449,13 @@ test("activity controls stay disabled until the command refresh lands", async ()
         resolveAction = resolve;
       });
     }
-
-    refreshes += 1;
-
-    if (refreshes > 1) {
-      return new Promise<Response>((resolve) => {
-        resolveRefresh = resolve;
-      });
-    }
-
-    return Promise.resolve(
-      Response.json({ robot: online, siteRobots: [], verifiedAt: Date.now() }),
-    );
+    // The page came with fresh data, so the only read is the command's refresh.
+    return new Promise<Response>((resolve) => {
+      resolveRefresh = resolve;
+    });
   });
   vi.stubGlobal("fetch", fetcher);
-  render(
-    <RobotDetails robot={online} siteRobots={[]} verifiedAt={Date.now()} />,
-  );
+  renderDetails({ robot: online, siteRobots: [], verifiedAt: Date.now() });
 
   const stop = screen.getByRole("button", { name: "Stop activity" });
   await waitFor(() => expect(stop).toHaveAttribute("aria-disabled", "false"));
@@ -534,9 +526,7 @@ test("failed action keeps reported activity and explains the failure", async () 
       ),
     ),
   );
-  render(
-    <RobotDetails robot={online} siteRobots={[]} verifiedAt={Date.now()} />,
-  );
+  renderDetails({ robot: online, siteRobots: [], verifiedAt: Date.now() });
 
   await act(async () => {
     fireEvent.click(screen.getByRole("button", { name: /^Stop activity$/ }));
@@ -580,9 +570,7 @@ test("an action the server refuses shows the server's reason", async () => {
       ),
     ),
   );
-  render(
-    <RobotDetails robot={online} siteRobots={[]} verifiedAt={Date.now()} />,
-  );
+  renderDetails({ robot: online, siteRobots: [], verifiedAt: Date.now() });
 
   fireEvent.click(screen.getByRole("button", { name: /^Stop activity$/ }));
 
