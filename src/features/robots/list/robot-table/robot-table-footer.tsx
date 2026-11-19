@@ -1,3 +1,5 @@
+"use client";
+
 import Box from "@mui/material/Box";
 import type { IconButtonProps } from "@mui/material/IconButton";
 import Skeleton from "@mui/material/Skeleton";
@@ -5,14 +7,21 @@ import TablePagination from "@mui/material/TablePagination";
 import Typography from "@mui/material/Typography";
 import type { HTMLAttributes } from "react";
 
-import { robotPageSizes, type RobotPage } from "@/modules/robots/robot";
+import { robotPageSizes } from "@/modules/robots/robot";
 import type { RobotFilters } from "@/modules/robots/robot-filters";
+
+import { useRobotWriteLock } from "../../api/robot-mutations";
+import useRobotList from "../use-robot-list";
+import useRobotListView, {
+  setRobotListPage,
+  setRobotListPageSize,
+} from "../use-robot-list-view";
 
 function robotWord(count: number) {
   return count === 1 ? "robot" : "robots";
 }
 
-function formatResultCount(
+export function formatResultCount(
   total: number,
   matchingTotal: number,
   filters: RobotFilters,
@@ -35,25 +44,11 @@ function formatResultCount(
   return `${count} · Newest first`;
 }
 
-export default function RobotTableFooter({
-  snapshot,
-  filters,
-  showResultCount,
-  page,
-  pageSize,
-  onPageSizeChange,
-  onPageChange,
-  paginationDisabled,
-}: {
-  snapshot?: Pick<RobotPage, "total" | "summary">;
-  filters: RobotFilters;
-  showResultCount: boolean;
-  page: number;
-  pageSize: number;
-  onPageSizeChange: (pageSize: number) => void;
-  onPageChange: (page: number) => void;
-  paginationDisabled: boolean;
-}) {
+export default function RobotTableFooter() {
+  const { filters, pageSize } = useRobotListView();
+  const { status, snapshot, page } = useRobotList();
+  const { isWritePending } = useRobotWriteLock();
+
   // The previous snapshot keeps the pager mounted while the next page loads.
   const total = snapshot?.total ?? 0;
 
@@ -76,9 +71,9 @@ export default function RobotTableFooter({
           rowsPerPage={pageSize}
           rowsPerPageOptions={robotPageSizes}
           onRowsPerPageChange={(event) =>
-            onPageSizeChange(Number(event.target.value))
+            setRobotListPageSize(Number(event.target.value))
           }
-          disabled={paginationDisabled}
+          disabled={isWritePending || status !== "success"}
           slotProps={{
             actions: {
               previousButton: {
@@ -100,7 +95,7 @@ export default function RobotTableFooter({
               sx: { justifyContent: "flex-start", pl: 2 },
             },
           }}
-          onPageChange={(_, nextPage) => onPageChange(nextPage)}
+          onPageChange={(_, nextPage) => setRobotListPage(nextPage)}
         />
       )}
 
@@ -110,7 +105,7 @@ export default function RobotTableFooter({
         color="text.secondary"
         sx={{ ml: "auto", pr: 2, fontVariantNumeric: "tabular-nums" }}
       >
-        {showResultCount && snapshot ? (
+        {status === "success" && snapshot ? (
           formatResultCount(total, snapshot.summary.all, filters)
         ) : (
           <Skeleton width={180} aria-hidden="true" />

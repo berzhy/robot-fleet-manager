@@ -1,19 +1,20 @@
+"use client";
+
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import ToggleButton from "@mui/material/ToggleButton";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import Skeleton from "@mui/material/Skeleton";
-import {
-  fleetViews,
-  type RobotFilters,
-  type FleetSummary,
-} from "@/modules/robots/robot-filters";
+import { fleetViews } from "@/modules/robots/robot-filters";
 import {
   criticalBatteryPercent,
   lowBatteryPercent,
 } from "@/modules/robots/robot";
 import { delayedReportMaxAgeMs } from "@/modules/telemetry/freshness";
+
+import useRobotList from "../use-robot-list";
+import useRobotListView, { setRobotListFilters } from "../use-robot-list-view";
 
 const labels = {
   all: "All robots",
@@ -28,17 +29,12 @@ const explanations = {
   "low-battery": `Last-reported battery at or below ${lowBatteryPercent}%, including Returning but excluding Charging.`,
 };
 
-export default function RobotStatusFilters({
-  filters,
-  summary,
-  updating = false,
-  onChange,
-}: {
-  filters: RobotFilters;
-  summary?: FleetSummary;
-  updating?: boolean;
-  onChange: (changes: Partial<RobotFilters>) => void;
-}) {
+export default function RobotStatusFilters() {
+  const { filters } = useRobotListView();
+  const { status, snapshot } = useRobotList();
+  const summary = snapshot?.summary;
+  const updating = status === "loading";
+
   return (
     <Box
       role="group"
@@ -65,7 +61,7 @@ export default function RobotStatusFilters({
             selected={filters.view === view}
             onChange={() => {
               if (view !== filters.view) {
-                onChange({ view });
+                setRobotListFilters({ view });
               }
             }}
             aria-label={labels[view]}

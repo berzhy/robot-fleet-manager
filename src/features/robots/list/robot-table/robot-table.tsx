@@ -10,11 +10,10 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 
-import type { Robot, RobotPage } from "@/modules/robots/robot";
-import type { RobotAction } from "@/modules/robots/robot-actions";
-import type { RobotFilters } from "@/modules/robots/robot-filters";
+import type { Robot } from "@/modules/robots/robot";
 
-import type { RobotListStatus } from "../use-robot-list";
+import useRobotList from "../use-robot-list";
+import useRobotListView from "../use-robot-list-view";
 
 import RobotTableEmptyState from "./robot-table-empty-state";
 import RobotTableErrorState from "./robot-table-error-state";
@@ -39,43 +38,24 @@ const rowHeight = 70;
 
 export default function RobotTable({
   toolbar,
-  filters,
-  snapshot,
-  status,
   onClearFilters,
   onClearSearch,
   onRowFocusLost,
-  unverified = false,
-  page,
-  pageSize,
-  onPageSizeChange,
-  onPageChange,
-  onRetry,
-  onAction,
-  onDelete,
   onAdd,
   adding,
-  actionsDisabled,
+  onDelete,
 }: {
   toolbar?: ReactNode;
-  filters: RobotFilters;
-  snapshot?: RobotPage;
-  status: RobotListStatus;
   onClearFilters: () => void;
   onClearSearch: () => void;
   onRowFocusLost?: () => void;
-  unverified?: boolean;
   onAdd: (trigger: HTMLButtonElement) => void;
   adding: boolean;
-  actionsDisabled: boolean;
-  page: number;
-  pageSize: number;
-  onPageSizeChange: (pageSize: number) => void;
-  onPageChange: (page: number) => void;
-  onRetry: () => void;
-  onAction: (robot: Robot, action: RobotAction) => void;
   onDelete: (robot: Robot, trigger: HTMLButtonElement) => void;
 }) {
+  const { filters, pageSize } = useRobotListView();
+  const { status, snapshot, refresh, refreshFailed } = useRobotList();
+
   // Focus events from the portalled menu follow the React tree to its row.
   const focusedRowElement = useRef<HTMLTableRowElement | null>(null);
 
@@ -181,13 +161,11 @@ export default function RobotTable({
                 robot={robot}
                 search={search}
                 evaluatedAt={result.evaluatedAt}
-                unverified={unverified}
+                unverified={refreshFailed}
                 onFocusCapture={(event) => {
                   focusedRowElement.current = event.currentTarget;
                 }}
-                actionsDisabled={actionsDisabled}
                 onDelete={onDelete}
-                onAction={onAction}
                 rowHeight={rowHeight}
               />
             ))}
@@ -203,18 +181,9 @@ export default function RobotTable({
           ) : (
             <RobotTableEmptyState onAdd={onAdd} adding={adding} />
           ))}
-        {status === "error" && <RobotTableErrorState onRetry={onRetry} />}
+        {status === "error" && <RobotTableErrorState onRetry={refresh} />}
       </TableContainer>
-      <RobotTableFooter
-        snapshot={snapshot}
-        filters={filters}
-        showResultCount={status === "success"}
-        page={page}
-        pageSize={pageSize}
-        onPageSizeChange={onPageSizeChange}
-        onPageChange={onPageChange}
-        paginationDisabled={actionsDisabled || status !== "success"}
-      />
+      <RobotTableFooter />
     </Paper>
   );
 }

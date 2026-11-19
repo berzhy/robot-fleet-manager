@@ -17,7 +17,6 @@ import {
   useDeleteRobot,
   useRobotWriteLock,
 } from "../api/robot-mutations";
-import useRobotCommand from "../use-robot-command";
 
 import AddRobotSplitButton from "./add-robot-split-button";
 import DeleteRobotDialog from "./delete-robot-dialog";
@@ -33,8 +32,6 @@ import useRobotList, {
 import useRobotListView, {
   clearRobotListFilters,
   setRobotListFilters,
-  setRobotListPage,
-  setRobotListPageSize,
 } from "./use-robot-list-view";
 
 type DeleteTarget =
@@ -46,7 +43,6 @@ export default function RobotList() {
   const createRobots = useCreateRobots();
   const deleteRobot = useDeleteRobot();
   const deleteAllRobots = useDeleteAllRobots();
-  const requestAction = useRobotCommand();
   const notifications = useNotifications();
 
   const { isWritePending, isWritePendingNow } = useRobotWriteLock();
@@ -59,8 +55,8 @@ export default function RobotList() {
     open: boolean;
   } | null>(null);
 
-  const { filters, pageSize } = useRobotListView();
-  const { status, snapshot, page, refresh, refreshFailed } = useRobotList();
+  const { filters } = useRobotListView();
+  const { status, refreshFailed } = useRobotList();
   const announcement = useRobotListAnnouncement();
   useRobotListPageCorrection();
 
@@ -261,26 +257,14 @@ export default function RobotList() {
         </Alert>
       )}
       <RobotTable
-        filters={filters}
-        snapshot={snapshot}
-        status={status}
         toolbar={
           <Stack spacing={2}>
-            <RobotStatusFilters
-              filters={filters}
-              onChange={setRobotListFilters}
-              summary={snapshot?.summary}
-              updating={status === "loading"}
-            />
+            <RobotStatusFilters />
             <Divider />
             <RobotListFilters
-              filters={filters}
               search={search}
               searchInputRef={searchInputRef}
               onSearchChange={setSearch}
-              onChange={setRobotListFilters}
-              onClearFilters={clearRobotListFilters}
-              options={snapshot?.filterOptions}
             />
           </Stack>
         }
@@ -295,19 +279,11 @@ export default function RobotList() {
           setRobotListFilters({ search: undefined });
         }}
         onRowFocusLost={confirmation ? undefined : focusSearch}
-        unverified={refreshFailed}
-        page={page}
-        pageSize={pageSize}
-        onPageSizeChange={setRobotListPageSize}
-        onPageChange={setRobotListPage}
-        onRetry={refresh}
-        onAction={requestAction}
         onDelete={({ id, name }, trigger) =>
           requestDelete({ kind: "robot", id, name }, trigger)
         }
         onAdd={(trigger) => addRobot(trigger)}
         adding={adding}
-        actionsDisabled={isWritePending}
       />
       {confirmation && (
         <DeleteRobotDialog

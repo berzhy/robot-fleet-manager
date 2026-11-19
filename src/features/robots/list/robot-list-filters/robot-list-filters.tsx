@@ -21,16 +21,18 @@ import {
 } from "react";
 
 import { integrationTypes, robotTypes } from "@/modules/robots/robot";
-import {
-  type FilterOptions,
-  type RobotFilters,
-} from "@/modules/robots/robot-filters";
+import type { RobotFilters } from "@/modules/robots/robot-filters";
 import { appliedSearch } from "@/modules/robots/robot-list-params";
 
 import {
   formatIntegrationType,
   formatRobotType,
 } from "../../utils/robot-formatters";
+import useRobotList from "../use-robot-list";
+import useRobotListView, {
+  clearRobotListFilters,
+  setRobotListFilters,
+} from "../use-robot-list-view";
 
 const searchDebounceMs = 300;
 
@@ -45,22 +47,17 @@ function formatFilterValue(key: keyof RobotFilters, value: string) {
 }
 
 export default function RobotListFilters({
-  filters,
   search,
   searchInputRef,
   onSearchChange,
-  options,
-  onChange,
-  onClearFilters,
 }: {
-  filters: RobotFilters;
   search: string;
   searchInputRef: RefObject<HTMLInputElement | null>;
   onSearchChange: (value: string) => void;
-  options?: FilterOptions;
-  onChange: (changes: Partial<RobotFilters>) => void;
-  onClearFilters: () => void;
 }) {
+  const { filters } = useRobotListView();
+  const options = useRobotList().snapshot?.filterOptions;
+
   const [composing, setComposing] = useState(false);
   const [moreAnchor, setMoreAnchor] = useState<HTMLElement | null>(null);
   const [openFilter, setOpenFilter] = useState<{
@@ -76,7 +73,7 @@ export default function RobotListFilters({
   const applySearch = useEffectEvent((value: string) => {
     const applied = appliedSearch(value);
     if (applied !== filters.search) {
-      onChange({ search: applied });
+      setRobotListFilters({ search: applied });
     }
   });
 
@@ -92,7 +89,7 @@ export default function RobotListFilters({
     searchInputRef.current?.focus();
     onSearchChange("");
     if (filters.search !== undefined) {
-      onChange({ search: undefined });
+      setRobotListFilters({ search: undefined });
     }
   }
 
@@ -169,7 +166,7 @@ export default function RobotListFilters({
     if (key === "search") {
       onSearchChange("");
     }
-    onChange({ [key]: key === "view" ? "all" : undefined });
+    setRobotListFilters({ [key]: key === "view" ? "all" : undefined });
 
     if (next instanceof HTMLElement && next.getAttribute("role") === "button") {
       next.focus();
@@ -210,7 +207,9 @@ export default function RobotListFilters({
           },
         }}
         onChange={(event) => {
-          onChange({ [field.key]: event.target.value || undefined });
+          setRobotListFilters({
+            [field.key]: event.target.value || undefined,
+          });
           if (inPopover) {
             closeMoreFilters();
           }
@@ -400,7 +399,7 @@ export default function RobotListFilters({
             size="small"
             onClick={() => {
               onSearchChange("");
-              onClearFilters();
+              clearRobotListFilters();
               container.current?.ownerDocument
                 .querySelector<HTMLElement>('[data-view="all"]')
                 ?.focus();

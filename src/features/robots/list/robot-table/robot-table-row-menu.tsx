@@ -18,25 +18,25 @@ import {
   actionLabels,
   actionUnavailable,
   robotActions,
-  type RobotAction,
 } from "@/modules/robots/robot-actions";
 import type { Robot } from "@/modules/robots/robot";
+
+import { useRobotWriteLock } from "../../api/robot-mutations";
+import useRobotCommand from "../../use-robot-command";
 
 export default function RobotTableRowMenu({
   robot,
   evaluatedAt,
-  onAction,
   unverified = false,
   onDelete,
-  disabled,
 }: {
-  disabled: boolean;
   robot: Robot;
   evaluatedAt: number;
-  onAction: (robot: Robot, action: RobotAction) => void;
   unverified?: boolean;
   onDelete: (robot: Robot, trigger: HTMLButtonElement) => void;
 }) {
+  const requestAction = useRobotCommand();
+  const { isWritePending } = useRobotWriteLock();
   const [anchor, setAnchor] = useState<HTMLButtonElement | null>(null);
   const id = useId();
 
@@ -44,7 +44,7 @@ export default function RobotTableRowMenu({
     <>
       <IconButton
         data-testid="robot-actions"
-        disabled={disabled}
+        disabled={isWritePending}
         aria-label={`Actions for ${robot.name}`}
         aria-haspopup="menu"
         aria-controls={anchor ? id : undefined}
@@ -83,7 +83,7 @@ export default function RobotTableRowMenu({
                   if (reason) {
                     return;
                   }
-                  onAction(robot, action);
+                  requestAction(robot, action);
                   setAnchor(null);
                 }}
               >

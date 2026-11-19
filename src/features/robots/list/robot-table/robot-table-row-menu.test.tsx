@@ -1,15 +1,19 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
+
+import { render } from "@/query/test-utils";
 
 import { workingRobot } from "../../test-fixtures";
 import RobotTableRowMenu from "./robot-table-row-menu";
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 test("disabled actions explain their reason on keyboard focus and cannot execute", async () => {
-  const onAction = vi.fn();
+  const fetcher = vi.fn();
+  vi.stubGlobal("fetch", fetcher);
   const evaluatedAt = Date.now();
 
   render(
@@ -19,9 +23,7 @@ test("disabled actions explain their reason on keyboard focus and cannot execute
         lastReceivedAt: new Date(evaluatedAt).toISOString(),
       }}
       evaluatedAt={evaluatedAt}
-      disabled={false}
       onDelete={vi.fn()}
-      onAction={onAction}
     />,
   );
 
@@ -41,5 +43,5 @@ test("disabled actions explain their reason on keyboard focus and cannot execute
   );
 
   fireEvent.click(start);
-  expect(onAction).not.toHaveBeenCalled();
+  expect(fetcher).not.toHaveBeenCalled();
 });

@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
-import { expect, test, vi } from "vitest";
+import { act, fireEvent, screen, within } from "@testing-library/react";
+import { afterEach, expect, test, vi } from "vitest";
 
 import {
   robotPageSizes,
@@ -7,7 +7,10 @@ import {
   type RobotPage,
 } from "@/modules/robots/robot";
 
+import { render } from "@/query/test-utils";
+
 import { pageMetadata } from "../../test-fixtures";
+import { setRobotListFilters } from "../use-robot-list-view";
 import RobotTable from "./robot-table";
 
 const robot: Robot = {
@@ -30,15 +33,14 @@ const robot: Robot = {
 };
 
 const tableHandlers = {
-  onPageSizeChange: () => {},
-  onPageChange: () => {},
-  onRetry: () => {},
   onAdd: () => {},
   onDelete: () => {},
-  onAction: () => {},
   onClearFilters: () => {},
   onClearSearch: () => {},
+  adding: false,
 };
+
+afterEach(() => vi.unstubAllGlobals());
 
 function robotPage(items: Robot[]): RobotPage {
   return {
@@ -50,85 +52,96 @@ function robotPage(items: Robot[]): RobotPage {
   };
 }
 
-test.each(robotPageSizes)("loading renders %i decorative rows", (pageSize) => {
-  const props = {
-    ...tableHandlers,
-    snapshot: { ...robotPage([robot]), pageSize },
-    page: 0,
-    pageSize,
-    adding: false,
-    actionsDisabled: false,
-  };
-  const { rerender } = render(
-    <RobotTable
-      {...props}
-      filters={{ view: "needs-attention" }}
-      status="loading"
-    />,
+/** Renders the table for a URL view, with the robot API answering `snapshot`. */
+function renderTable(snapshot: RobotPage, query = "") {
+  window.history.replaceState(null, "", `/robots${query}`);
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() => Promise.resolve(Response.json(snapshot))),
   );
+  render(<RobotTable {...tableHandlers} />);
+}
 
-  const table = screen.getByRole("table", { name: "Robot fleet" });
-  const footerCount = screen.getByTestId("fleet-result-count");
+test.each(robotPageSizes)(
+  "loading the next view renders %i decorative rows and keeps the pager",
+  async (pageSize) => {
+    window.history.replaceState(null, "", `/robots?pageSize=${pageSize}`);
+    let finishLoading!: (response: Response) => void;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string) =>
+        url.includes("view=needs-attention")
+          ? new Promise<Response>((resolve) => {
+              finishLoading = resolve;
+            })
+          : Promise.resolve(Response.json({ ...robotPage([robot]), pageSize })),
+      ),
+    );
+    render(<RobotTable {...tableHandlers} />);
 
-  expect(table.querySelectorAll("tbody > tr")).toHaveLength(pageSize);
-  expect(within(table).getAllByRole("row")).toHaveLength(1);
-  expect(footerCount).not.toHaveTextContent("Newest first");
-  expect(screen.getByTestId("fleet-page-summary")).toHaveTextContent("of 1");
+    const table = screen.getByRole("table", { name: "Robot fleet" });
+    const footerCount = screen.getByTestId("fleet-result-count");
+    expect(
+      await within(table).findByRole("link", { name: robot.name }),
+    ).toBeVisible();
 
-  rerender(
-    <RobotTable {...props} filters={{ view: "all" }} status="success" />,
-  );
+    act(() => setRobotListFilters({ view: "needs-attention" }));
 
-  expect(table.querySelectorAll("tbody > tr")).toHaveLength(1);
-  expect(within(table).getByRole("link", { name: robot.name })).toBeVisible();
-  expect(footerCount).toHaveTextContent("1 robot · Newest first");
-});
+    expect(table.querySelectorAll("tbody > tr")).toHaveLength(pageSize);
+    expect(within(table).getAllByRole("row")).toHaveLength(1);
+    expect(footerCount).not.toHaveTextContent("Newest first");
+    expect(screen.getByTestId("fleet-page-summary")).toHaveTextContent("of 1");
 
-test("table renders the supplied server page without slicing or sorting", () => {
-  const onPageChange = vi.fn();
+    await act(async () => {
+      finishLoading(Response.json({ ...robotPage([robot]), pageSize }));
+      await Promise.resolve();
+    });
+
+    expect(
+      await within(table).findByRole("link", { name: robot.name }),
+    ).toBeVisible();
+    expect(table.querySelectorAll("tbody > tr")).toHaveLength(1);
+    expect(footerCount).toHaveTextContent("1 of 1 matching robot");
+  },
+);
+
+test("table renders the supplied server page without slicing or sorting", async () => {
   const robotNeedingAttention = {
     ...robot,
     problemCode: "path-blocked",
   } as const;
   const metadata = pageMetadata(42);
 
-  render(
-    <RobotTable
-      {...tableHandlers}
-      filters={{ view: "needs-attention", site: "Munich" }}
-      status="success"
-      snapshot={{
-        items: [
-          {
-            ...robotNeedingAttention,
-            id: "zulu",
-            name: "Zulu robot",
-            createdAt: "2026-01-03T00:00:00.000Z",
-          },
-          {
-            ...robotNeedingAttention,
-            id: "alpha",
-            name: "Alpha robot",
-            createdAt: "2026-01-01T00:00:00.000Z",
-          },
-          robotNeedingAttention,
-        ],
-        total: 23,
-        page: 1,
-        pageSize: 20,
-        ...metadata,
-        fleetTotal: 60,
-        summary: { ...metadata.summary, "needs-attention": 23 },
-      }}
-      pageSize={20}
-      page={1}
-      onPageChange={onPageChange}
-      adding={false}
-      actionsDisabled={false}
-    />,
+  renderTable(
+    {
+      items: [
+        {
+          ...robotNeedingAttention,
+          id: "zulu",
+          name: "Zulu robot",
+          createdAt: "2026-01-03T00:00:00.000Z",
+        },
+        {
+          ...robotNeedingAttention,
+          id: "alpha",
+          name: "Alpha robot",
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+        robotNeedingAttention,
+      ],
+      total: 23,
+      page: 1,
+      pageSize: 20,
+      ...metadata,
+      fleetTotal: 60,
+      summary: { ...metadata.summary, "needs-attention": 23 },
+    },
+    "?site=Munich&view=needs-attention&pageSize=20&page=1",
   );
 
-  expect(screen.getByRole("link", { name: robot.name })).toBeInTheDocument();
+  expect(
+    await screen.findByRole("link", { name: robot.name }),
+  ).toBeInTheDocument();
   expect(screen.getByTestId("fleet-page-summary")).toHaveTextContent(
     "21–23 of 23",
   );
@@ -139,30 +152,21 @@ test("table renders the supplied server page without slicing or sorting", () => 
     screen.getAllByTestId("robot-name").map((name) => name.textContent),
   ).toEqual(["Zulu robot", "Alpha robot", robot.name]);
 
-  fireEvent.click(screen.getByTestId("fleet-previous-page"));
-
-  expect(onPageChange).toHaveBeenCalledWith(0);
-
   const row = within(screen.getByTestId("robot-row-test"));
   expect(row.getByTestId("robot-battery")).toHaveTextContent(/^Unknown$/);
   expect(row.getByTestId("robot-connection")).toHaveTextContent(/^Unknown$/);
+
+  fireEvent.click(screen.getByTestId("fleet-previous-page"));
+
+  expect(window.location.search).toBe(
+    "?site=Munich&view=needs-attention&pageSize=20",
+  );
 });
 
-test("robot names are plain text with one accessible navigation link per row", () => {
-  render(
-    <RobotTable
-      {...tableHandlers}
-      filters={{ view: "all" }}
-      snapshot={robotPage([robot])}
-      pageSize={20}
-      page={0}
-      status="success"
-      adding={false}
-      actionsDisabled={false}
-    />,
-  );
+test("robot names are plain text with one accessible navigation link per row", async () => {
+  renderTable(robotPage([robot]));
 
-  const identity = screen.getByRole("rowheader");
+  const identity = await screen.findByRole("rowheader");
   expect(within(identity).getByText(robot.name)).toBeInTheDocument();
   expect(within(identity).getByText(robot.manufacturer)).toBeInTheDocument();
   expect(
@@ -186,20 +190,10 @@ test("robot names are plain text with one accessible navigation link per row", (
   );
 });
 
-test("columns put identity and operational context before catalog metadata", () => {
-  render(
-    <RobotTable
-      {...tableHandlers}
-      filters={{ view: "all" }}
-      snapshot={robotPage([robot])}
-      pageSize={20}
-      page={0}
-      status="success"
-      adding={false}
-      actionsDisabled={false}
-    />,
-  );
+test("columns put identity and operational context before catalog metadata", async () => {
+  renderTable(robotPage([robot]));
 
+  const addedAt = await screen.findByTestId("robot-added-at");
   expect(
     screen.getAllByRole("columnheader").map((header) => header.textContent),
   ).toEqual([
@@ -213,33 +207,25 @@ test("columns put identity and operational context before catalog metadata", () 
     "Registered",
     "Actions",
   ]);
-  expect(screen.getByTestId("robot-added-at")).toHaveAttribute(
-    "dateTime",
-    robot.createdAt,
-  );
-  expect(screen.getByTestId("robot-added-at")).toHaveTextContent("14 Nov 2026");
-  expect(screen.getByTestId("robot-added-at")).toHaveTextContent(
-    "13:00:00 CET",
-  );
+  expect(addedAt).toHaveAttribute("dateTime", robot.createdAt);
+  expect(addedAt).toHaveTextContent("14 Nov 2026");
+  expect(addedAt).toHaveTextContent("13:00:00 CET");
 });
 
-test("a search with no matches names the query, lists searchable fields and offers Clear search", () => {
+test("a search with no matches names the query, lists searchable fields and offers Clear search", async () => {
   const onClearSearch = vi.fn();
-  render(
-    <RobotTable
-      {...tableHandlers}
-      filters={{ view: "all", search: "no-such-robot" }}
-      snapshot={{ ...robotPage([]), fleetTotal: 5 }}
-      onClearSearch={onClearSearch}
-      pageSize={20}
-      page={0}
-      status="success"
-      adding={false}
-      actionsDisabled={false}
-    />,
+  window.history.replaceState(null, "", "/robots?search=no-such-robot");
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() =>
+      Promise.resolve(Response.json({ ...robotPage([]), fleetTotal: 5 })),
+    ),
   );
+  render(<RobotTable {...tableHandlers} onClearSearch={onClearSearch} />);
 
-  expect(screen.getByText("No robots match “no-such-robot”.")).toBeVisible();
+  expect(
+    await screen.findByText("No robots match “no-such-robot”."),
+  ).toBeVisible();
   expect(
     screen.getByText(
       "Search matches name, manufacturer, location, area, type, integration, activity, problem, connection and battery.",
@@ -257,23 +243,12 @@ test.each([
   ["sensor-obstructed", "Sensor obstructed"],
 ] as const)(
   "%s shows Needs attention and its concrete reason",
-  (problemCode, label) => {
-    render(
-      <RobotTable
-        {...tableHandlers}
-        filters={{ view: "all" }}
-        status="success"
-        snapshot={robotPage([
-          { ...robot, activity: "needs-attention", problemCode },
-        ])}
-        page={0}
-        pageSize={20}
-        adding={false}
-        actionsDisabled={false}
-      />,
+  async (problemCode, label) => {
+    renderTable(
+      robotPage([{ ...robot, activity: "needs-attention", problemCode }]),
     );
 
-    expect(screen.getByTestId("robot-activity")).toHaveTextContent(
+    expect(await screen.findByTestId("robot-activity")).toHaveTextContent(
       `Needs attention${label}`,
     );
   },
