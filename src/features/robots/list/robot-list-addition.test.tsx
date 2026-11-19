@@ -395,7 +395,7 @@ test("addition outside the selected view retains filters and reports success wit
   expect(
     screen.getByRole("button", { name: "Offline", pressed: true }),
   ).toBeVisible();
-  expect(screen.getByText("Connection: Offline")).toBeVisible();
+  expect(screen.getByText("Status: Offline")).toBeVisible();
   expect(screen.queryByTestId("robot-row-new")).not.toBeInTheDocument();
   expect(fetcher).toHaveBeenLastCalledWith(
     expect.stringContaining("view=offline"),

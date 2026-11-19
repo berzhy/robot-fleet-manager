@@ -23,31 +23,24 @@ import {
   type RefObject,
 } from "react";
 
-import { integrationTypes, robotTypes } from "@/modules/robots/robot";
 import type { RobotFilters } from "@/modules/robots/robot-filters";
 import { appliedSearch } from "@/modules/robots/robot-list-params";
 
-import {
-  formatIntegrationType,
-  formatRobotType,
-} from "../../utils/robot-formatters";
 import useRobotList from "../use-robot-list";
 import useRobotListView, {
   clearRobotListFilters,
   setRobotListFilters,
 } from "../use-robot-list-view";
 
-const searchDebounceMs = 300;
+import {
+  formatFilterValue,
+  getFilterChips,
+  moreFilterFields,
+  toolbarFilterFields,
+  type FilterField,
+} from "./filter-fields";
 
-function formatFilterValue(key: keyof RobotFilters, value: string) {
-  if (key === "integrationType") {
-    return formatIntegrationType(value as (typeof integrationTypes)[number]);
-  }
-  if (key === "type") {
-    return formatRobotType(value as (typeof robotTypes)[number]);
-  }
-  return value;
-}
+const searchDebounceMs = 300;
 
 export default function RobotListFilters({
   searchInputRef,
@@ -55,7 +48,7 @@ export default function RobotListFilters({
   searchInputRef: RefObject<HTMLInputElement | null>;
 }) {
   const { filters } = useRobotListView();
-  const options = useRobotList().snapshot?.filterOptions;
+  const available = useRobotList().snapshot?.filterOptions;
 
   // The box holds what the user types; the URL holds the applied search.
   const [search, setSearch] = useState(filters.search ?? "");
@@ -87,7 +80,7 @@ export default function RobotListFilters({
   const [composing, setComposing] = useState(false);
   const [moreAnchor, setMoreAnchor] = useState<HTMLElement | null>(null);
   const [openFilter, setOpenFilter] = useState<{
-    key: keyof RobotFilters;
+    key: FilterField["key"];
     options: readonly string[];
   } | null>(null);
 
@@ -144,55 +137,10 @@ export default function RobotListFilters({
     setOpenFilter(null);
   }
 
-  const primaryFields = [
-    { key: "site", label: "Location", options: options?.sites ?? [] },
-    { key: "type", label: "Type", options: [...robotTypes] },
-  ] as const;
-  const secondaryFields = [
-    {
-      key: "manufacturer",
-      label: "Manufacturer",
-      options: options?.manufacturers ?? [],
-    },
-    {
-      key: "integrationType",
-      label: "Integration",
-      options: [...integrationTypes],
-    },
-  ] as const;
-  const fields = [...primaryFields, ...secondaryFields];
-
-  const secondaryCount = secondaryFields.filter(
+  const moreCount = moreFilterFields.filter(
     (field) => filters[field.key] !== undefined,
   ).length;
-
-  const chips: { key: keyof RobotFilters; label: string }[] = fields.flatMap(
-    (field) => {
-      const value = filters[field.key];
-      return value
-        ? [
-            {
-              key: field.key,
-              label: `${field.label}: ${formatFilterValue(field.key, value)}`,
-            },
-          ]
-        : [];
-    },
-  );
-  if (filters.search) {
-    chips.unshift({ key: "search", label: `Search: ${filters.search}` });
-  }
-  if (filters.view !== "all") {
-    chips.push({
-      key: "view",
-      label:
-        filters.view === "offline"
-          ? "Connection: Offline"
-          : filters.view === "low-battery"
-            ? "Battery: Low"
-            : "Needs attention",
-    });
-  }
+  const chips = getFilterChips(filters);
 
   // The view toggles live in RobotStatusFilters, a sibling component.
   function allRobotsViewButton() {
@@ -211,7 +159,7 @@ export default function RobotListFilters({
         ? searchInputRef.current
         : key === "view"
           ? allRobotsViewButton()
-          : key === "manufacturer" || key === "integrationType"
+          : moreFilterFields.some((field) => field.key === key)
             ? moreButtonRef.current
             : container.current?.querySelector<HTMLElement>(
                 `#fleet-filter-${key}`,
@@ -232,14 +180,15 @@ export default function RobotListFilters({
   }
 
   function renderField(
-    field: (typeof fields)[number],
+    field: FilterField,
     sx?: { minWidth?: number; maxWidth?: number; flex?: string },
     inPopover = false,
   ) {
     // Keep a focused option mounted even if the next poll removes it.
     const openOptions =
       openFilter?.key === field.key ? openFilter.options : undefined;
-    const displayedOptions = openOptions ?? field.options;
+    const displayedOptions =
+      openOptions ?? (available ? field.options(available) : []);
     const selected = filters[field.key];
 
     return (
@@ -248,7 +197,7 @@ export default function RobotListFilters({
         select
         size="small"
         variant="standard"
-        disabled={!options && !openOptions}
+        disabled={!available && !openOptions}
         id={`fleet-filter-${field.key}`}
         label={field.label}
         value={selected ?? ""}
@@ -271,21 +220,12 @@ export default function RobotListFilters({
           }
         }}
       >
-        <MenuItem value="">
-          All{" "}
-          {field.label === "Location"
-            ? "locations"
-            : field.label === "Manufacturer"
-              ? "manufacturers"
-              : field.label === "Type"
-                ? "types"
-                : "integrations"}
-        </MenuItem>
+        <MenuItem value="">{field.allLabel}</MenuItem>
         {[
           ...new Set([...displayedOptions, ...(selected ? [selected] : [])]),
         ].map((value) => (
           <MenuItem key={value} value={value}>
-            {formatFilterValue(field.key, value)}
+            {formatFilterValue(field, value)}
           </MenuItem>
         ))}
       </TextField>
@@ -363,7 +303,7 @@ export default function RobotListFilters({
             minWidth: 0,
           }}
         >
-          {primaryFields.map((field) =>
+          {toolbarFilterFields.map((field) =>
             renderField(field, {
               minWidth: 120,
               maxWidth: 260,
@@ -385,9 +325,7 @@ export default function RobotListFilters({
               whiteSpace: "nowrap",
             }}
           >
-            {secondaryCount > 0
-              ? `More filters (${secondaryCount})`
-              : "More filters"}
+            {moreCount > 0 ? `More filters (${moreCount})` : "More filters"}
           </Button>
           <Popover
             open={moreAnchor !== null}
@@ -421,7 +359,7 @@ export default function RobotListFilters({
                   <CloseIcon />
                 </IconButton>
               </Stack>
-              {secondaryFields.map((field) =>
+              {moreFilterFields.map((field) =>
                 renderField(field, undefined, true),
               )}
             </Stack>

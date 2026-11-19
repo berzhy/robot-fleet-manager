@@ -26,16 +26,13 @@ export function formatResultCount(
   matchingTotal: number,
   filters: RobotFilters,
 ) {
-  const hasCriteria = Boolean(
-    filters.search ||
-    filters.site ||
-    filters.type ||
-    filters.manufacturer ||
-    filters.integrationType,
+  const { view, ...criteria } = filters;
+  const hasCriteria = Object.values(criteria).some(
+    (value) => value !== undefined,
   );
 
   const count =
-    filters.view !== "all"
+    view !== "all"
       ? `${total} of ${matchingTotal} matching ${robotWord(matchingTotal)}`
       : hasCriteria
         ? `${matchingTotal} matching ${robotWord(matchingTotal)}`

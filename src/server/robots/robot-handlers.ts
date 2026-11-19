@@ -63,18 +63,8 @@ export function robotHandlers(database: () => FleetDatabase) {
         );
       }
 
-      const filters = robotFiltersSchema.safeParse(
-        Object.fromEntries(
-          [
-            "search",
-            "site",
-            "manufacturer",
-            "integrationType",
-            "type",
-            "view",
-          ].flatMap((key) => (params.has(key) ? [[key, params.get(key)]] : [])),
-        ),
-      );
+      // The schema keeps only its own keys, so page and pageSize drop out.
+      const filters = robotFiltersSchema.safeParse(Object.fromEntries(params));
 
       if (!filters.success) {
         return errorResponse(400, "INVALID_INPUT", "Invalid robot filters.");

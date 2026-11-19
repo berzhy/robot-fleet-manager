@@ -89,7 +89,7 @@ test("dropdowns, tiles and removable chips share one selection", async () => {
 
   fireEvent.click(screen.getByRole("button", { name: "Offline" }));
 
-  expect(screen.getByText("Connection: Offline")).toBeVisible();
+  expect(screen.getByText("Status: Offline")).toBeVisible();
   expect(
     within(screen.getByRole("button", { name: "All robots" })).getByText("12"),
   ).toBeVisible();
@@ -97,7 +97,7 @@ test("dropdowns, tiles and removable chips share one selection", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
 
   expect(screen.queryByText("Location: Munich")).not.toBeInTheDocument();
-  expect(screen.queryByText("Connection: Offline")).not.toBeInTheDocument();
+  expect(screen.queryByText("Status: Offline")).not.toBeInTheDocument();
 });
 
 test("selecting the active tile does not restart its query", async () => {
@@ -129,7 +129,7 @@ test("type selection creates a removable chip without clearing other filters", a
 
   expect(screen.queryByText("Type: Inspection robot")).not.toBeInTheDocument();
   expect(screen.getByText("Location: Munich")).toBeVisible();
-  expect(screen.getByText("Connection: Offline")).toBeVisible();
+  expect(screen.getByText("Status: Offline")).toBeVisible();
   expect(screen.getByRole("combobox", { name: "Type" })).toHaveTextContent(
     "All types",
   );
