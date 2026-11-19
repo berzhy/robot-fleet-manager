@@ -2,6 +2,18 @@ Pay extra attention to architecture, structure, code cleanlines and code quality
 
 Prefer dedicated MUI props (`spacing`, `align`, `variant`) and native props (SVG `opacity`). Use `sx` for custom styles.
 
+## Code quality bar
+
+Readability is the top priority: the author walks reviewers through this code line by line, so it must read clearly on the first pass.
+
+- Use what TanStack Query, Next.js, React and MUI already provide before writing custom machinery; custom code needs a one-sentence reason.
+- Full-word names; booleans read as questions (`isPending`, `hasFilters`); `onX` props and `handleX` handlers; one concept keeps one name across the codebase.
+- No magic values: meaningful numbers and strings become named module constants with units in the name (`pollIntervalMs`).
+- Blank lines between logical groups (hooks, derived values, handlers, render). File order: imports, types, constants, main export, private helpers.
+- One job per component or hook. More than about seven props means the boundary is wrong. No mode flags (`null` meaning "all", behaviour-switching booleans).
+- Derive types from zod schemas and `as const` arrays; `as` casts only at I/O boundaries.
+- Comments explain why, never what. No dead code or speculative abstractions. Prefer changes that delete code.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 ## This is NOT the Next.js you know
