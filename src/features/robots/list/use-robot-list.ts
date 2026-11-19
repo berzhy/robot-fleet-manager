@@ -7,8 +7,9 @@ import {
 } from "@tanstack/react-query";
 import { useState } from "react";
 
-import type { RobotFilters } from "@/modules/robots/robot-filters";
 import { robotPageSize } from "@/modules/robots/robot";
+import type { RobotFilters } from "@/modules/robots/robot-filters";
+import type { RobotListParams } from "@/modules/robots/robot-list-params";
 
 import { robotListOptions } from "../api/robot-queries";
 
@@ -21,21 +22,13 @@ function lastRobotPage(total: number, size: number) {
 export default function useRobotList() {
   const client = useQueryClient();
 
-  const [request, setRequest] = useState<{
-    page: number;
-    pageSize: number;
-    filters: RobotFilters;
-  }>({
+  const [request, setRequest] = useState<RobotListParams>({
     page: 0,
     pageSize: robotPageSize,
     filters: { view: "all" },
   });
 
-  const options = robotListOptions(
-    request.page,
-    request.pageSize,
-    request.filters,
-  );
+  const options = robotListOptions(request);
 
   const [announcement, setAnnouncement] = useState("");
   const [announce, setAnnounce] = useState(false);

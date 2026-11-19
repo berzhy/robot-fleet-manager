@@ -1,12 +1,10 @@
-import type { RobotFilters } from "@/modules/robots/robot-filters";
 import type { RobotAction } from "@/modules/robots/robot-actions";
-import type { CreateRobotInput } from "@/modules/robots/robot-validation";
 import {
-  robotPageSize,
-  type Robot,
-  type RobotPage,
-  type RobotContext,
-} from "@/modules/robots/robot";
+  robotFilterSearchParams,
+  type RobotListParams,
+} from "@/modules/robots/robot-list-params";
+import type { CreateRobotInput } from "@/modules/robots/robot-validation";
+import type { Robot, RobotContext, RobotPage } from "@/modules/robots/robot";
 
 const requestTimeoutMs = 5_000;
 
@@ -23,20 +21,14 @@ export function isRequestTimeout(error: unknown) {
 }
 
 export async function getRobots(
-  page: number,
-  pageSize = robotPageSize,
+  { page, pageSize, filters }: RobotListParams,
   signal?: AbortSignal,
-  filters: RobotFilters = { view: "all" },
 ): Promise<RobotPage> {
   const params = new URLSearchParams({
     page: String(page),
     pageSize: String(pageSize),
+    ...Object.fromEntries(robotFilterSearchParams(filters)),
   });
-  for (const [key, value] of Object.entries(filters)) {
-    if (value !== undefined && !(key === "view" && value === "all")) {
-      params.set(key, value);
-    }
-  }
 
   const response = await fetch(`/api/robots?${params}`, {
     signal: requestSignal(signal),

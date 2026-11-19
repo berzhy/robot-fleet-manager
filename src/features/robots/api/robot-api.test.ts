@@ -26,7 +26,12 @@ test("requests a server page with cancellation and rejects HTTP failures", async
   vi.stubGlobal("fetch", fetcher);
 
   const controller = new AbortController();
-  expect(await getRobots(2, 20, controller.signal)).toEqual({
+  expect(
+    await getRobots(
+      { page: 2, pageSize: 20, filters: { view: "all" } },
+      controller.signal,
+    ),
+  ).toEqual({
     items: [],
     total: 0,
     page: 2,
@@ -39,7 +44,9 @@ test("requests a server page with cancellation and rejects HTTP failures", async
     cache: "no-store",
   });
 
-  await expect(getRobots(0)).rejects.toThrow("Unable to load robots.");
+  await expect(
+    getRobots({ page: 0, pageSize: 10, filters: { view: "all" } }),
+  ).rejects.toThrow("Unable to load robots.");
 });
 
 test("deletes an encoded robot id and distinguishes an already removed robot from a failed request", async () => {
@@ -136,13 +143,17 @@ test("encodes literal search text and combined filters in the list request", asy
   );
   vi.stubGlobal("fetch", fetcher);
 
-  await getRobots(0, 20, undefined, {
-    view: "offline",
-    search: "Robot %_&",
-    site: "Munich & Berlin",
-    manufacturer: "A/B",
-    integrationType: "ros2",
-    type: "inspection",
+  await getRobots({
+    page: 0,
+    pageSize: 20,
+    filters: {
+      view: "offline",
+      search: "Robot %_&",
+      site: "Munich & Berlin",
+      manufacturer: "A/B",
+      integrationType: "ros2",
+      type: "inspection",
+    },
   });
   const url = new URL(fetcher.mock.calls[0][0] as string, "http://localhost");
   expect(Object.fromEntries(url.searchParams)).toEqual({
@@ -161,7 +172,10 @@ test("caller cancellation aborts the combined read signal", async () => {
   const fetcher = vi.fn().mockResolvedValue(Response.json({ items: [] }));
   vi.stubGlobal("fetch", fetcher);
   const controller = new AbortController();
-  await getRobots(0, 10, controller.signal);
+  await getRobots(
+    { page: 0, pageSize: 10, filters: { view: "all" } },
+    controller.signal,
+  );
   const signal = (fetcher.mock.calls[0] as unknown as [string, RequestInit])[1]
     .signal!;
   expect(signal.aborted).toBe(false);

@@ -28,7 +28,7 @@ test("aborts old requests and ignores their late responses", async () => {
       ...pageMetadata(),
     });
   const { result } = renderHook(() => useRobotList());
-  const signal = vi.mocked(getRobots).mock.calls[0][2];
+  const signal = vi.mocked(getRobots).mock.calls[0][1];
 
   act(() => result.current.setPage(1));
   expect(signal?.aborted).toBe(true);
@@ -65,9 +65,16 @@ test("page size changes cancel old requests and reload preserves the selection",
 
   act(() => result.current.refresh());
   await waitFor(() => expect(result.current.status).toBe("success"));
-  expect(getRobots).toHaveBeenLastCalledWith(0, 20, expect.any(AbortSignal), {
-    view: "all",
-  });
+  expect(getRobots).toHaveBeenLastCalledWith(
+    {
+      page: 0,
+      pageSize: 20,
+      filters: {
+        view: "all",
+      },
+    },
+    expect.any(AbortSignal),
+  );
 });
 
 test("failed page correction retains only cached destination data under the corrected pager", async () => {
@@ -105,9 +112,16 @@ test("failed page correction retains only cached destination data under the corr
   expect(result.current.status).toBe("success");
   expect(result.current.snapshot?.page).toBe(0);
   expect(result.current.page).toBe(0);
-  expect(getRobots).toHaveBeenLastCalledWith(0, 10, expect.any(AbortSignal), {
-    view: "all",
-  });
+  expect(getRobots).toHaveBeenLastCalledWith(
+    {
+      page: 0,
+      pageSize: 10,
+      filters: {
+        view: "all",
+      },
+    },
+    expect.any(AbortSignal),
+  );
 });
 
 test("filter changes cancel old scope requests and reset page while retaining page size", async () => {
@@ -132,7 +146,7 @@ test("filter changes cancel old scope requests and reset page while retaining pa
     }),
   );
   act(() => result.current.setPage(2));
-  const oldSignal = vi.mocked(getRobots).mock.lastCall![2];
+  const oldSignal = vi.mocked(getRobots).mock.lastCall![1];
   act(() =>
     result.current.setFilters({
       view: "offline",
@@ -142,11 +156,18 @@ test("filter changes cancel old scope requests and reset page while retaining pa
   );
   await waitFor(() => expect(result.current.status).toBe("success"));
   expect(oldSignal?.aborted).toBe(true);
-  expect(getRobots).toHaveBeenLastCalledWith(0, 10, expect.any(AbortSignal), {
-    view: "offline",
-    site: "Berlin",
-    search: "Boston",
-  });
+  expect(getRobots).toHaveBeenLastCalledWith(
+    {
+      page: 0,
+      pageSize: 10,
+      filters: {
+        view: "offline",
+        site: "Berlin",
+        search: "Boston",
+      },
+    },
+    expect.any(AbortSignal),
+  );
 
   await act(async () => {
     stale({ ...response, total: 999 });
@@ -180,9 +201,16 @@ test("zero matching results correct a later page and preserve filters", async ()
   await waitFor(() => expect(result.current.page).toBe(0));
   await waitFor(() => expect(result.current.status).toBe("success"));
   expect(result.current.filters.view).toBe("low-battery");
-  expect(getRobots).toHaveBeenLastCalledWith(0, 10, expect.any(AbortSignal), {
-    view: "low-battery",
-  });
+  expect(getRobots).toHaveBeenLastCalledWith(
+    {
+      page: 0,
+      pageSize: 10,
+      filters: {
+        view: "low-battery",
+      },
+    },
+    expect.any(AbortSignal),
+  );
 });
 
 test("announces explicit search results but keeps background refreshes quiet", async () => {
