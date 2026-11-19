@@ -14,7 +14,7 @@ import { robotListOptions } from "../api/robot-queries";
 
 import useRobotListView, { setRobotListPage } from "./use-robot-list-view";
 
-export type RobotListStatus = "loading" | "error" | "success";
+type RobotListStatus = "loading" | "error" | "success";
 
 // No local state or effects, so any part of the list can call it; React Query
 // shares one request between them.
