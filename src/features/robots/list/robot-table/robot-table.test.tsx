@@ -35,8 +35,7 @@ const robot: Robot = {
 const tableHandlers = {
   onAdd: () => {},
   onDelete: () => {},
-  onClearFilters: () => {},
-  onClearSearch: () => {},
+  onFocusSearch: () => {},
   adding: false,
 };
 
@@ -213,7 +212,7 @@ test("columns put identity and operational context before catalog metadata", asy
 });
 
 test("a search with no matches names the query, lists searchable fields and offers Clear search", async () => {
-  const onClearSearch = vi.fn();
+  const onFocusSearch = vi.fn();
   window.history.replaceState(null, "", "/robots?search=no-such-robot");
   vi.stubGlobal(
     "fetch",
@@ -221,7 +220,7 @@ test("a search with no matches names the query, lists searchable fields and offe
       Promise.resolve(Response.json({ ...robotPage([]), fleetTotal: 5 })),
     ),
   );
-  render(<RobotTable {...tableHandlers} onClearSearch={onClearSearch} />);
+  render(<RobotTable {...tableHandlers} onFocusSearch={onFocusSearch} />);
 
   expect(
     await screen.findByText("No robots match “no-such-robot”."),
@@ -234,7 +233,8 @@ test("a search with no matches names the query, lists searchable fields and offe
 
   fireEvent.click(screen.getByRole("button", { name: "Clear search" }));
 
-  expect(onClearSearch).toHaveBeenCalledOnce();
+  expect(window.location.search).toBe("");
+  expect(onFocusSearch).toHaveBeenCalledOnce();
 });
 
 test.each([

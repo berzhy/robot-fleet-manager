@@ -28,10 +28,7 @@ import useRobotList, {
   useRobotListAnnouncement,
   useRobotListPageCorrection,
 } from "./use-robot-list";
-import useRobotListView, {
-  clearRobotListFilters,
-  setRobotListFilters,
-} from "./use-robot-list-view";
+import useRobotListView from "./use-robot-list-view";
 
 type DeleteTarget =
   { kind: "robot"; id: string; name: string } | { kind: "all" };
@@ -242,15 +239,12 @@ export default function RobotList() {
             <RobotListFilters searchInputRef={searchInputRef} />
           </Stack>
         }
-        onClearFilters={() => {
-          focusSearch();
-          clearRobotListFilters();
+        onFocusSearch={() => {
+          // The delete dialog keeps focus while it is open.
+          if (!confirmation) {
+            focusSearch();
+          }
         }}
-        onClearSearch={() => {
-          focusSearch();
-          setRobotListFilters({ search: undefined });
-        }}
-        onRowFocusLost={confirmation ? undefined : focusSearch}
         onDelete={({ id, name }, trigger) =>
           requestDelete({ kind: "robot", id, name }, trigger)
         }

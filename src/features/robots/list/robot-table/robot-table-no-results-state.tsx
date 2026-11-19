@@ -1,16 +1,31 @@
+"use client";
+
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 
+import useRobotListView, {
+  clearRobotListFilters,
+  setRobotListFilters,
+} from "../use-robot-list-view";
+
 export default function RobotTableNoResultsState({
-  search,
-  onClearSearch,
-  onClearFilters,
+  onCleared,
 }: {
-  search?: string;
-  onClearSearch: () => void;
-  onClearFilters: () => void;
+  onCleared: () => void;
 }) {
+  const { search } = useRobotListView().filters;
+
+  function clearSearch() {
+    onCleared();
+    setRobotListFilters({ search: undefined });
+  }
+
+  function clearFilters() {
+    onCleared();
+    clearRobotListFilters();
+  }
+
   return (
     <Stack
       data-testid="fleet-no-results"
@@ -36,14 +51,14 @@ export default function RobotTableNoResultsState({
             integration, activity, problem, connection and battery.
           </Typography>
           <Stack direction="row" spacing={1}>
-            <Button onClick={onClearSearch}>Clear search</Button>
-            <Button onClick={onClearFilters}>Clear filters</Button>
+            <Button onClick={clearSearch}>Clear search</Button>
+            <Button onClick={clearFilters}>Clear filters</Button>
           </Stack>
         </>
       ) : (
         <>
           <Typography role="status">No robots match these filters.</Typography>
-          <Button onClick={onClearFilters}>Clear filters</Button>
+          <Button onClick={clearFilters}>Clear filters</Button>
         </>
       )}
     </Stack>

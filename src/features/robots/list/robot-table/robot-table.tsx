@@ -38,17 +38,13 @@ const rowHeight = 70;
 
 export default function RobotTable({
   toolbar,
-  onClearFilters,
-  onClearSearch,
-  onRowFocusLost,
+  onFocusSearch,
   onAdd,
   adding,
   onDelete,
 }: {
   toolbar?: ReactNode;
-  onClearFilters: () => void;
-  onClearSearch: () => void;
-  onRowFocusLost?: () => void;
+  onFocusSearch: () => void;
   onAdd: (trigger: HTMLButtonElement) => void;
   adding: boolean;
   onDelete: (robot: Robot, trigger: HTMLButtonElement) => void;
@@ -69,7 +65,7 @@ export default function RobotTable({
 
     // Avoid stealing focus if another control has already received it.
     if (row.ownerDocument.activeElement === row.ownerDocument.body) {
-      onRowFocusLost?.();
+      onFocusSearch();
     }
   });
 
@@ -173,11 +169,7 @@ export default function RobotTable({
         </Table>
         {result?.total === 0 &&
           (result.fleetTotal > 0 ? (
-            <RobotTableNoResultsState
-              search={search}
-              onClearSearch={onClearSearch}
-              onClearFilters={onClearFilters}
-            />
+            <RobotTableNoResultsState onCleared={onFocusSearch} />
           ) : (
             <RobotTableEmptyState onAdd={onAdd} adding={adding} />
           ))}
