@@ -42,7 +42,7 @@ export default function FleetSummary({
   return (
     <Box
       role="group"
-      aria-label="Fleet summary filters"
+      aria-label="Robot status filters"
       aria-busy={updating}
       sx={{
         display: "grid",

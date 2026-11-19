@@ -41,7 +41,7 @@ test("details show fields, missing values, and breadcrumbs", async () => {
   ).toBeInTheDocument();
   const breadcrumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
   expect(
-    within(breadcrumbs).getByRole("link", { name: "Fleet dashboard" }),
+    within(breadcrumbs).getByRole("link", { name: "Robots" }),
   ).toHaveAttribute("href", "/robots");
   expect(within(breadcrumbs).getByText(robot.name)).toHaveAttribute(
     "aria-current",

@@ -1,4 +1,4 @@
-# Fleet dashboard
+# Fleet Orchestrator
 
 ```
 > Claude make a robot orchestaration dashboard, make it nice, and NO "AI slop"!  :)
@@ -10,7 +10,7 @@ Hope we can discuss more this week!
 
 ## What to try
 
-The fleet dashboard shows which robots need attention, where they are, and what they are doing. You can search and filter the fleet, add or delete robots, and open a robot's details to start, stop, send it home, or retry.
+The Robots page shows which robots need attention, where they are, and what they are doing. You can search and filter the fleet, add or delete robots, and open a robot's details to start, stop, send it home, or retry.
 
 The app starts empty. Add 1, 10, or 100 generated robots and leave the simulator running to see activity, battery changes, problems, and robots going offline. The dashboard updates every five seconds.
 
@@ -32,7 +32,7 @@ In a second terminal:
 npm run simulator
 ```
 
-Open http://localhost:3000 to reach the fleet dashboard at `/robots`. Run one simulator and keep it running while trying the dashboard. Fleet data is saved locally in `data/fleet.sqlite`.
+Open http://localhost:3000 to reach the Robots page at `/robots`. Run one simulator and keep it running while trying the dashboard. Fleet data is saved locally in `data/fleet.sqlite`.
 
 ## Checks
 

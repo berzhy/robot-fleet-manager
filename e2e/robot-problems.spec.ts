@@ -72,7 +72,7 @@ test("investigates a reported problem and retries it from robot details", async 
 
   await page
     .getByRole("navigation", { name: "Breadcrumb" })
-    .getByRole("link", { name: "Fleet dashboard" })
+    .getByRole("link", { name: "Robots", exact: true })
     .click();
   await expect(
     page.getByRole("button", {

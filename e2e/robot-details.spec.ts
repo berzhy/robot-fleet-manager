@@ -61,7 +61,7 @@ test("detail context and controls follow reported telemetry", async ({
   await expect(
     page
       .getByRole("navigation", { name: "Main navigation" })
-      .getByRole("link", { name: "Fleet", exact: true }),
+      .getByRole("link", { name: "Robots", exact: true }),
   ).toHaveAttribute("aria-current", "page");
   await expect(page.getByRole("region", { name: "Location" })).toContainText(
     "Lobby: 3 other robots",
@@ -153,7 +153,7 @@ test("detail context and controls follow reported telemetry", async ({
 
   await page
     .getByRole("navigation", { name: "Breadcrumb" })
-    .getByRole("link", { name: "Fleet dashboard" })
+    .getByRole("link", { name: "Robots", exact: true })
     .click();
   await expect(page).toHaveURL("/robots");
   await expect(page.getByTestId(`robot-row-${selected.id}`)).toBeVisible();
@@ -166,9 +166,9 @@ test("a missing robot links back to the fleet list", async ({ page }) => {
     page.getByRole("heading", { name: "Robot not found" }),
   ).toBeVisible();
 
-  await page.getByRole("link", { name: "Back to fleet dashboard" }).click();
+  await page.getByRole("link", { name: "Back to robots" }).click();
   await expect(page).toHaveURL("/robots");
   await expect(
-    page.getByRole("heading", { name: "Fleet dashboard" }),
+    page.getByRole("heading", { level: 1, name: "Robots", exact: true }),
   ).toBeVisible();
 });

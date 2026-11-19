@@ -51,7 +51,9 @@ test("renders the API response with accessible loading status", async () => {
   vi.stubGlobal("fetch", fetcher);
   render(<FleetDashboard />);
 
-  const status = screen.getByRole("status", { name: "Fleet loading status" });
+  const status = screen.getByRole("status", {
+    name: "Robot list loading status",
+  });
   expect(status).toHaveTextContent("Loading robots");
   expect(status.closest("[aria-busy]")).toBeNull();
 
@@ -192,7 +194,7 @@ test("switching summary tiles preserves counts while refreshing and updates them
   vi.stubGlobal("fetch", fetcher);
   render(<FleetDashboard />);
 
-  const tiles = screen.getByRole("group", { name: "Fleet summary filters" });
+  const tiles = screen.getByRole("group", { name: "Robot status filters" });
   const all = within(tiles).getByRole("button", {
     name: "All robots",
   });

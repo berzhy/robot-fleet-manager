@@ -101,7 +101,7 @@ export default function RobotDetails(initial: RobotContext) {
     >
       <Breadcrumbs aria-label="Breadcrumb">
         <Link component={NextLink} href="/robots">
-          Fleet dashboard
+          Robots
         </Link>
         <Typography aria-current="page">{robot.name}</Typography>
       </Breadcrumbs>
@@ -121,7 +121,7 @@ export default function RobotDetails(initial: RobotContext) {
         <Alert data-testid="robot-unavailable" severity="info">
           Robot is no longer available.{" "}
           <Link component={NextLink} href="/robots">
-            Fleet dashboard
+            Back to robots
           </Link>
         </Alert>
       ) : (

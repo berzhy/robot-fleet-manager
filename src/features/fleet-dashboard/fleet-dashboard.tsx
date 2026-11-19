@@ -246,7 +246,7 @@ export default function FleetDashboard() {
         }}
       >
         <Typography component="h1" variant="h4" sx={{ flexShrink: 0 }}>
-          Fleet dashboard
+          Robots
         </Typography>
         <AddRobotSplitButton
           onDeleteAll={(trigger) => requestDelete({ kind: "all" }, trigger)}
@@ -261,7 +261,7 @@ export default function FleetDashboard() {
       <Box
         data-testid="fleet-loading"
         role="status"
-        aria-label="Fleet loading status"
+        aria-label="Robot list loading status"
         aria-atomic="true"
         sx={{
           position: "absolute",

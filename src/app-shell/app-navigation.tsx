@@ -10,7 +10,7 @@ import { usePathname } from "next/navigation";
 import { Suspense } from "react";
 
 const sections = [
-  { label: "Fleet", href: "/robots", icon: PrecisionManufacturingIcon },
+  { label: "Robots", href: "/robots", icon: PrecisionManufacturingIcon },
   { label: "Skills", href: "/skills", icon: ExtensionIcon },
   { label: "Integrations", href: "/integrations", icon: HubIcon },
 ];

@@ -16,7 +16,7 @@ export default function RobotNotFound() {
         component={NextLink}
         href="/robots"
       >
-        Back to fleet dashboard
+        Back to robots
       </Link>
     </Stack>
   );
