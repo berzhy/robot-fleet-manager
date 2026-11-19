@@ -106,14 +106,16 @@ async function registeredRobots(request: APIRequestContext) {
 async function addRobot(page: Page): Promise<Robot> {
   const created = page.waitForResponse(
     (response) =>
-      new URL(response.url()).pathname === "/api/robots" &&
+      new URL(response.url()).pathname === "/api/robots/batch" &&
       response.request().method() === "POST",
   );
   await page.getByTestId("fleet-add-robot").click();
 
   const response = await created;
   expect(response.status()).toBe(201);
-  const robot = (await response.json()) as Robot;
+  const {
+    items: [robot],
+  } = (await response.json()) as { items: Robot[] };
 
   const row = page.getByTestId(`robot-row-${robot.id}`);
   await expect(row).toBeVisible();

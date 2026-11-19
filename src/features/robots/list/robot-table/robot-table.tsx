@@ -55,6 +55,7 @@ export default function RobotTable({
   onDelete,
   onAdd,
   adding,
+  actionsDisabled,
 }: {
   toolbar?: ReactNode;
   filters: RobotFilters;
@@ -66,6 +67,7 @@ export default function RobotTable({
   unverified?: boolean;
   onAdd: (trigger: HTMLButtonElement) => void;
   adding: boolean;
+  actionsDisabled: boolean;
   page: number;
   pageSize: number;
   onPageSizeChange: (pageSize: number) => void;
@@ -183,7 +185,7 @@ export default function RobotTable({
                 onFocusCapture={(event) => {
                   focusedRowElement.current = event.currentTarget;
                 }}
-                adding={adding}
+                actionsDisabled={actionsDisabled}
                 onDelete={onDelete}
                 onAction={onAction}
                 rowHeight={rowHeight}
@@ -211,7 +213,7 @@ export default function RobotTable({
         pageSize={pageSize}
         onPageSizeChange={onPageSizeChange}
         onPageChange={onPageChange}
-        paginationDisabled={adding || status !== "success"}
+        paginationDisabled={actionsDisabled || status !== "success"}
       />
     </Paper>
   );

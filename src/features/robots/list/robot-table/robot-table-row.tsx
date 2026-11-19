@@ -37,10 +37,10 @@ export default function RobotTableRow({
   rowHeight,
   onAction,
   onDelete,
-  adding,
+  actionsDisabled,
 }: {
   search?: string;
-  adding: boolean;
+  actionsDisabled: boolean;
   evaluatedAt: number;
   unverified: boolean;
   onFocusCapture: FocusEventHandler<HTMLTableRowElement>;
@@ -186,7 +186,7 @@ export default function RobotTableRow({
       </TableCell>
       <TableCell align="right" sx={{ position: "relative" }}>
         <RobotTableRowMenu
-          disabled={adding}
+          disabled={actionsDisabled}
           robot={robot}
           evaluatedAt={evaluatedAt}
           unverified={unverified}

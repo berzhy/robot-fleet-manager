@@ -83,19 +83,6 @@ export async function deleteRobot(id: string) {
   throw new Error("Unable to delete robot.");
 }
 
-export async function createRobot(input: CreateRobotInput): Promise<Robot> {
-  const response = await fetch("/api/robots", {
-    method: "POST",
-    signal: requestSignal(),
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
-  if (response.status !== 201) {
-    throw new Error("Unable to add robot.");
-  }
-  return response.json() as Promise<Robot>;
-}
-
 export async function createRobots(
   robots: CreateRobotInput[],
 ): Promise<Robot[]> {

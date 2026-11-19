@@ -1,7 +1,6 @@
 import { pageMetadata } from "../test-fixtures";
 import { afterEach, expect, test, vi } from "vitest";
 import {
-  createRobot,
   createRobots,
   deleteAllRobots,
   getRobots,
@@ -71,7 +70,7 @@ test("deletes an encoded robot id and distinguishes an already removed robot fro
   );
 });
 
-test("creates metadata using POST and requires a 201 response", async () => {
+test("creates robots in one batch POST and requires a 201 response", async () => {
   const input = {
     name: "Robot ABCD1234",
     manufacturer: "Maker",
@@ -91,19 +90,19 @@ test("creates metadata using POST and requires a 201 response", async () => {
   };
   const fetcher = vi
     .fn()
-    .mockResolvedValueOnce(Response.json(created, { status: 201 }))
+    .mockResolvedValueOnce(Response.json({ items: [created] }, { status: 201 }))
     .mockResolvedValueOnce(new Response(null, { status: 500 }));
   vi.stubGlobal("fetch", fetcher);
 
-  expect(await createRobot(input)).toEqual(created);
-  expect(fetcher).toHaveBeenCalledWith("/api/robots", {
+  expect(await createRobots([input])).toEqual([created]);
+  expect(fetcher).toHaveBeenCalledWith("/api/robots/batch", {
     method: "POST",
     signal: expect.any(AbortSignal) as AbortSignal,
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
+    body: JSON.stringify({ robots: [input] }),
   });
 
-  await expect(createRobot(input)).rejects.toThrow("Unable to add robot.");
+  await expect(createRobots([input])).rejects.toThrow("Unable to add robots.");
 });
 
 test("detail requests encode IDs, support cancellation, and distinguish deletion from failure", async () => {
@@ -170,7 +169,7 @@ test("caller cancellation aborts the combined read signal", async () => {
   expect(signal.aborted).toBe(true);
 });
 
-test.each(["create", "batch", "delete", "bulk-delete"])(
+test.each(["batch", "delete", "bulk-delete"])(
   "%s requests terminate on their deadline without retrying",
   async (operation) => {
     const timeout = new AbortController();
@@ -203,13 +202,11 @@ test.each(["create", "batch", "delete", "bulk-delete"])(
       site: "Munich",
     };
     const request =
-      operation === "create"
-        ? createRobot(input)
-        : operation === "batch"
-          ? createRobots([input])
-          : operation === "delete"
-            ? dataDeleteRobot("one")
-            : deleteAllRobots();
+      operation === "batch"
+        ? createRobots([input])
+        : operation === "delete"
+          ? dataDeleteRobot("one")
+          : deleteAllRobots();
     const failure = expect(request).rejects.toMatchObject({
       name: "TimeoutError",
     });

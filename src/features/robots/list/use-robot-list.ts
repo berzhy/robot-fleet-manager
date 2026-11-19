@@ -5,7 +5,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 
 import type { RobotFilters } from "@/modules/robots/robot-filters";
 import { robotPageSize } from "@/modules/robots/robot";
@@ -18,7 +18,7 @@ function lastRobotPage(total: number, size: number) {
   return Math.max(0, Math.ceil(total / size) - 1);
 }
 
-export default function useRobotList(paused = false) {
+export default function useRobotList() {
   const client = useQueryClient();
 
   const [request, setRequest] = useState<{
@@ -31,21 +31,16 @@ export default function useRobotList(paused = false) {
     filters: { view: "all" },
   });
 
-  const options = useMemo(
-    () => robotListOptions(request.page, request.pageSize, request.filters),
-    [request],
+  const options = robotListOptions(
+    request.page,
+    request.pageSize,
+    request.filters,
   );
 
   const [announcement, setAnnouncement] = useState("");
   const [announce, setAnnounce] = useState(false);
 
-  const query = useQuery({
-    ...options,
-    enabled: !paused,
-    refetchInterval: 5000,
-    refetchIntervalInBackground: false,
-    placeholderData: keepPreviousData,
-  });
+  const query = useQuery({ ...options, placeholderData: keepPreviousData });
 
   const snapshot = query.data;
   const total = snapshot?.total ?? 0;
@@ -55,12 +50,6 @@ export default function useRobotList(paused = false) {
     query.data &&
     request.page > lastRobotPage(query.data.total, request.pageSize),
   );
-
-  useEffect(() => {
-    if (paused) {
-      void client.cancelQueries({ queryKey: options.queryKey, exact: true });
-    }
-  }, [client, options.queryKey, paused]);
 
   if (outOfRange) {
     setRequest((previous) => ({ ...previous, page }));

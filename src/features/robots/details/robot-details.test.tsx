@@ -250,9 +250,8 @@ test.each([
       await Promise.resolve();
     });
 
-    expect(screen.getByRole("status")).toHaveTextContent(
-      `${action} requested.`,
-    );
+    // Accepted, but controls stay locked and quiet until the refresh lands.
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(screen.getByTestId("robot-connection")).toHaveTextContent(
       /^Online$/,
     );
@@ -267,9 +266,12 @@ test.each([
 
     await act(async () => {
       resolveRefresh(context());
-      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
     });
 
+    expect(screen.getByRole("status")).toHaveTextContent(
+      `${action} requested.`,
+    );
     expect(button).toHaveAttribute("aria-disabled", "false");
 
     await act(async () => vi.advanceTimersByTimeAsync(6000));
@@ -424,16 +426,11 @@ test("activity controls stay disabled until the command refresh lands", async ()
 
   resolveAction(new Response(null, { status: 202 }));
 
-  // The action has settled and reported success, but the refresh it
-  // triggered is still in flight: commands must stay disabled against
-  // the pre-command activity until that refresh lands.
-  await waitFor(() =>
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Stop activity requested.",
-    ),
-  );
+  // The action was accepted, but the refresh it triggered is still in flight:
+  // commands stay disabled against the pre-command activity until it lands.
   await waitFor(() => expect(resolveRefresh).toBeDefined());
   expect(stop).toHaveAttribute("aria-disabled", "true");
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
 
   await act(async () => {
     fireEvent.click(stop);
@@ -458,6 +455,9 @@ test("activity controls stay disabled until the command refresh lands", async ()
 
   await waitFor(() =>
     expect(screen.getByTestId("robot-activity")).toHaveTextContent("Idle"),
+  );
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "Stop activity requested.",
   );
   expect(
     screen.getByRole("button", { name: "Start activity" }),

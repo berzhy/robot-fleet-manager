@@ -1,15 +1,13 @@
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useRef } from "react";
 
 import type { RobotListStatus } from "./use-robot-list";
 
 export default function useAddRobotFocus({
-  inFlightRef,
-  adding,
+  isWritePending,
   deleteDialogActive,
   status,
 }: {
-  inFlightRef: RefObject<boolean>;
-  adding: boolean;
+  isWritePending: boolean;
   deleteDialogActive: boolean;
   status: RobotListStatus;
 }) {
@@ -20,8 +18,7 @@ export default function useAddRobotFocus({
     const target = focusTargetRef.current;
     if (
       !target ||
-      inFlightRef.current ||
-      adding ||
+      isWritePending ||
       deleteDialogActive ||
       status === "loading"
     ) {
@@ -31,7 +28,7 @@ export default function useAddRobotFocus({
     // A list refresh can remove the recorded trigger before focus returns.
     focusTargetRef.current = null;
     (target.isConnected ? target : addButtonRef.current)?.focus();
-  }, [inFlightRef, adding, deleteDialogActive, status]);
+  }, [isWritePending, deleteDialogActive, status]);
 
   function rememberAddTrigger(trigger: HTMLButtonElement) {
     focusTargetRef.current = trigger;

@@ -11,7 +11,7 @@ import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
-import { useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 
 import {
   actionLabels,
@@ -25,7 +25,7 @@ import { connectionStatus } from "@/modules/telemetry/freshness";
 import ActionNotification from "../action-notification";
 import { isRequestTimeout } from "../api/robot-api";
 import ConnectionStatus from "../connection-status/connection-status";
-import useRobotMutations from "../hooks/use-robot-mutations";
+import { useRobotCommand, useRobotWriteLock } from "../api/robot-mutations";
 import {
   formatActivity,
   formatBattery,
@@ -42,9 +42,8 @@ import useLiveRobot from "./use-live-robot";
 export default function RobotDetails(initial: RobotContext) {
   const tabId = useId();
   const [tab, setTab] = useState<"overview" | "logs">("overview");
-  const { command } = useRobotMutations();
-  const pending = command.isPending;
-  const inFlight = useRef(false);
+  const command = useRobotCommand();
+  const { isWritePending, isWritePendingNow } = useRobotWriteLock();
   const [notice, setNotice] = useState<{
     severity: "success" | "error";
     message: string;
@@ -53,18 +52,15 @@ export default function RobotDetails(initial: RobotContext) {
     robot,
     siteRobots,
     missing,
-    interrupted,
-    refreshing,
-    unverified,
+    refreshFailed,
     verifiedAt: evaluatedAt,
-  } = useLiveRobot(initial, pending);
+  } = useLiveRobot(initial);
 
   const connection = connectionStatus(robot.lastReceivedAt, evaluatedAt);
   const stale = connection === "Delayed" || connection === "Offline";
-  const waitingForVerification = unverified || refreshing || !evaluatedAt;
 
-  async function act(action: RobotAction) {
-    if (inFlight.current || waitingForVerification) {
+  function act(action: RobotAction) {
+    if (isWritePendingNow() || refreshFailed) {
       return;
     }
 
@@ -77,25 +73,29 @@ export default function RobotDetails(initial: RobotContext) {
       return;
     }
 
-    inFlight.current = true;
     setNotice(null);
-    try {
-      await command.mutateAsync({ id: robot.id, action });
-      setNotice({
-        severity: "success",
-        message: `${actionLabels[action]} requested.`,
-      });
-    } catch (error) {
-      setNotice({
-        severity: "error",
-        message: isRequestTimeout(error)
-          ? "The command timed out. Its outcome is uncertain; checking reported activity."
-          : "Unable to request activity change. Please try again.",
-      });
-    } finally {
-      inFlight.current = false;
-    }
+
+    command.mutate(
+      { id: robot.id, action },
+      {
+        onSuccess: () => {
+          setNotice({
+            severity: "success",
+            message: `${actionLabels[action]} requested.`,
+          });
+        },
+        onError: (error) => {
+          setNotice({
+            severity: "error",
+            message: isRequestTimeout(error)
+              ? "The command timed out, so its outcome is uncertain. Check the reported activity before trying again."
+              : "Unable to request activity change. Please try again.",
+          });
+        },
+      },
+    );
   }
+
   return (
     <Stack
       data-testid="robot-details"
@@ -129,7 +129,7 @@ export default function RobotDetails(initial: RobotContext) {
         </Alert>
       ) : (
         <>
-          {interrupted && (
+          {refreshFailed && (
             <Alert data-testid="robot-refresh-warning" severity="warning">
               Live updates interrupted. Showing last-known data and connection
               states.
@@ -148,20 +148,16 @@ export default function RobotDetails(initial: RobotContext) {
                     data-testid="robot-connection"
                   >
                     <ConnectionStatus
-                      status={
-                        robot.lastReceivedAt === null
-                          ? "Unknown"
-                          : evaluatedAt
-                            ? connection
-                            : "Checking"
-                      }
-                      unverified={unverified}
+                      status={connection}
+                      unverified={refreshFailed}
                     />
                   </Typography>
                 </Box>
                 <Box sx={{ minWidth: 120 }}>
                   <Typography variant="body2" color="text.secondary">
-                    {stale || unverified ? "Last reported battery" : "Battery"}
+                    {stale || refreshFailed
+                      ? "Last reported battery"
+                      : "Battery"}
                   </Typography>
                   <Typography
                     component="p"
@@ -181,7 +177,7 @@ export default function RobotDetails(initial: RobotContext) {
                 </Box>
                 <Box>
                   <Typography variant="body2" color="text.secondary">
-                    {stale || unverified
+                    {stale || refreshFailed
                       ? "Last reported activity"
                       : "Activity"}
                   </Typography>
@@ -217,9 +213,9 @@ export default function RobotDetails(initial: RobotContext) {
               <ActivityControls
                 robot={robot}
                 evaluatedAt={evaluatedAt}
-                unverified={waitingForVerification}
-                pending={pending}
-                onAction={(action) => void act(action)}
+                unverified={refreshFailed}
+                pending={isWritePending}
+                onAction={act}
               />
             </Stack>
           </Paper>
@@ -263,7 +259,7 @@ export default function RobotDetails(initial: RobotContext) {
                 robot={robot}
                 peers={siteRobots}
                 evaluatedAt={evaluatedAt}
-                unverified={unverified}
+                unverified={refreshFailed}
               />
               <RobotProfile robot={robot} />
             </Box>

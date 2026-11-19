@@ -57,6 +57,7 @@ test.each(robotPageSizes)("loading renders %i decorative rows", (pageSize) => {
     page: 0,
     pageSize,
     adding: false,
+    actionsDisabled: false,
   };
   const { rerender } = render(
     <RobotTable
@@ -123,6 +124,7 @@ test("table renders the supplied server page without slicing or sorting", () => 
       page={1}
       onPageChange={onPageChange}
       adding={false}
+      actionsDisabled={false}
     />,
   );
 
@@ -156,6 +158,7 @@ test("robot names are plain text with one accessible navigation link per row", (
       page={0}
       status="success"
       adding={false}
+      actionsDisabled={false}
     />,
   );
 
@@ -193,6 +196,7 @@ test("columns put identity and operational context before catalog metadata", () 
       page={0}
       status="success"
       adding={false}
+      actionsDisabled={false}
     />,
   );
 
@@ -231,6 +235,7 @@ test("a search with no matches names the query, lists searchable fields and offe
       page={0}
       status="success"
       adding={false}
+      actionsDisabled={false}
     />,
   );
 
@@ -264,6 +269,7 @@ test.each([
         page={0}
         pageSize={20}
         adding={false}
+        actionsDisabled={false}
       />,
     );
 
