@@ -47,7 +47,7 @@ export function useDeleteAllRobots() {
   });
 }
 
-export function useRobotCommand() {
+export function useSendRobotAction() {
   const client = useQueryClient();
 
   return useMutation({

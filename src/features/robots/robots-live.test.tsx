@@ -5,7 +5,7 @@ import { renderHook, render } from "@/query/test-utils";
 import type { Robot } from "@/modules/robots/robot";
 import type { CreateRobotInput } from "@/modules/robots/robot-validation";
 
-import { useCreateRobots, useRobotCommand } from "./api/robot-mutations";
+import { useCreateRobots, useSendRobotAction } from "./api/robot-mutations";
 
 import RobotDetails from "./details/robot-details";
 import useLiveRobot from "./details/use-live-robot";
@@ -754,7 +754,7 @@ test("a command cancels the poll in flight and stays pending until fresh data la
   const initial = { robot, siteRobots: [], verifiedAt: Date.now() };
   const { result } = renderHook(() => ({
     detail: useLiveRobot(initial),
-    command: useRobotCommand(),
+    command: useSendRobotAction(),
   }));
   await tick();
   expect(reads).toHaveLength(1);

@@ -171,7 +171,7 @@ test("keyboard explanations and Stop/Retry requests follow reported activity", a
 
   await page.getByRole("menuitem", { name: "Stop activity" }).click();
   await expect(page.getByTestId("fleet-notification")).toContainText(
-    "Stop requested",
+    "Stop activity requested for",
   );
   const stopped = (await (
     await request.get(`/api/robots/${robot.id}`)
@@ -196,7 +196,7 @@ test("keyboard explanations and Stop/Retry requests follow reported activity", a
   await row.getByTestId("robot-actions").click();
   await page.getByRole("menuitem", { name: "Retry activity" }).click();
   await expect(page.getByTestId("fleet-notification")).toContainText(
-    "Retry requested",
+    "Retry activity requested for",
   );
   expect(
     await (await request.get(`/api/robots/${robot.id}`)).json(),

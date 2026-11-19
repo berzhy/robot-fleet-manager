@@ -61,7 +61,7 @@ test("investigates a reported problem and retries it from robot details", async 
 
   await retry.click();
   await expect(page.getByRole("status")).toContainText(
-    "Retry activity requested.",
+    "Retry activity requested for",
   );
 
   await report(true);

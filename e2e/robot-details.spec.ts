@@ -93,7 +93,7 @@ test("detail context and controls follow reported telemetry", async ({
 
   releaseAction();
   await expect(page.getByRole("status")).toContainText(
-    "Stop activity requested.",
+    "Stop activity requested for",
   );
   await expect(location).toBeVisible();
   await expect(page.getByTestId("robot-activity")).toHaveText("Working");

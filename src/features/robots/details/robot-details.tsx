@@ -13,19 +13,13 @@ import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import { useId, useState } from "react";
 
-import {
-  actionLabels,
-  actionUnavailable,
-  type RobotAction,
-} from "@/modules/robots/robot-actions";
 import { robotProblemDetails } from "@/modules/robots/robot-problems";
 import type { RobotContext } from "@/modules/robots/robot";
 import { connectionStatus } from "@/modules/telemetry/freshness";
 
-import ActionNotification from "../action-notification";
-import { isRequestTimeout } from "../api/robot-api";
+import { useRobotWriteLock } from "../api/robot-mutations";
 import ConnectionStatus from "../connection-status/connection-status";
-import { useRobotCommand, useRobotWriteLock } from "../api/robot-mutations";
+import useRobotCommand from "../use-robot-command";
 import {
   formatActivity,
   formatBattery,
@@ -42,12 +36,8 @@ import useLiveRobot from "./use-live-robot";
 export default function RobotDetails(initial: RobotContext) {
   const tabId = useId();
   const [tab, setTab] = useState<"overview" | "logs">("overview");
-  const command = useRobotCommand();
-  const { isWritePending, isWritePendingNow } = useRobotWriteLock();
-  const [notice, setNotice] = useState<{
-    severity: "success" | "error";
-    message: string;
-  } | null>(null);
+  const requestAction = useRobotCommand();
+  const { isWritePending } = useRobotWriteLock();
   const {
     robot,
     siteRobots,
@@ -58,43 +48,6 @@ export default function RobotDetails(initial: RobotContext) {
 
   const connection = connectionStatus(robot.lastReceivedAt, evaluatedAt);
   const stale = connection === "Delayed" || connection === "Offline";
-
-  function act(action: RobotAction) {
-    if (isWritePendingNow() || refreshFailed) {
-      return;
-    }
-
-    const reason = actionUnavailable(robot, action, Date.now());
-    if (reason) {
-      setNotice({
-        severity: "error",
-        message: `${reason}. Check the latest report before trying again.`,
-      });
-      return;
-    }
-
-    setNotice(null);
-
-    command.mutate(
-      { id: robot.id, action },
-      {
-        onSuccess: () => {
-          setNotice({
-            severity: "success",
-            message: `${actionLabels[action]} requested.`,
-          });
-        },
-        onError: (error) => {
-          setNotice({
-            severity: "error",
-            message: isRequestTimeout(error)
-              ? "The command timed out, so its outcome is uncertain. Check the reported activity before trying again."
-              : "Unable to request activity change. Please try again.",
-          });
-        },
-      },
-    );
-  }
 
   return (
     <Stack
@@ -215,7 +168,7 @@ export default function RobotDetails(initial: RobotContext) {
                 evaluatedAt={evaluatedAt}
                 unverified={refreshFailed}
                 pending={isWritePending}
-                onAction={act}
+                onAction={(action) => requestAction(robot, action)}
               />
             </Stack>
           </Paper>
@@ -274,9 +227,6 @@ export default function RobotDetails(initial: RobotContext) {
             <RobotLogs robot={initial.robot} />
           </Box>
         </>
-      )}
-      {notice && (
-        <ActionNotification {...notice} onClose={() => setNotice(null)} />
       )}
     </Stack>
   );

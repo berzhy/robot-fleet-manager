@@ -270,7 +270,7 @@ test.each([
     });
 
     expect(screen.getByRole("status")).toHaveTextContent(
-      `${action} requested.`,
+      `${action} requested for “Test robot”.`,
     );
     expect(button).toHaveAttribute("aria-disabled", "false");
 
@@ -344,7 +344,7 @@ test("activity requests are guarded while pending and telemetry confirms the cha
     expect(screen.getByTestId("robot-activity")).toHaveTextContent("Idle"),
   );
   expect(screen.getByRole("status")).toHaveTextContent(
-    "Stop activity requested.",
+    "Stop activity requested for “Test robot”.",
   );
   const start = screen.getByRole("button", { name: "Start activity" });
   expect(start).toBe(stop);
@@ -378,6 +378,55 @@ test("activity requests are guarded while pending and telemetry confirms the cha
   expect(
     screen.queryByRole("button", { name: "Start activity" }),
   ).not.toBeInTheDocument();
+});
+
+test("a command result is reported after leaving the details screen", async () => {
+  const online: Robot = {
+    ...robot,
+    activity: "working" as const,
+    batteryPercent: 80,
+    lastReceivedAt: new Date().toISOString(),
+  };
+
+  let resolveAction!: (value: Response) => void;
+
+  vi.stubGlobal(
+    "fetch",
+    vi.fn((_url: string, init?: RequestInit) =>
+      init?.method === "POST"
+        ? new Promise<Response>((resolve) => {
+            resolveAction = resolve;
+          })
+        : Promise.resolve(
+            Response.json({
+              robot: online,
+              siteRobots: [],
+              verifiedAt: Date.now(),
+            }),
+          ),
+    ),
+  );
+  const { rerender } = render(
+    <RobotDetails robot={online} siteRobots={[]} verifiedAt={Date.now()} />,
+  );
+
+  const stop = screen.getByRole("button", { name: "Stop activity" });
+  await waitFor(() => expect(stop).toHaveAttribute("aria-disabled", "false"));
+  await act(async () => {
+    fireEvent.click(stop);
+    await Promise.resolve();
+  });
+
+  // Navigating away unmounts the screen; the app-level provider stays.
+  rerender(<></>);
+  await act(async () => {
+    resolveAction(new Response(null, { status: 202 }));
+    await Promise.resolve();
+  });
+
+  expect(await screen.findByRole("status")).toHaveTextContent(
+    "Stop activity requested for “Test robot”.",
+  );
 });
 
 test("activity controls stay disabled until the command refresh lands", async () => {
@@ -457,7 +506,7 @@ test("activity controls stay disabled until the command refresh lands", async ()
     expect(screen.getByTestId("robot-activity")).toHaveTextContent("Idle"),
   );
   expect(screen.getByRole("status")).toHaveTextContent(
-    "Stop activity requested.",
+    "Stop activity requested for “Test robot”.",
   );
   expect(
     screen.getByRole("button", { name: "Start activity" }),
@@ -496,7 +545,7 @@ test("failed action keeps reported activity and explains the failure", async () 
 
   await waitFor(() =>
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "Unable to request activity change",
+      "Unable to request stop activity for “Test robot”",
     ),
   );
   expect(screen.getByTestId("robot-activity")).toHaveTextContent("Working");

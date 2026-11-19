@@ -3,26 +3,20 @@
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
-import Portal from "@mui/material/Portal";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { useRef, useState } from "react";
 
-import type { Robot } from "@/modules/robots/robot";
-import {
-  actionUnavailable,
-  type RobotAction,
-} from "@/modules/robots/robot-actions";
+import { useNotifications } from "@/shared/notifications/notification-provider";
 
-import ActionNotification from "../action-notification";
 import { isRequestTimeout } from "../api/robot-api";
 import {
   useCreateRobots,
   useDeleteAllRobots,
   useDeleteRobot,
-  useRobotCommand,
   useRobotWriteLock,
 } from "../api/robot-mutations";
+import useRobotCommand from "../use-robot-command";
 
 import AddRobotSplitButton from "./add-robot-split-button";
 import DeleteRobotDialog from "./delete-robot-dialog";
@@ -36,13 +30,6 @@ import useRobotList from "./use-robot-list";
 type DeleteTarget =
   { kind: "robot"; id: string; name: string } | { kind: "all" };
 
-const actionRequestedMessages: Record<RobotAction, string> = {
-  start: "Start requested",
-  stop: "Stop requested",
-  "return-to-base": "Return requested",
-  retry: "Retry requested",
-};
-
 export default function RobotList() {
   const [search, setSearch] = useState("");
 
@@ -51,7 +38,8 @@ export default function RobotList() {
   const createRobots = useCreateRobots();
   const deleteRobot = useDeleteRobot();
   const deleteAllRobots = useDeleteAllRobots();
-  const command = useRobotCommand();
+  const requestAction = useRobotCommand();
+  const notifications = useNotifications();
 
   const { isWritePending, isWritePendingNow } = useRobotWriteLock();
   const adding = createRobots.isPending;
@@ -77,10 +65,7 @@ export default function RobotList() {
     setFilters,
   } = useRobotList();
 
-  const [notification, setNotification] = useState<{
-    severity: "success" | "error";
-    message: string;
-  } | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const { addButtonRef, rememberAddTrigger, preferAddButton } =
     useAddRobotFocus({
@@ -94,14 +79,14 @@ export default function RobotList() {
       return;
     }
 
-    setNotification(null);
+    notifications.clear();
     rememberAddTrigger(trigger);
 
     createRobots.mutate(
       Array.from({ length: count }, () => generateRobotInput()),
       {
         onSuccess: (robots) => {
-          setNotification({
+          notifications.show({
             severity: "success",
             message:
               count === 1
@@ -111,7 +96,7 @@ export default function RobotList() {
           preferAddButton();
         },
         onError: (error) => {
-          setNotification({
+          notifications.show({
             severity: "error",
             message: isRequestTimeout(error)
               ? "The add request timed out, so its outcome is uncertain. The list shows the latest fleet state; check it before you try again."
@@ -124,49 +109,13 @@ export default function RobotList() {
     );
   }
 
-  function actOnRobot(robot: Robot, action: RobotAction) {
-    if (isWritePendingNow()) {
-      return;
-    }
-
-    const reason = actionUnavailable(robot, action, Date.now());
-    if (reason) {
-      setNotification({
-        severity: "error",
-        message: `${reason}. Check the latest report before trying again.`,
-      });
-      return;
-    }
-
-    setNotification(null);
-
-    command.mutate(
-      { id: robot.id, action },
-      {
-        onSuccess: () => {
-          setNotification({
-            severity: "success",
-            message: `${actionRequestedMessages[action]} for “${robot.name}”.`,
-          });
-        },
-        onError: (error) => {
-          setNotification({
-            severity: "error",
-            message: isRequestTimeout(error)
-              ? "The command timed out, so its outcome is uncertain. Check the reported activity before trying again."
-              : `Unable to request action for “${robot.name}”. Please try again.`,
-          });
-        },
-      },
-    );
-  }
-
   function requestDelete(target: DeleteTarget, trigger: HTMLButtonElement) {
     if (isWritePendingNow() || confirmation) {
       return;
     }
 
-    setNotification(null);
+    notifications.clear();
+    setDeleteError(null);
     setConfirmation({ target, trigger, open: true });
   }
 
@@ -175,7 +124,7 @@ export default function RobotList() {
       return;
     }
 
-    setNotification(null);
+    setDeleteError(null);
     setConfirmation({ ...confirmation, open: false });
   }
 
@@ -185,24 +134,24 @@ export default function RobotList() {
     }
 
     const { target } = confirmation;
-    setNotification(null);
+    notifications.clear();
+    setDeleteError(null);
 
     function handleDeleted(message: string) {
-      setNotification({ severity: "success", message });
+      notifications.show({ severity: "success", message });
       setConfirmation(
         (current) => current && { ...current, open: false, trigger: null },
       );
     }
 
     function handleDeleteError(error: Error) {
-      setNotification({
-        severity: "error",
-        message: isRequestTimeout(error)
+      setDeleteError(
+        isRequestTimeout(error)
           ? "The delete request timed out, so its outcome is uncertain. The list shows the latest fleet state."
           : target.kind === "robot"
             ? `Unable to delete “${target.name}”. Please try again.`
             : "Unable to delete all robots. Please try again.",
-      });
+      );
     }
 
     if (target.kind === "robot") {
@@ -237,13 +186,6 @@ export default function RobotList() {
 
     setConfirmation(null);
   }
-
-  const notice = notification && (
-    <ActionNotification
-      {...notification}
-      onClose={() => setNotification(null)}
-    />
-  );
 
   return (
     <Stack spacing={2} sx={{ flex: 1, minHeight: 0 }}>
@@ -337,7 +279,7 @@ export default function RobotList() {
         onPageSizeChange={setPageSize}
         onPageChange={setPage}
         onRetry={refresh}
-        onAction={actOnRobot}
+        onAction={requestAction}
         onDelete={({ id, name }, trigger) =>
           requestDelete({ kind: "robot", id, name }, trigger)
         }
@@ -354,19 +296,12 @@ export default function RobotList() {
           }
           open={confirmation.open}
           pending={deleting}
-          error={
-            notification?.severity === "error"
-              ? notification.message
-              : undefined
-          }
-          onClearError={() => setNotification(null)}
+          error={deleteError ?? undefined}
+          onClearError={() => setDeleteError(null)}
           onCancel={closeDeleteDialog}
           onConfirm={confirmDelete}
           onExited={finishDialogClose}
         />
-      )}
-      {(notification?.severity === "success" || !confirmation) && (
-        <Portal>{notice}</Portal>
       )}
     </Stack>
   );

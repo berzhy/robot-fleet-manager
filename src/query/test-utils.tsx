@@ -8,6 +8,8 @@ import { notifyManager, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { afterEach } from "vitest";
 
+import { NotificationProvider } from "@/shared/notifications/notification-provider";
+
 import { createQueryClient } from "./query-client";
 
 // Keep notifications within async act, including tests that control polling timers.
@@ -28,7 +30,9 @@ function createWrapper() {
 
   return function Wrapper({ children }: { children: ReactNode }) {
     return (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+      <QueryClientProvider client={client}>
+        <NotificationProvider>{children}</NotificationProvider>
+      </QueryClientProvider>
     );
   };
 }
