@@ -36,7 +36,7 @@ export function formatRobotTimestamp(timestamp: string) {
   return timestampFormatter.format(new Date(timestamp));
 }
 
-const addedDateFormatter = new Intl.DateTimeFormat("en-GB", {
+const dateFormatter = new Intl.DateTimeFormat("en-GB", {
   dateStyle: "medium",
   timeZone: "Europe/Berlin",
 });
@@ -47,7 +47,33 @@ const addedTimeFormatter = new Intl.DateTimeFormat("en-GB", {
 export function formatAddedParts(createdAt: string) {
   const date = new Date(createdAt);
   return {
-    date: addedDateFormatter.format(date),
+    date: dateFormatter.format(date),
     time: addedTimeFormatter.format(date),
   };
+}
+
+const relativeTimeFormatter = new Intl.RelativeTimeFormat("en-GB", {
+  style: "short",
+});
+const minuteMs = 60_000;
+const hourMs = 60 * minuteMs;
+const dayMs = 24 * hourMs;
+
+/**
+ * "12 sec ago" up to a day, then the date; the exact time belongs in a
+ * tooltip. Measured against the snapshot time, like the connection status.
+ */
+export function formatTimeAgo(timestamp: string, now: number) {
+  // A report stamped after the snapshot time must not read "in 2 sec".
+  const age = Math.max(0, now - Date.parse(timestamp));
+  if (age >= dayMs) {
+    return dateFormatter.format(new Date(timestamp));
+  }
+  const [unitMs, unit] =
+    age >= hourMs
+      ? [hourMs, "hour" as const]
+      : age >= minuteMs
+        ? [minuteMs, "minute" as const]
+        : [1000, "second" as const];
+  return relativeTimeFormatter.format(-Math.floor(age / unitMs), unit);
 }

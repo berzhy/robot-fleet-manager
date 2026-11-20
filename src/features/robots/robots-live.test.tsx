@@ -322,6 +322,7 @@ test("connection classification stays on the last fleet snapshot between refresh
   const row = within(screen.getByTestId("robot-row-live"));
   expect(row.getByTestId("robot-connection")).toHaveTextContent(/^Online$/);
   expect(row.queryByTestId("robot-last-report")).not.toBeInTheDocument();
+  expect(row.getByTestId("robot-activity")).toHaveTextContent(/^Working$/);
 
   await tick(1000);
   expect(row.getByTestId("robot-connection")).toHaveTextContent(/^Online$/);
@@ -329,15 +330,18 @@ test("connection classification stays on the last fleet snapshot between refresh
   await tick(4000);
   expect(row.getByTestId("robot-connection")).toHaveTextContent(/^Delayed$/);
   const report = row.getByTestId("robot-last-report");
-  expect(report).toHaveTextContent("Last report 1 Jan 2026, 01:00:00 CET");
+  expect(report).toHaveTextContent(/^15 sec ago$/);
   expect(report.querySelector("time")).toHaveAttribute(
     "datetime",
     robot.lastReceivedAt,
   );
+  expect(row.getByTestId("robot-activity")).toHaveTextContent(
+    /^Last: Working$/,
+  );
 
   await tick(5000);
   expect(row.getByTestId("robot-connection")).toHaveTextContent(/^Offline$/);
-  expect(report).toHaveTextContent("Last report 1 Jan 2026, 01:00:00 CET");
+  expect(report).toHaveTextContent(/^20 sec ago$/);
 });
 
 test("a confirmed detail deletion clears an earlier refresh warning", async () => {

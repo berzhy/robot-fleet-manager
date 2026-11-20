@@ -5,6 +5,7 @@ import {
   formatBattery,
   formatRobotTimestamp,
   formatAddedParts,
+  formatTimeAgo,
 } from "./robot-formatters";
 
 test("battery formatting distinguishes missing data from zero and rounds percentages", () => {
@@ -46,4 +47,21 @@ test("battery tone follows the Low battery and critical rules, ignoring charging
   expect(
     batteryTone({ batteryPercent: null, activity: "unknown" }),
   ).toBeUndefined();
+});
+
+test.each([
+  [0, "0 sec ago"],
+  [59_999, "59 sec ago"],
+  [60_000, "1 min ago"],
+  [3_599_999, "59 min ago"],
+  [3_600_000, "1 hr ago"],
+  [86_399_999, "23 hr ago"],
+  [86_400_000, "14 Nov 2026"],
+  // Stamped after the snapshot time, as connection status also allows.
+  [-2_000, "0 sec ago"],
+])("a timestamp %i ms old reads %s", (ageMs, expected) => {
+  const timestamp = "2026-11-14T12:00:00.000Z";
+  expect(formatTimeAgo(timestamp, Date.parse(timestamp) + ageMs)).toBe(
+    expected,
+  );
 });

@@ -26,6 +26,7 @@ import {
   formatAddedParts,
   formatBattery,
   formatRobotTimestamp,
+  formatTimeAgo,
 } from "../../utils/robot-formatters";
 
 import RobotTableRowMenu from "./robot-table-row-menu";
@@ -50,7 +51,7 @@ export default function RobotTableRow({
 }) {
   const connection = connectionStatus(robot.lastReceivedAt, evaluatedAt);
   const connectionLabel = formatConnection(connection);
-  const showLastReport = connection === "delayed" || connection === "offline";
+  const stale = connection === "delayed" || connection === "offline";
   const registered = formatAddedParts(robot.createdAt);
   const battery = batteryTone(robot);
 
@@ -126,24 +127,37 @@ export default function RobotTableRow({
           <SearchHighlight text={connectionLabel} search={search} />
           {unverified ? " (unverified)" : ""}
         </Typography>
-        {showLastReport && robot.lastReceivedAt && (
+        {stale && robot.lastReceivedAt && (
           <Typography
             data-testid="robot-last-report"
             variant="body2"
             color="textSecondary"
           >
-            Last report{" "}
-            <time dateTime={robot.lastReceivedAt}>
-              {formatRobotTimestamp(robot.lastReceivedAt)}
-            </time>
+            <Tooltip
+              title={formatRobotTimestamp(robot.lastReceivedAt)}
+              describeChild
+            >
+              {/* Above the row link, so the pointer reaches the exact time. */}
+              <Box
+                component="time"
+                dateTime={robot.lastReceivedAt}
+                sx={{ position: "relative", zIndex: 1 }}
+              >
+                {formatTimeAgo(robot.lastReceivedAt, evaluatedAt)}
+              </Box>
+            </Tooltip>
           </Typography>
         )}
       </TableCell>
       <TableCell data-testid="robot-activity">
-        <SearchHighlight
-          text={formatActivity(robot.activity)}
-          search={search}
-        />
+        {/* Without fresh reports the activity is what the robot last said. */}
+        <Typography variant="body2" color={stale ? "textSecondary" : undefined}>
+          {stale && "Last: "}
+          <SearchHighlight
+            text={formatActivity(robot.activity)}
+            search={search}
+          />
+        </Typography>
         {robot.problemCode && (
           <Typography variant="body2" color="textSecondary">
             <SearchHighlight
