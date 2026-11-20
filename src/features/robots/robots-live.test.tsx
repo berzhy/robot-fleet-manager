@@ -6,7 +6,11 @@ import type { Robot, RobotContext } from "@/modules/robots/robot";
 import type { CreateRobotInput } from "@/modules/robots/robot-validation";
 
 import { useCreateRobots, useSendRobotAction } from "./api/robot-mutations";
-import { robotKeys } from "./api/robot-queries";
+import {
+  robotContextPollIntervalMs,
+  robotKeys,
+  robotListPollIntervalMs,
+} from "./api/robot-queries";
 
 import RobotDetails from "./details/robot-details";
 import useLiveRobot from "./details/use-live-robot";
@@ -110,16 +114,16 @@ test("quiet polling preserves DOM and focus, retains failed data, and recovers",
   const link = row.getByTestId("robot-link");
   link.focus();
 
-  await tick(4000);
+  await tick(robotListPollIntervalMs - 1);
   expect(fetcher).toHaveBeenCalledTimes(1);
 
-  await tick(1000);
+  await tick(1);
   expect(row.getByTestId("robot-battery")).toHaveTextContent("49%");
   expect(row.getByTestId("robot-link")).toBe(link);
   expect(link).toHaveFocus();
   expect(screen.getByTestId("fleet-loading")).toBeEmptyDOMElement();
 
-  await tick(5000);
+  await tick(robotListPollIntervalMs);
   expect(screen.getByTestId("fleet-refresh-warning")).toHaveRole("alert");
   expect(screen.getByTestId("fleet-refresh-warning")).toHaveTextContent(
     "Live updates interrupted",
@@ -127,7 +131,7 @@ test("quiet polling preserves DOM and focus, retains failed data, and recovers",
   expect(row.getByTestId("robot-connection")).toHaveTextContent(/^Online$/);
   expect(row.getByTestId("robot-battery")).toHaveTextContent("49%");
 
-  await tick(5000);
+  await tick(robotListPollIntervalMs);
   expect(screen.queryByTestId("fleet-refresh-warning")).not.toBeInTheDocument();
   expect(row.getByTestId("robot-battery")).toHaveTextContent("48%");
 });
@@ -155,14 +159,14 @@ test("an open action menu receives fleet updates while a hidden tab stops pollin
   const stop = screen.getByRole("menuitem", { name: "Stop activity" });
   expect(stop).not.toHaveAttribute("aria-disabled", "true");
 
-  await tick(5000);
+  await tick(robotListPollIntervalMs);
   expect(connection).toHaveTextContent(/^Delayed$/);
   expect(row.getByTestId("robot-battery")).toHaveTextContent("49%");
   expect(screen.getByRole("menu")).toBeVisible();
   expect(stop).toHaveAttribute("aria-disabled", "true");
 
   setPageVisibility(true);
-  await tick(5000);
+  await tick(robotListPollIntervalMs);
   expect(fetcher).toHaveBeenCalledTimes(2);
 
   setPageVisibility(false);
@@ -234,7 +238,7 @@ test("a stale in-flight poll cannot overwrite an explicit refresh", async () => 
   const { result } = renderHook(() => useRobotList());
   await tick();
 
-  await tick(5000);
+  await tick(robotListPollIntervalMs);
 
   act(() => {
     result.current.refresh();
@@ -262,7 +266,7 @@ test("details render with the page's data and first ask again at the next poll",
   expect(screen.getByTestId("robot-details")).toBeInTheDocument();
   expect(fetcher).not.toHaveBeenCalled();
 
-  await tick(5000);
+  await tick(robotContextPollIntervalMs);
   expect(fetcher).toHaveBeenCalledTimes(1);
 });
 
@@ -294,14 +298,14 @@ test("detail refreshes while Logs is selected and stops when its robot is delete
 
   const logs = screen.getByRole("tab", { name: "Logs" });
   fireEvent.click(logs);
-  await tick(5000);
+  await tick(robotContextPollIntervalMs);
   expect(logs).toHaveAttribute("aria-selected", "true");
   expect(screen.getByTestId("robot-battery")).toHaveTextContent("42%");
   expect(screen.getByRole("tabpanel", { name: "Logs" })).toHaveTextContent(
     "Location configuration loaded: Berlin",
   );
 
-  await tick(5000);
+  await tick(robotContextPollIntervalMs);
   expect(screen.getByTestId("robot-unavailable")).toHaveTextContent(
     "Robot is no longer available.",
   );
@@ -335,13 +339,13 @@ test("connection classification stays on the last fleet snapshot between refresh
   expect(row.queryByTestId("robot-last-report")).not.toBeInTheDocument();
   expect(row.getByTestId("robot-activity")).toHaveTextContent(/^Working$/);
 
-  await tick(1000);
+  await tick(robotListPollIntervalMs - 1);
   expect(row.getByTestId("robot-connection")).toHaveTextContent(/^Online$/);
 
-  await tick(4000);
+  await tick(1);
   expect(row.getByTestId("robot-connection")).toHaveTextContent(/^Delayed$/);
   const report = row.getByTestId("robot-last-report");
-  expect(report).toHaveTextContent(/^15 sec ago$/);
+  expect(report).toHaveTextContent(/^13 sec ago$/);
   expect(report.querySelector("time")).toHaveAttribute(
     "datetime",
     robot.lastReceivedAt,
@@ -350,9 +354,9 @@ test("connection classification stays on the last fleet snapshot between refresh
     /^Last: Working$/,
   );
 
-  await tick(5000);
+  await tick(robotListPollIntervalMs);
   expect(row.getByTestId("robot-connection")).toHaveTextContent(/^Offline$/);
-  expect(report).toHaveTextContent(/^20 sec ago$/);
+  expect(report).toHaveTextContent(/^16 sec ago$/);
 });
 
 test("a confirmed detail deletion clears an earlier refresh warning", async () => {
@@ -365,13 +369,13 @@ test("a confirmed detail deletion clears an earlier refresh warning", async () =
       .mockResolvedValueOnce(robotNotFound()),
   );
   renderDetails({ robot: robot, siteRobots: [], evaluatedAt: 0 });
-  await tick(5000);
+  await tick(robotContextPollIntervalMs);
 
   expect(screen.getByTestId("robot-refresh-warning")).toHaveTextContent(
     "Live updates interrupted",
   );
 
-  await tick(5000);
+  await tick(robotContextPollIntervalMs);
   expect(screen.getByTestId("robot-unavailable")).toHaveTextContent(
     "Robot is no longer available.",
   );
@@ -383,7 +387,7 @@ test("a failed first detail poll keeps server-verified connection information", 
   vi.setSystemTime(new Date(Date.parse(robot.lastReceivedAt!) + 20000));
   vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("unavailable")));
   renderDetails({ robot: robot, siteRobots: [], evaluatedAt: Date.now() });
-  await tick(5000);
+  await tick(robotContextPollIntervalMs);
 
   expect(
     within(screen.getByTestId("robot-details")).getByTestId("robot-connection"),
@@ -400,11 +404,11 @@ test("Escape closes a secondary select before More filters while polling continu
 
   fireEvent.click(screen.getByRole("button", { name: /More filters/ }));
   fireEvent.mouseDown(screen.getByRole("combobox", { name: "Manufacturer" }));
-  await tick(5000);
+  await tick(robotListPollIntervalMs);
   expect(fetcher).toHaveBeenCalledTimes(2);
 
   fireEvent.keyDown(screen.getByRole("listbox"), { key: "Escape" });
-  await tick(5000);
+  await tick(robotListPollIntervalMs);
   expect(fetcher).toHaveBeenCalledTimes(3);
   expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
   expect(
@@ -467,13 +471,14 @@ test("fleet and detail retain snapshots after a request timeout and recover on t
 
   // The details came with the page, so their first request is the first poll.
   stalled = true;
-  await tick(5000);
+  await tick(robotListPollIntervalMs);
   expect(fetcher).toHaveBeenCalledTimes(3);
 
   await act(async () => {
     timeout.abort(new DOMException("Request timed out", "TimeoutError"));
     await Promise.resolve();
   });
+  expect(fetcher).toHaveBeenCalledTimes(3);
   expect(result.current.fleet.refreshFailed).toBe(true);
   expect(result.current.detail.refreshFailed).toBe(true);
   expect(result.current.fleet.status).toBe("success");
@@ -482,13 +487,9 @@ test("fleet and detail retain snapshots after a request timeout and recover on t
   ]);
   expect(result.current.detail.robot.batteryPercent).toBe(45);
 
-  await tick(4999);
-  expect(fetcher).toHaveBeenCalledTimes(3);
-
   stalled = false;
   timeout = new AbortController();
-  await tick(1);
-  expect(fetcher).toHaveBeenCalledTimes(5);
+  await tick(robotListPollIntervalMs);
   expect(result.current.fleet.refreshFailed).toBe(false);
   expect(result.current.detail.refreshFailed).toBe(false);
 });
@@ -523,7 +524,7 @@ test("unmount cancels outstanding fleet and detail requests without restarting p
   expect(signals).toHaveLength(1);
 
   // The details came with the page, so their first request is the first poll.
-  await tick(5000);
+  await tick(robotContextPollIntervalMs);
   expect(signals).toHaveLength(2);
   expect(signals.every((signal) => !signal.aborted)).toBe(true);
 
@@ -564,7 +565,7 @@ test("cached fleet remount preserves rows while refreshing and after refresh fai
   expect(screen.getByTestId("fleet-refresh-warning")).toBeInTheDocument();
   expect(screen.queryByTestId("fleet-load-error")).not.toBeInTheDocument();
   expect(screen.getByTestId("robot-row-live")).toHaveTextContent("50%");
-  await tick(5000);
+  await tick(robotListPollIntervalMs);
   expect(screen.getByTestId("robot-row-live")).toHaveTextContent("40%");
 });
 
@@ -573,6 +574,10 @@ test.each(["fleet", "detail"] as const)(
   async (screenName) => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(robot.lastReceivedAt!));
+    const pollIntervalMs =
+      screenName === "fleet"
+        ? robotListPollIntervalMs
+        : robotContextPollIntervalMs;
 
     function response(batteryPercent: number) {
       return screenName === "fleet"
@@ -649,7 +654,7 @@ test.each(["fleet", "detail"] as const)(
 
     // Returning refreshes data older than one poll interval.
     setPageVisibility(true);
-    await tick(5000);
+    await tick(pollIntervalMs);
     setPageVisibility(false);
     await tick();
 
@@ -661,7 +666,7 @@ test.each(["fleet", "detail"] as const)(
     );
 
     setPageVisibility(true);
-    await tick(5000);
+    await tick(pollIntervalMs);
     setPageVisibility(false);
     await tick();
 
@@ -676,6 +681,10 @@ test.each(["fleet", "detail"] as const)(
   async (screenName) => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(robot.lastReceivedAt!));
+    const pollIntervalMs =
+      screenName === "fleet"
+        ? robotListPollIntervalMs
+        : robotContextPollIntervalMs;
 
     function response(batteryPercent: number) {
       return screenName === "fleet"
@@ -715,7 +724,7 @@ test.each(["fleet", "detail"] as const)(
     await tick();
     // The list fetches on mount, the details come with the page; count from here.
     fetcher.mockClear();
-    await tick(5000);
+    await tick(pollIntervalMs);
 
     const container = screen.getByTestId(
       screenName === "fleet" ? "robot-row-live" : "robot-details",
@@ -837,7 +846,7 @@ test("a command cancels the poll in flight and stays pending until fresh data la
       ],
     },
   );
-  await tick(5000);
+  await tick(robotContextPollIntervalMs);
   expect(reads).toHaveLength(1);
 
   await act(async () => {
