@@ -43,8 +43,8 @@ export default function RobotSearchField({
   const [ownSearch, setOwnSearch] = useState(filters.search);
 
   // Next re-renders URL readers a moment after replaceState, so the box may be
-  // ahead of the URL. Only a URL search this box did not apply (a link, Back,
-  // a removed chip) replaces what the user typed.
+  // ahead of the URL. Only a URL search this box did not apply (a link or
+  // Back) replaces what the user typed.
   if (filters.search !== urlSearch) {
     setUrlSearch(filters.search);
     if (filters.search !== ownSearch) {

@@ -57,7 +57,7 @@ export default function RobotListFilters({
         </Stack>
       </Stack>
       <AppliedFilterChips
-        onClearFilters={() => searchFieldRef.current?.reset()}
+        onClearSearch={() => searchFieldRef.current?.reset()}
       />
     </Stack>
   );

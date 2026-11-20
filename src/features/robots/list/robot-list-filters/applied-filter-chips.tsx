@@ -14,10 +14,14 @@ import useRobotListView, {
 import { filterControlId, getFilterChips } from "./filter-fields";
 
 export default function AppliedFilterChips({
-  onClearFilters,
+  onClearSearch,
 }: {
-  /** Clearing all filters also drops search text not applied yet. */
-  onClearFilters: () => void;
+  /**
+   * Drops search text the debounce has not applied yet. The URL reaches the
+   * search box a moment later, so without this the pending text could be
+   * applied again and bring the chip back.
+   */
+  onClearSearch: () => void;
 }) {
   const { filters } = useRobotListView();
   const chips = getFilterChips(filters);
@@ -32,6 +36,9 @@ export default function AppliedFilterChips({
     const nextChip = chips[index + 1];
 
     setRobotListFilters({ [key]: key === "view" ? "all" : undefined });
+    if (key === "search") {
+      onClearSearch();
+    }
     focusById(nextChip ? chipId(nextChip.key) : filterControlId(key));
   }
 
@@ -61,7 +68,7 @@ export default function AppliedFilterChips({
         size="small"
         onClick={() => {
           clearRobotListFilters();
-          onClearFilters();
+          onClearSearch();
           // This button goes away with the chips.
           focusById(filterControlId("view"));
         }}
