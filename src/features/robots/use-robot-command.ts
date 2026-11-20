@@ -11,6 +11,21 @@ import { useNotifications } from "@/shared/notifications/notification-provider";
 import { ApiError, isRequestTimeout } from "./api/robot-api";
 import { useRobotWriteLock, useSendRobotAction } from "./api/robot-mutations";
 
+/**
+ * Why a screen cannot offer an action now. Data that may be out of date
+ * blocks every action before the robot's own state is considered.
+ */
+export function commandUnavailable(
+  robot: Robot,
+  action: RobotAction,
+  evaluatedAt: number,
+  unverified: boolean,
+) {
+  return unverified
+    ? "Waiting for live updates"
+    : actionUnavailable(robot, action, evaluatedAt);
+}
+
 /** Sends a robot action from any screen and reports the outcome as a notification. */
 export default function useRobotCommand() {
   const sendAction = useSendRobotAction();

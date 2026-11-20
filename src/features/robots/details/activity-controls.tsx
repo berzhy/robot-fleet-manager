@@ -6,13 +6,10 @@ import { visuallyHidden } from "@mui/utils";
 import { useId } from "react";
 
 import type { Robot } from "@/modules/robots/robot";
-import {
-  actionLabels,
-  actionUnavailable,
-  type RobotAction,
-} from "@/modules/robots/robot-actions";
+import { actionLabels, type RobotAction } from "@/modules/robots/robot-actions";
 
 import { actionIcons } from "../robot-action-icons";
+import { commandUnavailable } from "../use-robot-command";
 
 const tileSizePx = 120;
 const tileIconSizePx = 32;
@@ -46,10 +43,7 @@ export default function ActivityControls({
     if (pending) {
       return "Another change is in progress";
     }
-    if (unverified) {
-      return "Waiting for live updates";
-    }
-    return actionUnavailable(robot, action, evaluatedAt);
+    return commandUnavailable(robot, action, evaluatedAt, unverified);
   }
 
   return (

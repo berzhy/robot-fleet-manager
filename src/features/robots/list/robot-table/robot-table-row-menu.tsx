@@ -10,16 +10,12 @@ import MenuItem from "@mui/material/MenuItem";
 import Tooltip from "@mui/material/Tooltip";
 import { useId, useState } from "react";
 
-import {
-  actionLabels,
-  actionUnavailable,
-  robotActions,
-} from "@/modules/robots/robot-actions";
+import { actionLabels, robotActions } from "@/modules/robots/robot-actions";
 import type { Robot } from "@/modules/robots/robot";
 
 import { useRobotWriteLock } from "../../api/robot-mutations";
 import { actionIcons } from "../../robot-action-icons";
-import useRobotCommand from "../../use-robot-command";
+import useRobotCommand, { commandUnavailable } from "../../use-robot-command";
 
 export default function RobotTableRowMenu({
   robot,
@@ -59,9 +55,12 @@ export default function RobotTableRowMenu({
         onClose={() => setAnchor(null)}
       >
         {robotActions.map((action) => {
-          const reason = unverified
-            ? "Refresh robot connection before requesting an action"
-            : actionUnavailable(robot, action, evaluatedAt);
+          const reason = commandUnavailable(
+            robot,
+            action,
+            evaluatedAt,
+            unverified,
+          );
           const Icon = actionIcons[action];
           return (
             <Tooltip
