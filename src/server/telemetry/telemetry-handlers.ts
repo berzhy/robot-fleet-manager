@@ -1,7 +1,7 @@
 import "server-only";
 import { telemetryBatchSchema } from "@/modules/telemetry/telemetry";
 import type { FleetDatabase } from "../db/database";
-import { errorResponse } from "../http/responses";
+import { errorResponse, jsonResponse } from "../http/responses";
 import { ingestTelemetry } from "./telemetry";
 
 const maxClockSkewMs = 5_000;
@@ -28,12 +28,14 @@ export function telemetryHandlers(database: () => FleetDatabase) {
       }
 
       try {
-        ingestTelemetry(
-          database(),
-          parsed.data.reports,
-          new Date(now).toISOString(),
+        // Senders learn which reports changed nothing, instead of a silent drop.
+        return jsonResponse(
+          ingestTelemetry(
+            database(),
+            parsed.data.reports,
+            new Date(now).toISOString(),
+          ),
         );
-        return new Response(null, { status: 204 });
       } catch (reason) {
         console.error("Telemetry API failed", reason);
         return errorResponse(

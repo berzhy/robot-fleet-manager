@@ -70,7 +70,7 @@ test("adds two robots and deletes one", async ({ page, request }) => {
   const telemetry = await request.post("/api/telemetry/batch", {
     data: { reports },
   });
-  expect(telemetry.status()).toBe(204);
+  expect(telemetry.status()).toBe(200);
 
   for (const row of [firstRow, secondRow]) {
     await expect(row.getByTestId("robot-connection")).toHaveText("Online", {
@@ -161,7 +161,7 @@ test("keyboard explanations and Stop/Retry requests follow reported activity", a
         ],
       },
     });
-    expect(response.status()).toBe(204);
+    expect(response.status()).toBe(200);
   }
 
   await report("working", 0);
@@ -275,7 +275,7 @@ async function sendProblem(
       ],
     },
   });
-  expect(response.status()).toBe(204);
+  expect(response.status()).toBe(200);
 }
 
 test("combines dropdowns and tiles, removes chips and retries a failed filter request", async ({
@@ -319,7 +319,7 @@ test("combines dropdowns and tiles, removes chips and retries a failed filter re
         })),
       },
     });
-    expect(telemetry.status()).toBe(204);
+    expect(telemetry.status()).toBe(200);
   }
 
   await reportFleet();

@@ -4,12 +4,25 @@ import type { TelemetryReport } from "@/modules/telemetry/telemetry";
 import type { FleetDatabase } from "../db/database";
 import { robots, latestTelemetry } from "../db/schema";
 
+/** What a batch did: reports that changed nothing are counted by reason. */
+export type IngestResult = {
+  accepted: number;
+  ignored: {
+    /** The robot does not exist, or was deleted. */
+    unknownRobot: number;
+    /** Acknowledges a command revision that was never sent. */
+    futureRevision: number;
+    /** Older than the stored report, or acknowledges an older revision. */
+    outdated: number;
+  };
+};
+
 export function ingestTelemetry(
   db: FleetDatabase,
   reports: TelemetryReport[],
   receivedAt: string,
-) {
-  db.transaction((tx) => {
+): IngestResult {
+  return db.transaction((tx) => {
     const known = new Map(
       tx
         .select({ id: robots.id, revision: robots.controlRevision })
@@ -24,19 +37,29 @@ export function ingestTelemetry(
         .map((robot) => [robot.id, robot.revision]),
     );
 
+    const ignored = { unknownRobot: 0, futureRevision: 0, outdated: 0 };
     const rows = reports
-      .filter(
-        (report) =>
-          known.has(report.robotId) &&
-          report.appliedControlRevision <= known.get(report.robotId)!,
-      )
+      .filter((report) => {
+        const revision = known.get(report.robotId);
+        if (revision === undefined) {
+          ignored.unknownRobot++;
+          return false;
+        }
+        if (report.appliedControlRevision > revision) {
+          ignored.futureRevision++;
+          return false;
+        }
+        return true;
+      })
       .map((report) => ({ ...report, receivedAt }));
 
     if (!rows.length) {
-      return;
+      return { accepted: 0, ignored };
     }
 
-    tx.insert(latestTelemetry)
+    // A row the condition below skips counts as no change.
+    const { changes } = tx
+      .insert(latestTelemetry)
       .values(rows)
       .onConflictDoUpdate({
         target: latestTelemetry.robotId,
@@ -52,5 +75,8 @@ export function ingestTelemetry(
         setWhere: sql`excluded.observed_at > ${latestTelemetry.observedAt} AND excluded.applied_control_revision >= ${latestTelemetry.appliedControlRevision}`,
       })
       .run();
+
+    ignored.outdated = rows.length - changes;
+    return { accepted: changes, ignored };
   });
 }

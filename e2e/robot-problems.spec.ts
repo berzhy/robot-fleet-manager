@@ -34,7 +34,7 @@ test("investigates a reported problem and retries it from robot details", async 
         ],
       },
     });
-    expect(response.status()).toBe(204);
+    expect(response.status()).toBe(200);
   }
 
   await report(false);

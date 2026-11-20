@@ -68,7 +68,11 @@ const post = (body: unknown) =>
   );
 
 test("ingestion persists latest telemetry and receipt times in list, registry and detail", async () => {
-  expect((await post({ reports: [report()] })).status).toBe(204);
+  const response = await post({ reports: [report()] });
+  expect(await response.json()).toEqual({
+    accepted: 1,
+    ignored: { unknownRobot: 0, futureRevision: 0, outdated: 0 },
+  });
 
   const robot = getRobot(db, id)!;
   expect(robot).toMatchObject({
@@ -88,19 +92,26 @@ test("ingestion persists latest telemetry and receipt times in list, registry an
 test("older, duplicate, unknown and deleted reports do not replace data or receipt time", () => {
   ingestTelemetry(db, [report()], observedAt);
 
-  ingestTelemetry(
-    db,
-    [
-      { ...report(), batteryPercent: 1 },
-      { ...report(), robotId: "unknown" },
-    ],
-    "2026-01-02T00:00:00.000Z",
-  );
-  ingestTelemetry(
-    db,
-    [{ ...report(), observedAt: "2025-01-01T00:00:00.000Z" }],
-    "2026-01-03T00:00:00.000Z",
-  );
+  expect(
+    ingestTelemetry(
+      db,
+      [
+        { ...report(), batteryPercent: 1 },
+        { ...report(), robotId: "unknown" },
+      ],
+      "2026-01-02T00:00:00.000Z",
+    ),
+  ).toEqual({
+    accepted: 0,
+    ignored: { unknownRobot: 1, futureRevision: 0, outdated: 1 },
+  });
+  expect(
+    ingestTelemetry(
+      db,
+      [{ ...report(), observedAt: "2025-01-01T00:00:00.000Z" }],
+      "2026-01-03T00:00:00.000Z",
+    ).ignored.outdated,
+  ).toBe(1);
 
   expect(getRobot(db, id)).toMatchObject({
     batteryPercent: 50,
@@ -108,7 +119,9 @@ test("older, duplicate, unknown and deleted reports do not replace data or recei
   });
 
   deleteRobot(db, id);
-  expect(() => ingestTelemetry(db, [report()], observedAt)).not.toThrow();
+  expect(ingestTelemetry(db, [report()], observedAt).ignored.unknownRobot).toBe(
+    1,
+  );
   expect(db.$client.prepare("SELECT * FROM latest_telemetry").all()).toEqual(
     [],
   );
@@ -179,8 +192,11 @@ test("telemetry preserves problems and rejects impossible or regressing acknowle
     appliedControlRevision: 2,
   });
 
-  for (const revision of [1, 3]) {
-    ingestTelemetry(
+  for (const [revision, reason] of [
+    [1, "outdated"],
+    [3, "futureRevision"],
+  ] as const) {
+    const result = ingestTelemetry(
       db,
       [
         {
@@ -191,6 +207,7 @@ test("telemetry preserves problems and rejects impossible or regressing acknowle
       ],
       "2026-01-02T00:00:00.000Z",
     );
+    expect(result.ignored[reason]).toBe(1);
   }
   expect(robotRegistry(db).find((robot) => robot.id === id)).toMatchObject({
     activity: "needs-attention",
@@ -224,7 +241,7 @@ test.each(robotProblemCodes)(
         },
       ],
     });
-    expect(response.status).toBe(204);
+    expect(response.status).toBe(200);
 
     expect(getRobot(db, id)).toMatchObject({
       activity: "needs-attention",

@@ -50,7 +50,7 @@ test("detail context and controls follow reported telemetry", async ({
         })),
       },
     });
-    expect(response.status()).toBe(204);
+    expect(response.status()).toBe(200);
   }
 
   await report("working", 0);
