@@ -2,6 +2,7 @@ import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
+import { visuallyHidden } from "@mui/utils";
 import { useId } from "react";
 
 import type { Robot } from "@/modules/robots/robot";
@@ -71,13 +72,7 @@ export default function ActivityControls({
                 <Typography
                   component="span"
                   id={`${id}-${action}`}
-                  sx={{
-                    position: "absolute",
-                    width: "1px",
-                    height: "1px",
-                    overflow: "hidden",
-                    clipPath: "inset(50%)",
-                  }}
+                  sx={visuallyHidden}
                 >
                   {reason}
                 </Typography>

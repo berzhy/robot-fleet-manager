@@ -8,10 +8,11 @@ import security from "@/assets/robots/security.webp";
 import inspection from "@/assets/robots/inspection.webp";
 import type { Robot } from "@/modules/robots/robot";
 import {
-  formatRobotType,
   formatIntegrationType,
-  formatRobotTimestamp,
-} from "../utils/robot-formatters";
+  formatRobotType,
+} from "@/modules/robots/robot-labels";
+
+import { formatRobotTimestamp } from "../utils/robot-formatters";
 const illustrations = { cleaning, delivery, security, inspection };
 export default function RobotProfile({ robot }: { robot: Robot }) {
   const fields = [

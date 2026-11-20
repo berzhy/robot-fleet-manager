@@ -1,5 +1,6 @@
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
+import { visuallyHidden } from "@mui/utils";
 import Stack from "@mui/material/Stack";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
@@ -36,7 +37,7 @@ export default function LocationMap({
   const selectedArea = areaName(robot.area);
   const stale =
     unverified ||
-    ["Delayed", "Offline"].includes(
+    ["delayed", "offline"].includes(
       connectionStatus(robot.lastReceivedAt, evaluatedAt),
     );
   const groups = zones.map((zone) => ({
@@ -122,7 +123,7 @@ export default function LocationMap({
                 opacity={
                   unverified ||
                   connectionStatus(peer.lastReceivedAt, evaluatedAt) !==
-                    "Online"
+                    "online"
                     ? 0.35
                     : 0.8
                 }
@@ -150,19 +151,7 @@ export default function LocationMap({
           </g>
         ))}
       </Box>
-      <Box
-        component="ul"
-        sx={{
-          position: "absolute",
-          width: "1px",
-          height: "1px",
-          p: 0,
-          m: -1,
-          overflow: "hidden",
-          clipPath: "inset(50%)",
-          whiteSpace: "nowrap",
-        }}
-      >
+      <Box component="ul" sx={visuallyHidden}>
         {groups
           .filter((zone) => zone.peers.length > 0)
           .map((zone) => (

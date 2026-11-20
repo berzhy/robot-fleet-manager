@@ -4,6 +4,7 @@ import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
 import Stack from "@mui/material/Stack";
+import { visuallyHidden } from "@mui/utils";
 import Typography from "@mui/material/Typography";
 import { useRef } from "react";
 
@@ -73,16 +74,7 @@ export default function RobotList() {
         role="status"
         aria-label="Robot list loading status"
         aria-atomic="true"
-        sx={{
-          position: "absolute",
-          width: "1px",
-          height: "1px",
-          p: 0,
-          m: -1,
-          overflow: "hidden",
-          clipPath: "inset(50%)",
-          whiteSpace: "nowrap",
-        }}
+        sx={visuallyHidden}
       >
         {status === "loading" ? "Loading robots" : announcement}
       </Box>

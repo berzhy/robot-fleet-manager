@@ -38,12 +38,19 @@ export type Robot = {
   area: string | null;
   activity: RobotActivity;
   problemCode: RobotProblemCode | null;
-  controlTarget: "work" | "stop" | "base";
-  controlRevision: number;
-  appliedControlRevision: number;
   batteryPercent: number | null;
   lastTelemetryAt: string | null;
   lastReceivedAt: string | null;
+};
+
+/**
+ * A robot as the simulator reads it from the registry: with the latest
+ * command (target and revision) and the revision the robot last applied.
+ */
+export type RegistryRobot = Robot & {
+  controlTarget: "work" | "stop" | "base";
+  controlRevision: number;
+  appliedControlRevision: number;
 };
 
 export type RobotPage = {
@@ -61,5 +68,5 @@ export type SiteRobot = Pick<Robot, "id" | "name" | "area" | "lastReceivedAt">;
 export type RobotContext = {
   robot: Robot;
   siteRobots: SiteRobot[];
-  verifiedAt: number;
+  evaluatedAt: number;
 };

@@ -23,6 +23,10 @@ export default function useRobotList() {
   const view = useRobotListView();
 
   const options = robotListOptions(view);
+  // While the next view loads, the previous result keeps the tile counts,
+  // filter options and pager in place. Its rows are not shown (status stays
+  // "loading"), because they belong to the previous view: a click on one
+  // would act on a robot the new view may not include.
   const query = useQuery({ ...options, placeholderData: keepPreviousData });
 
   const snapshot = query.data;

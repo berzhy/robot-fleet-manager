@@ -10,7 +10,12 @@ import {
 } from "vitest";
 import { createSchema } from "../db/create-schema";
 import { openDatabase } from "../db/database";
-import { createRobot, deleteRobot, getRobot } from "../robots/robots";
+import {
+  createRobot,
+  deleteRobot,
+  getRobot,
+  robotRegistry,
+} from "../robots/robots";
 import { robotHandlers } from "../robots/robot-handlers";
 import { telemetryHandlers } from "./telemetry-handlers";
 import { ingestTelemetry } from "./telemetry";
@@ -169,7 +174,7 @@ test("telemetry preserves problems and rejects impossible or regressing acknowle
     ],
     observedAt,
   );
-  expect(getRobot(db, id)).toMatchObject({
+  expect(robotRegistry(db).find((robot) => robot.id === id)).toMatchObject({
     problemCode: "path-blocked",
     appliedControlRevision: 2,
   });
@@ -187,7 +192,7 @@ test("telemetry preserves problems and rejects impossible or regressing acknowle
       "2026-01-02T00:00:00.000Z",
     );
   }
-  expect(getRobot(db, id)).toMatchObject({
+  expect(robotRegistry(db).find((robot) => robot.id === id)).toMatchObject({
     activity: "needs-attention",
     appliedControlRevision: 2,
     lastReceivedAt: observedAt,

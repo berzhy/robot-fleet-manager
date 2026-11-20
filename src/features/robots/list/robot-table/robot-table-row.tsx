@@ -10,17 +10,20 @@ import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import type { FocusEventHandler } from "react";
 
+import {
+  formatActivity,
+  formatConnection,
+  formatIntegrationType,
+  formatRobotType,
+} from "@/modules/robots/robot-labels";
 import { robotProblemDetails } from "@/modules/robots/robot-problems";
 import type { Robot } from "@/modules/robots/robot";
 import { connectionStatus } from "@/modules/telemetry/freshness";
 
 import { ConnectionIndicator } from "../../connection-status/connection-status";
 import {
-  formatActivity,
-  formatRobotType,
-  formatIntegrationType,
-  formatBattery,
   formatAddedParts,
+  formatBattery,
   formatRobotTimestamp,
 } from "../../utils/robot-formatters";
 
@@ -45,7 +48,8 @@ export default function RobotTableRow({
   onDelete: (robot: Robot, trigger: HTMLButtonElement) => void;
 }) {
   const connection = connectionStatus(robot.lastReceivedAt, evaluatedAt);
-  const showLastReport = connection === "Delayed" || connection === "Offline";
+  const connectionLabel = formatConnection(connection);
+  const showLastReport = connection === "delayed" || connection === "offline";
   const registered = formatAddedParts(robot.createdAt);
 
   return (
@@ -63,7 +67,9 @@ export default function RobotTableRow({
       <TableCell component="th" scope="row">
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <Tooltip
-            title={unverified ? `${connection} (unverified)` : connection}
+            title={
+              unverified ? `${connectionLabel} (unverified)` : connectionLabel
+            }
           >
             <Box
               sx={{
@@ -115,7 +121,7 @@ export default function RobotTableRow({
       </TableCell>
       <TableCell sx={{ fontVariantNumeric: "tabular-nums" }}>
         <Typography data-testid="robot-connection" variant="body2">
-          <SearchHighlight text={connection} search={search} />
+          <SearchHighlight text={connectionLabel} search={search} />
           {unverified ? " (unverified)" : ""}
         </Typography>
         {showLastReport && robot.lastReceivedAt && (

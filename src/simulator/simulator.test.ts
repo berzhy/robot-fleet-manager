@@ -1,9 +1,9 @@
 import { initializeRobot } from "./simulation";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { runSimulator } from "./simulator";
-import type { Robot } from "@/modules/robots/robot";
+import type { RegistryRobot } from "@/modules/robots/robot";
 
-const robot: Robot = {
+const robot: RegistryRobot = {
   problemCode: null,
   controlTarget: "work",
   controlRevision: 0,

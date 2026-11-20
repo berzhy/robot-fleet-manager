@@ -1,7 +1,7 @@
-import { robotFiltersSchema } from "@/modules/robots/robot-filters";
 import "server-only";
 
 import { robotPageSize } from "@/modules/robots/robot";
+import { robotFiltersSchema } from "@/modules/robots/robot-filters";
 import {
   createRobotSchema,
   createRobotBatchSchema,
@@ -11,6 +11,7 @@ import {
 
 import { errorResponse, jsonResponse } from "../http/responses";
 import type { FleetDatabase } from "../db/database";
+import { requestRobotAction } from "./robot-actions";
 import {
   createRobots,
   createRobot,
@@ -63,18 +64,8 @@ export function robotHandlers(database: () => FleetDatabase) {
         );
       }
 
-      const filters = robotFiltersSchema.safeParse(
-        Object.fromEntries(
-          [
-            "search",
-            "site",
-            "manufacturer",
-            "integrationType",
-            "type",
-            "view",
-          ].flatMap((key) => (params.has(key) ? [[key, params.get(key)]] : [])),
-        ),
-      );
+      // The schema keeps only its own keys, so page and pageSize drop out.
+      const filters = robotFiltersSchema.safeParse(Object.fromEntries(params));
 
       if (!filters.success) {
         return errorResponse(400, "INVALID_INPUT", "Invalid robot filters.");
@@ -157,6 +148,11 @@ export function robotHandlers(database: () => FleetDatabase) {
         deleteAllRobots(database());
         return new Response(null, { status: 204 });
       });
+    },
+
+    // Not wrapped in safely(): it reports its own failure message.
+    requestAction(id: string, request: Request) {
+      return requestRobotAction(database(), id, request);
     },
 
     remove(id: string) {

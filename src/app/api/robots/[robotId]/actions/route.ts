@@ -1,14 +1,14 @@
 import { io } from "next/cache";
+
 import { getDatabase } from "@/server/db/runtime-database";
-import { requestRobotAction } from "@/server/robots/robot-actions";
+import { robotHandlers } from "@/server/robots/robot-handlers";
+
+const handlers = robotHandlers(getDatabase);
+
 export async function POST(
   request: Request,
-  context: { params: Promise<{ robotId: string }> },
+  context: RouteContext<"/api/robots/[robotId]/actions">,
 ) {
   await io();
-  return requestRobotAction(
-    getDatabase(),
-    (await context.params).robotId,
-    request,
-  );
+  return handlers.requestAction((await context.params).robotId, request);
 }

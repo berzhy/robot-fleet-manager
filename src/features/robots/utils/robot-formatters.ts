@@ -2,12 +2,6 @@ export function formatBattery(value: number | null) {
   return value === null ? "Unknown" : `${Math.round(value)}%`;
 }
 
-export {
-  formatRobotType,
-  formatIntegrationType,
-  formatActivity,
-} from "@/modules/robots/robot-labels";
-
 const timestampFormatter = new Intl.DateTimeFormat("en-GB", {
   dateStyle: "medium",
   timeStyle: "long",

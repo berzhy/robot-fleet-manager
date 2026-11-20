@@ -16,12 +16,8 @@ import { delayedReportMaxAgeMs } from "@/modules/telemetry/freshness";
 import useRobotList from "../use-robot-list";
 import useRobotListView, { setRobotListFilters } from "../use-robot-list-view";
 
-const labels = {
-  all: "All robots",
-  "needs-attention": "Needs attention",
-  offline: "Offline",
-  "low-battery": "Low battery",
-};
+import { fleetViewLabels } from "./filter-fields";
+
 const explanations = {
   all: "All robots within the selected location, manufacturer, type and integration.",
   "needs-attention": `Offline, a reported problem, or critical battery at or below ${criticalBatteryPercent}% while not charging.`,
@@ -64,7 +60,7 @@ export default function RobotStatusFilters() {
                 setRobotListFilters({ view });
               }
             }}
-            aria-label={labels[view]}
+            aria-label={fleetViewLabels[view]}
             sx={{ py: 1.25 }}
           >
             <Stack
@@ -84,7 +80,7 @@ export default function RobotStatusFilters() {
                 {summary ? summary[view] : <Skeleton width={40} />}
               </Typography>
               <Typography variant="body2" component="span">
-                {labels[view]}
+                {fleetViewLabels[view]}
               </Typography>
             </Stack>
           </ToggleButton>

@@ -1,14 +1,19 @@
 export const onlineReportMaxAgeMs = 10_000;
 export const delayedReportMaxAgeMs = 15_000;
 
-export function connectionStatus(receivedAt: string | null, now: number) {
+export type ConnectionStatus = "online" | "delayed" | "offline" | "unknown";
+
+export function connectionStatus(
+  receivedAt: string | null,
+  now: number,
+): ConnectionStatus {
   if (!receivedAt) {
-    return "Unknown";
+    return "unknown";
   }
   const age = Math.max(0, now - Date.parse(receivedAt));
   return age <= onlineReportMaxAgeMs
-    ? "Online"
+    ? "online"
     : age <= delayedReportMaxAgeMs
-      ? "Delayed"
-      : "Offline";
+      ? "delayed"
+      : "offline";
 }

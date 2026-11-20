@@ -1,9 +1,5 @@
 # Fleet Orchestrator
 
-```
-> Claude make a robot orchestaration dashboard, make it nice, and NO "AI slop"!  :)
-```
-
 Hi, this is my take on the engineering challenge, using Next.js and MUI. I focused on the interface, its behaviour, and the overall structure. I used AI extensively to move quickly and explore ideas.
 
 Hope we can discuss more this week!
