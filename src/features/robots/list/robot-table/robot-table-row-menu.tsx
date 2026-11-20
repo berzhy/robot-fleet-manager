@@ -2,7 +2,7 @@
 
 import DeleteIcon from "@mui/icons-material/Delete";
 import HomeIcon from "@mui/icons-material/Home";
-import MenuIcon from "@mui/icons-material/Menu";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import ReplayIcon from "@mui/icons-material/Replay";
 import StopIcon from "@mui/icons-material/Stop";
@@ -53,6 +53,7 @@ export default function RobotTableRowMenu({
     <>
       <IconButton
         data-testid="robot-actions"
+        size="small"
         disabled={isWritePending}
         aria-label={`Actions for ${robot.name}`}
         aria-haspopup="menu"
@@ -60,7 +61,7 @@ export default function RobotTableRowMenu({
         aria-expanded={anchor ? true : undefined}
         onClick={(event) => setAnchor(event.currentTarget)}
       >
-        <MenuIcon />
+        <MoreVertIcon fontSize="small" />
       </IconButton>
       <Menu
         id={id}
