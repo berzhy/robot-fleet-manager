@@ -47,7 +47,11 @@ export default function RobotStatusFilters() {
         <Tooltip
           key={view}
           title={explanations[view]}
-          placement="top"
+          // Below the tile: above it, the tooltip covers the Add robot button.
+          placement="bottom"
+          // Help on demand, not a popup every time the pointer crosses a tile.
+          enterDelay={700}
+          enterNextDelay={700}
           describeChild
         >
           <ToggleButton
