@@ -1,7 +1,10 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { expect, test } from "vitest";
+
 import type { Robot } from "@/modules/robots/robot";
+
 import LocationMap from "./location-map";
+
 const robot: Robot = {
   problemCode: null,
   id: "test",
@@ -41,4 +44,27 @@ test("map limits peer markers without losing counts and separates unknown areas"
   );
   expect(screen.getByText("+5")).toBeInTheDocument();
   expect(screen.getByText(/Reported area: Lobby/)).toBeInTheDocument();
+});
+
+test.each([
+  ["Munich", "Offices & warehouse", "3"],
+  ["Berlin", "Office & service campus", "4"],
+  ["Hamburg", "Distribution center", "5"],
+  ["Detail demo", "Offices & warehouse", "3"],
+])("shows the facility details for %s", (site, type, chargingBays) => {
+  render(
+    <LocationMap
+      robot={{ ...robot, site }}
+      peers={[]}
+      evaluatedAt={Date.parse(robot.createdAt)}
+      unverified={false}
+    />,
+  );
+
+  const location = within(screen.getByRole("region", { name: "Location" }));
+  expect(
+    location.getByRole("heading", { name: `${site} · Location` }),
+  ).toBeVisible();
+  expect(location.getByText(type)).toBeVisible();
+  expect(location.getByText(chargingBays, { exact: true })).toBeVisible();
 });

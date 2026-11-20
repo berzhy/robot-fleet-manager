@@ -1,29 +1,30 @@
 import Box from "@mui/material/Box";
-import Divider from "@mui/material/Divider";
-import { visuallyHidden } from "@mui/utils";
-import Stack from "@mui/material/Stack";
 import Paper from "@mui/material/Paper";
+import Stack from "@mui/material/Stack";
+import { useTheme } from "@mui/material/styles";
 import Typography from "@mui/material/Typography";
+import { visuallyHidden } from "@mui/utils";
 
 import type { Robot, SiteRobot } from "@/modules/robots/robot";
 import { connectionStatus, isStale } from "@/modules/telemetry/freshness";
 
-import FacilityPlan, { facilityDetails } from "./facility-plan";
+import {
+  facilityAreas,
+  facilityPlanViewBox,
+  getFacilityLayout,
+} from "./facility-layouts";
+import FacilityPlan from "./facility-plan";
 
+const markerColumns = 4;
+const markerSpacing = 16;
 const markerLimit = 12;
-// Full page width would draw the plan about 950 px tall; it stays centred.
-const planMaxHeightPx = 640;
-const zones = [
-  { name: "Lobby", x: 274, y: 168, peersX: 218, peersY: 206 },
-  { name: "Floor 1", x: 636, y: 216, peersX: 680, peersY: 216 },
-  { name: "Warehouse", x: 328, y: 364, peersX: 310, peersY: 480 },
-  { name: "Base", x: 612, y: 448, peersX: 484, peersY: 448 },
-  { name: "Area unknown", x: 470, y: 560, peersX: 556, peersY: 556 },
-];
 
-function areaName(area: string | null) {
-  return zones.some((zone) => zone.name === area) ? area : "Area unknown";
-}
+const planMinWidthPx = 400;
+const planMaxHeightPx = 640;
+const sidebarWidthPx = 288;
+
+const unknownArea = "Area unknown";
+const unknownZone = { name: unknownArea, label: unknownArea, x: 62, y: 468 };
 
 export default function LocationMap({
   robot,
@@ -36,10 +37,19 @@ export default function LocationMap({
   evaluatedAt: number;
   unverified: boolean;
 }) {
+  const theme = useTheme();
+  const palette = (theme.vars ?? theme).palette;
+
+  const layout = getFacilityLayout(robot.site);
+  const zones = facilityAreas.map((area) => {
+    const [x, y] = layout.zoneAnchors[area.name];
+    return { ...area, x, y };
+  });
+
   const selectedArea = areaName(robot.area);
   const stale =
     unverified || isStale(connectionStatus(robot.lastReceivedAt, evaluatedAt));
-  const groups = zones.map((zone) => ({
+  const groups = [...zones, unknownZone].map((zone) => ({
     ...zone,
     peers: peers
       .filter(
@@ -47,109 +57,139 @@ export default function LocationMap({
       )
       .sort((a, b) => a.id.localeCompare(b.id)),
   }));
+
   return (
     <Paper
       component="section"
       aria-label="Location"
       variant="outlined"
-      sx={{ p: 3 }}
+      sx={{
+        p: 3,
+        display: "grid",
+        gridTemplateColumns: {
+          xs: "minmax(0, 1fr)",
+          lg: `minmax(0, 1fr) ${sidebarWidthPx}px`,
+        },
+        columnGap: 3,
+        alignItems: "start",
+      }}
     >
-      <Typography variant="h6" component="h2">
-        {robot.site} · Location
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-        {stale ? "Last reported area" : "Reported area"}:{" "}
-        {robot.area ?? "Unknown"}
-      </Typography>
+      <Box sx={{ gridColumn: "1 / -1", mb: 2, overflowWrap: "anywhere" }}>
+        <Typography variant="h6" component="h2">
+          {robot.site} · Location
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          {stale ? "Last reported area" : "Reported area"}:{" "}
+          {robot.area ?? "Unknown"}
+        </Typography>
+      </Box>
       <Box
-        component="svg"
-        viewBox="0 0 800 616"
-        aria-hidden="true"
-        sx={(theme) => {
-          const palette = (theme.vars ?? theme).palette;
-          return {
-            width: "100%",
-            maxHeight: planMaxHeightPx,
-            display: "block",
-            mt: 2,
-            color: palette.text.secondary,
-          };
-        }}
+        role="group"
+        aria-label="Facility floor plan"
+        tabIndex={0}
+        sx={{ containerType: "inline-size", overflowX: "auto" }}
       >
-        <FacilityPlan />
-        {groups.map((zone) => (
-          <g key={zone.name}>
-            {zone.name === selectedArea && (
-              <g opacity={stale ? 0.5 : 1}>
+        <Box
+          component="svg"
+          viewBox={facilityPlanViewBox}
+          aria-hidden="true"
+          sx={{
+            display: "block",
+            width: "100%",
+            minWidth: planMinWidthPx,
+            height: "auto",
+            maxHeight: planMaxHeightPx,
+          }}
+        >
+          <FacilityPlan layout={layout} />
+          {groups.map((zone) => {
+            const isSelected = zone.name === selectedArea;
+            const isUnknown = zone.name === unknownArea;
+
+            if (isUnknown && !isSelected && zone.peers.length === 0) {
+              return null;
+            }
+
+            return (
+              <g key={zone.name} transform={`translate(${zone.x} ${zone.y})`}>
+                {isUnknown && (
+                  <rect
+                    x="-30"
+                    y="-38"
+                    width="312"
+                    height="108"
+                    rx="6"
+                    fill={palette.action.hover}
+                    stroke={palette.text.disabled}
+                    strokeDasharray="5 5"
+                  />
+                )}
                 <Box
-                  component="circle"
-                  cx={zone.x}
-                  cy={zone.y}
-                  r="19"
-                  sx={(theme) => ({
-                    fill: (theme.vars ?? theme).palette.primary.main,
-                    opacity: 0.12,
-                  })}
-                />
-                <Box
-                  component="circle"
-                  cx={zone.x}
-                  cy={zone.y}
-                  r="10"
-                  sx={(theme) => ({
-                    fill: (theme.vars ?? theme).palette.background.paper,
-                    stroke: (theme.vars ?? theme).palette.primary.main,
-                    strokeWidth: 2.5,
-                  })}
-                />
-                <Box
-                  component="circle"
-                  cx={zone.x}
-                  cy={zone.y}
-                  r="4"
-                  sx={(theme) => ({
-                    fill: (theme.vars ?? theme).palette.primary.main,
-                  })}
-                />
+                  component="text"
+                  fill={palette.text.primary}
+                  sx={{
+                    fontSize: 34,
+                    fontWeight: 600,
+                    "@container (min-width: 600px)": { fontSize: 26 },
+                    "@container (min-width: 900px)": { fontSize: 22 },
+                  }}
+                >
+                  {zone.label}
+                </Box>
+                {isSelected && (
+                  <g
+                    transform="translate(19 44)"
+                    fill={palette.primary.main}
+                    opacity={stale ? 0.5 : 1}
+                  >
+                    <circle r="19" opacity={0.12} />
+                    <circle
+                      r="10"
+                      fill={palette.background.paper}
+                      stroke={palette.primary.main}
+                      strokeWidth="2.5"
+                    />
+                    <circle r="4" />
+                  </g>
+                )}
+                <g fill={palette.text.secondary}>
+                  {zone.peers.slice(0, markerLimit).map((peer, index) => (
+                    <circle
+                      key={peer.id}
+                      cx={64 + (index % markerColumns) * markerSpacing}
+                      cy={
+                        28 + Math.floor(index / markerColumns) * markerSpacing
+                      }
+                      r="5"
+                      opacity={
+                        unverified ||
+                        connectionStatus(peer.lastReceivedAt, evaluatedAt) !==
+                          "online"
+                          ? 0.35
+                          : 0.8
+                      }
+                    />
+                  ))}
+                  {zone.peers.length > markerLimit && (
+                    <Box
+                      component="text"
+                      x="136"
+                      y="44"
+                      dominantBaseline="central"
+                      sx={{
+                        fontSize: 26,
+                        "@container (min-width: 600px)": { fontSize: 18 },
+                        "@container (min-width: 900px)": { fontSize: 16 },
+                      }}
+                    >
+                      +{zone.peers.length - markerLimit}
+                    </Box>
+                  )}
+                </g>
               </g>
-            )}
-            {zone.peers.slice(0, markerLimit).map((peer, index) => (
-              <Box
-                key={peer.id}
-                component="circle"
-                cx={zone.peersX + (index % 4) * 13}
-                cy={zone.peersY + Math.floor(index / 4) * 13}
-                r="4"
-                opacity={
-                  unverified ||
-                  connectionStatus(peer.lastReceivedAt, evaluatedAt) !==
-                    "online"
-                    ? 0.35
-                    : 0.8
-                }
-                sx={(theme) => ({
-                  fill: (theme.vars ?? theme).palette.text.secondary,
-                })}
-              />
-            ))}
-            {zone.peers.length > markerLimit && (
-              <text
-                x={zone.peersX + 58}
-                y={zone.peersY + 18}
-                fill="currentColor"
-                fontSize="12"
-              >
-                +{zone.peers.length - markerLimit}
-              </text>
-            )}
-            {zone.name === "Area unknown" &&
-              (selectedArea === zone.name || zone.peers.length > 0) && (
-                <text x="448" y="594" fill="currentColor" fontSize="11">
-                  Area unknown
-                </text>
-              )}
-          </g>
-        ))}
+            );
+          })}
+        </Box>
       </Box>
       <Box component="ul" sx={visuallyHidden}>
         {groups
@@ -161,21 +201,31 @@ export default function LocationMap({
             </li>
           ))}
       </Box>
-      <Divider sx={{ my: 2 }} />
       <Box
         sx={{
           display: "grid",
           gridTemplateColumns: {
-            xs: "1fr",
-            sm: "minmax(0, 1fr) minmax(0, 0.85fr)",
+            xs: "repeat(2, minmax(0, 1fr))",
+            lg: "minmax(0, 1fr)",
           },
-          columnGap: { sm: 8, lg: 10 },
-          rowGap: 3,
+          gap: { xs: 2, sm: 3, lg: 5 },
+          alignSelf: { lg: "stretch" },
+          alignContent: "start",
           alignItems: "start",
+          mt: { xs: 2, lg: 0 },
+          pt: { xs: 3, lg: 0 },
+          pl: { lg: 3 },
+          borderWidth: { xs: "1px 0 0", lg: "0 0 0 1px" },
+          borderStyle: "solid",
+          borderColor: "divider",
         }}
       >
         <Box>
-          <Typography component="h3" variant="subtitle2" sx={{ mb: 2 }}>
+          <Typography
+            component="h3"
+            variant="subtitle2"
+            sx={{ mb: { xs: 2, lg: 2.5 } }}
+          >
             Facility details
           </Typography>
           <Box
@@ -183,28 +233,32 @@ export default function LocationMap({
             sx={{
               m: 0,
               display: "grid",
-              gridTemplateColumns: "max-content minmax(0, 1fr)",
-              columnGap: 2,
-              rowGap: 1.5,
+              gridTemplateColumns: {
+                xs: "minmax(0, 1fr)",
+                sm: "max-content minmax(0, 1fr)",
+              },
+              columnGap: 1.5,
+              rowGap: { xs: 0.5, sm: 1.5, lg: 2 },
+              "& dd:not(:last-child)": { mb: { xs: 1, sm: 0 } },
             }}
           >
             <Typography component="dt" variant="body2" color="text.secondary">
               Type
             </Typography>
             <Typography component="dd" variant="subtitle2" sx={{ m: 0 }}>
-              {facilityDetails.type}
+              {layout.type}
             </Typography>
             <Typography component="dt" variant="body2" color="text.secondary">
               Floor area
             </Typography>
             <Typography component="dd" variant="subtitle2" sx={{ m: 0 }}>
-              {facilityDetails.floorArea}
+              {layout.floorArea}
             </Typography>
             <Typography component="dt" variant="body2" color="text.secondary">
               Charging bays
             </Typography>
             <Typography component="dd" variant="subtitle2" sx={{ m: 0 }}>
-              {facilityDetails.chargingBays.length}
+              {layout.chargingBays.length}
             </Typography>
           </Box>
         </Box>
@@ -214,7 +268,7 @@ export default function LocationMap({
           sx={{
             display: "flex",
             flexDirection: "column",
-            gap: 2,
+            gap: { xs: 2, lg: 2.5 },
             alignItems: "flex-start",
           }}
         >
@@ -301,5 +355,11 @@ export default function LocationMap({
         </Box>
       </Box>
     </Paper>
+  );
+}
+
+function areaName(area: string | null) {
+  return (
+    facilityAreas.find((option) => option.name === area)?.name ?? unknownArea
   );
 }
