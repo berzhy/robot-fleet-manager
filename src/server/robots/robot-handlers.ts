@@ -1,7 +1,7 @@
-import { robotFiltersSchema } from "@/modules/robots/robot-filters";
 import "server-only";
 
 import { robotPageSize } from "@/modules/robots/robot";
+import { robotFiltersSchema } from "@/modules/robots/robot-filters";
 import {
   createRobotSchema,
   createRobotBatchSchema,
@@ -11,6 +11,7 @@ import {
 
 import { errorResponse, jsonResponse } from "../http/responses";
 import type { FleetDatabase } from "../db/database";
+import { requestRobotAction } from "./robot-actions";
 import {
   createRobots,
   createRobot,
@@ -147,6 +148,11 @@ export function robotHandlers(database: () => FleetDatabase) {
         deleteAllRobots(database());
         return new Response(null, { status: 204 });
       });
+    },
+
+    // Not wrapped in safely(): it reports its own failure message.
+    requestAction(id: string, request: Request) {
+      return requestRobotAction(database(), id, request);
     },
 
     remove(id: string) {
