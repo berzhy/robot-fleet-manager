@@ -5,7 +5,7 @@ import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Link from "@mui/material/Link";
 import Stack from "@mui/material/Stack";
-import Tab, { tabClasses } from "@mui/material/Tab";
+import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import NextLink from "next/link";
 import { useId, useState } from "react";
@@ -42,16 +42,12 @@ export default function RobotDetails({ robotId }: { robotId: string }) {
       <Link
         component={NextLink}
         href="/robots"
-        sx={[
-          {
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 0.5,
-            alignSelf: "flex-start",
-          },
-          // Straight on the page; see background.default in theme.ts.
-          (theme) => theme.applyStyles("light", { color: "primary.dark" }),
-        ]}
+        sx={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 0.5,
+          alignSelf: "flex-start",
+        }}
       >
         <ArrowBackIcon fontSize="small" aria-hidden />
         Back to robots
@@ -85,13 +81,7 @@ export default function RobotDetails({ robotId }: { robotId: string }) {
             value={tab}
             onChange={(_event, value: DetailsTab) => setTab(value)}
             aria-label="Robot details"
-            // Straight on the page; see background.default in theme.ts.
-            sx={(theme) => ({
-              mb: 2,
-              // As specific as the tab's own selected colour, which it replaces.
-              [`& .${tabClasses.root}.${tabClasses.selected}`]:
-                theme.applyStyles("light", { color: "primary.dark" }),
-            })}
+            sx={{ mb: 2 }}
           >
             <Tab
               label="Map"

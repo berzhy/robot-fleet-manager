@@ -2,6 +2,7 @@
 
 import { grey } from "@mui/material/colors";
 import { createTheme } from "@mui/material/styles";
+import { tabClasses } from "@mui/material/Tab";
 
 const theme = createTheme({
   cssVariables: {
@@ -11,7 +12,8 @@ const theme = createTheme({
     light: {
       palette: {
         // White cards stand out on a grey page. Blue text placed straight on
-        // it uses primary.dark: the default blue reaches only 4.2:1 there.
+        // it uses primary.dark (see MuiLink and MuiTab below): the default
+        // blue reaches only 4.2:1 there.
         background: { default: grey[100] },
       },
     },
@@ -24,6 +26,17 @@ const theme = createTheme({
     button: { textTransform: "none", fontWeight: 600 },
   },
   components: {
+    MuiLink: {
+      variants: [
+        {
+          props: { color: "primary" },
+          style: ({ theme }) =>
+            theme.applyStyles("light", {
+              color: theme.vars.palette.primary.dark,
+            }),
+        },
+      ],
+    },
     MuiButtonBase: {
       styleOverrides: {
         // A crisp outline instead of the ripple-shaped focus highlight.
@@ -40,7 +53,14 @@ const theme = createTheme({
     MuiIconButton: { defaultProps: { disableFocusRipple: true } },
     MuiTab: {
       defaultProps: { disableFocusRipple: true },
-      styleOverrides: { root: { textTransform: "none" } },
+      styleOverrides: {
+        root: ({ theme }) => ({
+          textTransform: "none",
+          [`&.${tabClasses.selected}`]: theme.applyStyles("light", {
+            color: theme.vars.palette.primary.dark,
+          }),
+        }),
+      },
     },
   },
 });

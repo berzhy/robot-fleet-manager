@@ -37,6 +37,15 @@ export default function RobotLogs({ robot }: { robot: Robot }) {
               component="span"
               variant="inherit"
               color={entry.level === "WARN" ? "warning" : "textSecondary"}
+              // warning.main is too faint on white; this is the Alert's own
+              // warning text colour.
+              sx={(theme) =>
+                entry.level === "WARN"
+                  ? theme.applyStyles("light", {
+                      color: theme.vars?.palette.Alert.warningColor,
+                    })
+                  : {}
+              }
             >
               {entry.level}
             </Typography>
