@@ -15,6 +15,8 @@ export default function RobotNotFound() {
         data-testid="robot-not-found-back"
         component={NextLink}
         href="/robots"
+        // Straight on the page; see background.default in theme.ts.
+        sx={(theme) => theme.applyStyles("light", { color: "primary.dark" })}
       >
         Back to robots
       </Link>

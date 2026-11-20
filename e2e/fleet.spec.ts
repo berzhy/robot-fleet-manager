@@ -235,11 +235,11 @@ async function seedFleet(request: APIRequestContext, count = 1) {
 
 // The URL change applies in a later render, and until then the previous view's
 // rows stay clickable; a menu opened on one closes when the new rows load.
-async function showView(page: Page, name: string) {
-  await page.getByRole("button", { name, exact: true }).click();
-  await expect(
-    page.getByRole("button", { name, exact: true, pressed: true }),
-  ).toBeVisible();
+async function showView(page: Page, label: string) {
+  // A tile is named by its count and label, such as "3 Needs attention".
+  const name = new RegExp(`${label}$`);
+  await page.getByRole("button", { name }).click();
+  await expect(page.getByRole("button", { name, pressed: true })).toBeVisible();
   await expect(page.getByTestId("fleet-loading")).not.toHaveText(
     "Loading robots",
   );
@@ -337,9 +337,7 @@ test("combines dropdowns and tiles, removes chips and retries a failed filter re
   await expect(rows).toHaveCount(2);
 
   await reportFleet();
-  await page
-    .getByRole("button", { name: "Needs attention", exact: true })
-    .click();
+  await page.getByRole("button", { name: /Needs attention$/ }).click();
   await expect(page.getByTestId(`robot-row-${robot.id}`)).toBeVisible();
   await expect(rows).toHaveCount(1);
   await expect(
@@ -353,7 +351,7 @@ test("combines dropdowns and tiles, removes chips and retries a failed filter re
   await removable.focus();
   await page.keyboard.press("Delete");
   await expect(
-    page.getByRole("button", { name: "All robots", exact: true }),
+    page.getByRole("button", { name: /All robots$/ }),
   ).toHaveAttribute("aria-pressed", "true");
   await expect(
     page.getByText("Integration: ROS 2", { exact: true }),
@@ -363,7 +361,7 @@ test("combines dropdowns and tiles, removes chips and retries a failed filter re
   await page.route("**/api/robots?*", (route) =>
     fail ? route.fulfill({ status: 500, body: "error" }) : route.continue(),
   );
-  await page.getByRole("button", { name: "Low battery", exact: true }).click();
+  await page.getByRole("button", { name: /Low battery$/ }).click();
   await expect(page.getByTestId("fleet-load-error")).toBeVisible();
 
   fail = false;
@@ -455,8 +453,7 @@ test("live filtered recovery closes the action menu and restores focus", async (
   ).toBeFocused();
   await expect(
     page.getByRole("button", {
-      name: "Needs attention",
-      exact: true,
+      name: /Needs attention$/,
       pressed: true,
     }),
   ).toContainText("0");
@@ -530,9 +527,7 @@ test("search combines with filters and tiles, clears through chips and recovers 
   await page.goto("/robots");
 
   await chooseFilter(page, "Location", "Munich");
-  await page
-    .getByRole("button", { name: "Needs attention", exact: true })
-    .click();
+  await page.getByRole("button", { name: /Needs attention$/ }).click();
 
   const search = page.getByRole("textbox", { name: "Search robots" });
   await search.fill("ROS 2");
@@ -541,9 +536,9 @@ test("search combines with filters and tiles, clears through chips and recovers 
   );
   await expect(page.getByTestId(`robot-row-${robots[0].id}`)).toBeVisible();
   await expect(page.getByTestId(`robot-row-${robots[1].id}`)).toHaveCount(0);
-  await expect(
-    page.getByRole("button", { name: "All robots", exact: true }),
-  ).toContainText("2");
+  await expect(page.getByRole("button", { name: /All robots$/ })).toContainText(
+    "2",
+  );
   await expect(page.getByTestId("fleet-loading")).toHaveText("1 robot found.");
   await expect(
     page

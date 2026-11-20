@@ -69,29 +69,29 @@ test("dropdowns, tiles and removable chips share one selection", async () => {
   expect(screen.getByText("Location: Munich")).toBeVisible();
 
   fireEvent.click(
-    screen.getByRole("button", { name: "Needs attention", pressed: false }),
+    screen.getByRole("button", { name: /Needs attention$/, pressed: false }),
   );
 
   expect(
-    screen.getByRole("button", { name: "Needs attention", pressed: true }),
+    screen.getByRole("button", { name: /Needs attention$/, pressed: true }),
   ).toHaveAttribute("aria-pressed", "true");
 
   const chip = screen.getByTestId("fleet-chip-view");
   fireEvent.keyDown(chip, { key: "Delete" });
   fireEvent.keyUp(chip, { key: "Delete" });
 
-  expect(screen.getByRole("button", { name: "All robots" })).toHaveAttribute(
+  expect(screen.getByRole("button", { name: /All robots$/ })).toHaveAttribute(
     "aria-pressed",
     "true",
   );
-  expect(screen.getByRole("button", { name: "All robots" })).toHaveFocus();
+  expect(screen.getByRole("button", { name: /All robots$/ })).toHaveFocus();
   expect(screen.getByText("Location: Munich")).toBeVisible();
 
-  fireEvent.click(screen.getByRole("button", { name: "Offline" }));
+  fireEvent.click(screen.getByRole("button", { name: /Offline$/ }));
 
   expect(screen.getByText("Status: Offline")).toBeVisible();
   expect(
-    within(screen.getByRole("button", { name: "All robots" })).getByText("12"),
+    within(screen.getByRole("button", { name: /All robots$/ })).getByText("12"),
   ).toBeVisible();
 
   fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
@@ -104,12 +104,12 @@ test("selecting the active tile does not restart its query", async () => {
   const fetcher = renderFilters(<RobotStatusFilters />);
   await waitFor(() => expect(fetcher).toHaveBeenCalledOnce());
 
-  fireEvent.click(screen.getByRole("button", { name: "All robots" }));
+  fireEvent.click(screen.getByRole("button", { name: /All robots$/ }));
 
   expect(window.location.search).toBe("");
   expect(fetcher).toHaveBeenCalledOnce();
 
-  fireEvent.click(screen.getByRole("button", { name: "Offline" }));
+  fireEvent.click(screen.getByRole("button", { name: /Offline$/ }));
 
   expect(window.location.search).toBe("?view=offline");
 });

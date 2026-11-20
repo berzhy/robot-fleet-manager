@@ -87,7 +87,6 @@ export default function RobotStatusFilters() {
               <CardActionArea
                 data-view={view}
                 aria-pressed={selected}
-                aria-label={fleetViewLabels[view]}
                 onClick={() => {
                   if (!selected) {
                     setRobotListFilters({ view });

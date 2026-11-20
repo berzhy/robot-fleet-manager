@@ -10,6 +10,8 @@ const theme = createTheme({
   colorSchemes: {
     light: {
       palette: {
+        // White cards stand out on a grey page. Blue text placed straight on
+        // it uses primary.dark: the default blue reaches only 4.2:1 there.
         background: { default: grey[100] },
       },
     },

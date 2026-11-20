@@ -374,7 +374,7 @@ test("addition outside the selected view retains filters and reports success wit
 
   await screen.findByTestId("robot-row-new");
   await act(async () => {
-    fireEvent.click(screen.getByRole("button", { name: "Offline" }));
+    fireEvent.click(screen.getByRole("button", { name: /Offline$/ }));
     await Promise.resolve();
   });
   await screen.findByText("No robots match these filters.");
@@ -390,7 +390,7 @@ test("addition outside the selected view retains filters and reports success wit
     expect(screen.getByTestId("fleet-add-robot")).not.toBeDisabled(),
   );
   expect(
-    screen.getByRole("button", { name: "Offline", pressed: true }),
+    screen.getByRole("button", { name: /Offline$/, pressed: true }),
   ).toBeVisible();
   expect(screen.getByText("Status: Offline")).toBeVisible();
   expect(screen.queryByTestId("robot-row-new")).not.toBeInTheDocument();

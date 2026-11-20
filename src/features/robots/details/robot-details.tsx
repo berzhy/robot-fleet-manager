@@ -7,7 +7,7 @@ import Link from "@mui/material/Link";
 import LinearProgress from "@mui/material/LinearProgress";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
-import Tab from "@mui/material/Tab";
+import Tab, { tabClasses } from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
@@ -51,7 +51,12 @@ export default function RobotDetails({ robotId }: { robotId: string }) {
       sx={{ width: "100%", maxWidth: 1440, mx: "auto" }}
     >
       <Breadcrumbs aria-label="Breadcrumb">
-        <Link component={NextLink} href="/robots">
+        {/* Straight on the page; see background.default in theme.ts. */}
+        <Link
+          component={NextLink}
+          href="/robots"
+          sx={(theme) => theme.applyStyles("light", { color: "primary.dark" })}
+        >
           Robots
         </Link>
         <Typography aria-current="page">{robot.name}</Typography>
@@ -71,7 +76,14 @@ export default function RobotDetails({ robotId }: { robotId: string }) {
       {missing ? (
         <Alert data-testid="robot-unavailable" severity="info">
           Robot is no longer available.{" "}
-          <Link component={NextLink} href="/robots">
+          {/* The default blue is as faint on this pale alert as on the page. */}
+          <Link
+            component={NextLink}
+            href="/robots"
+            sx={(theme) =>
+              theme.applyStyles("light", { color: "primary.dark" })
+            }
+          >
             Back to robots
           </Link>
         </Alert>
@@ -173,6 +185,12 @@ export default function RobotDetails({ robotId }: { robotId: string }) {
             value={tab}
             onChange={(_event, value: "overview" | "logs") => setTab(value)}
             aria-label="Robot details"
+            // Straight on the page; see background.default in theme.ts.
+            sx={(theme) => ({
+              // As specific as the tab's own selected colour, which it replaces.
+              [`& .${tabClasses.root}.${tabClasses.selected}`]:
+                theme.applyStyles("light", { color: "primary.dark" }),
+            })}
           >
             <Tab
               label="Overview"

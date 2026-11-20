@@ -67,10 +67,12 @@ export default function RobotTableRow({
     >
       <TableCell component="th" scope="row">
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          {/* A plain div cannot carry a label; Connection names the state. */}
           <Tooltip
             title={
               unverified ? `${connectionLabel} (unverified)` : connectionLabel
             }
+            describeChild
           >
             <Box
               sx={{

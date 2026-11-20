@@ -39,9 +39,7 @@ test("investigates a reported problem and retries it from robot details", async 
 
   await report(false);
   await page.goto("/robots");
-  await page
-    .getByRole("button", { name: "Needs attention", exact: true })
-    .click();
+  await page.getByRole("button", { name: /Needs attention$/ }).click();
 
   const row = page.getByTestId(`robot-row-${robot.id}`);
   await expect(row).toContainText("Sensor obstructed");
@@ -74,8 +72,7 @@ test("investigates a reported problem and retries it from robot details", async 
   await page.goBack();
   await expect(
     page.getByRole("button", {
-      name: "Needs attention",
-      exact: true,
+      name: /Needs attention$/,
       pressed: true,
     }),
   ).toBeVisible();
@@ -91,8 +88,7 @@ test("investigates a reported problem and retries it from robot details", async 
   await expect(page).toHaveURL("/robots");
   await expect(
     page.getByRole("button", {
-      name: "All robots",
-      exact: true,
+      name: /All robots$/,
       pressed: true,
     }),
   ).toBeVisible();

@@ -227,10 +227,10 @@ test("switching summary tiles preserves counts while refreshing and updates them
 
   const tiles = screen.getByRole("group", { name: "Robot status filters" });
   const all = within(tiles).getByRole("button", {
-    name: "All robots",
+    name: /All robots$/,
   });
   const offline = within(tiles).getByRole("button", {
-    name: "Offline",
+    name: /Offline$/,
   });
   await waitFor(() => expect(all).toHaveTextContent("10"));
 

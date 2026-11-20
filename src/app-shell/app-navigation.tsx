@@ -42,7 +42,8 @@ function NavigationLinks({
   onNavigate: () => void;
 }) {
   return (
-    <List component="nav" aria-label="Main navigation">
+    // The sidebar is the navigation landmark; the links need no list semantics.
+    <List component="div">
       {sections.map(({ label, href, icon: Icon }) => {
         const selected = pathname === href || pathname.startsWith(`${href}/`);
 
