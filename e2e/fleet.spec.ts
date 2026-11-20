@@ -555,7 +555,9 @@ test("search combines with filters and tiles, clears through chips and recovers 
 
   await search.fill("no-such-robot");
   await expect(
-    page.getByText("No robots match “no-such-robot”."),
+    page.getByText(
+      "No robots match “no-such-robot” with the selected filters.",
+    ),
   ).toBeVisible();
 
   await page.getByTestId("fleet-chip-search").focus();
@@ -567,7 +569,9 @@ test("search combines with filters and tiles, clears through chips and recovers 
 
   await search.fill("no-such-robot");
   await expect(
-    page.getByText("No robots match “no-such-robot”."),
+    page.getByText(
+      "No robots match “no-such-robot” with the selected filters.",
+    ),
   ).toBeVisible();
 
   await page

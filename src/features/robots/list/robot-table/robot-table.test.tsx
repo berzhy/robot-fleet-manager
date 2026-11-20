@@ -234,6 +234,21 @@ test("a search with no matches names the query, lists searchable fields and offe
   expect(onFocusSearch).toHaveBeenCalledOnce();
 });
 
+test("a search with no matches mentions other applied filters, which may be the cause", async () => {
+  window.history.replaceState(null, "", "/robots?search=sa&view=offline");
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() =>
+      Promise.resolve(Response.json({ ...robotPage([]), fleetTotal: 5 })),
+    ),
+  );
+  render(<RobotTable {...tableHandlers} />);
+
+  expect(
+    await screen.findByText("No robots match “sa” with the selected filters."),
+  ).toBeVisible();
+});
+
 test.each([
   ["path-blocked", "Path blocked"],
   ["position-lost", "Position lost"],

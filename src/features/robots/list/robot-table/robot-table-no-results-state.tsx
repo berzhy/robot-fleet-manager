@@ -14,7 +14,11 @@ export default function RobotTableNoResultsState({
 }: {
   onCleared: () => void;
 }) {
-  const { search } = useRobotListView().filters;
+  const { search, view, ...fields } = useRobotListView().filters;
+  // With other filters applied, the search alone may not be what empties the list.
+  const otherFilters =
+    view !== "all" ||
+    Object.values(fields).some((value) => value !== undefined);
 
   function clearSearch() {
     onCleared();
@@ -44,7 +48,9 @@ export default function RobotTableNoResultsState({
             align="center"
             sx={{ overflowWrap: "anywhere" }}
           >
-            {`No robots match “${search}”.`}
+            {otherFilters
+              ? `No robots match “${search}” with the selected filters.`
+              : `No robots match “${search}”.`}
           </Typography>
           <Typography variant="body2" color="text.secondary" align="center">
             Search matches name, manufacturer, location, area, type,
