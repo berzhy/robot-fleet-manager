@@ -21,7 +21,7 @@ import { delayedReportMaxAgeMs } from "@/modules/telemetry/freshness";
 import useRobotList from "../use-robot-list";
 import useRobotListView, { setRobotListFilters } from "../use-robot-list-view";
 
-import { fleetViewLabels } from "./filter-fields";
+import { fleetViewId, fleetViewLabels } from "./filter-fields";
 
 type ProblemView = Exclude<RobotFilters["view"], "all">;
 
@@ -85,7 +85,7 @@ export default function RobotStatusFilters() {
               describeChild
             >
               <CardActionArea
-                data-view={view}
+                id={fleetViewId(view)}
                 aria-pressed={selected}
                 onClick={() => {
                   if (!selected) {

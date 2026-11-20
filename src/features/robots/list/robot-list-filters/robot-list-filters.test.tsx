@@ -14,6 +14,7 @@ import { render } from "@/query/test-utils";
 import { pageMetadata } from "../../test-fixtures";
 
 import RobotListFilters from "./robot-list-filters";
+import type { SearchFieldHandle } from "./robot-search-field";
 import RobotStatusFilters from "./robot-status-filters";
 
 const filterPage: RobotPage = {
@@ -49,9 +50,9 @@ async function filterOptionsLoaded() {
 }
 
 function ListFilters() {
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchFieldRef = useRef<SearchFieldHandle>(null);
 
-  return <RobotListFilters searchInputRef={searchInputRef} />;
+  return <RobotListFilters searchFieldRef={searchFieldRef} />;
 }
 
 test("dropdowns, tiles and removable chips share one selection", async () => {
@@ -181,6 +182,21 @@ test("search waits for two characters and debounce, supports composition and cle
   expect(field).toHaveValue("");
   expect(screen.queryByTestId("fleet-chip-search")).not.toBeInTheDocument();
   expect(screen.getByText("Location: Munich")).toBeVisible();
+});
+
+test("removing the only chip, a search, returns focus to the search box", async () => {
+  renderFilters(<ListFilters />, "?search=Robot");
+
+  const chip = screen.getByTestId("fleet-chip-search");
+  fireEvent.keyDown(chip, { key: "Delete" });
+  fireEvent.keyUp(chip, { key: "Delete" });
+
+  await waitFor(() =>
+    expect(screen.getByRole("textbox", { name: "Search robots" })).toHaveValue(
+      "",
+    ),
+  );
+  expect(screen.getByRole("textbox", { name: "Search robots" })).toHaveFocus();
 });
 
 test("chip removal and Clear filters cancel pending search", async () => {

@@ -17,7 +17,8 @@ import useRobotListView, { setRobotListPage } from "./use-robot-list-view";
 type RobotListStatus = "loading" | "error" | "success";
 
 // No local state or effects, so any part of the list can call it; React Query
-// shares one request between them.
+// shares one request between them. A component that mounts later, such as one
+// in a popover, refetches on mount, so it should get the data as props instead.
 export default function useRobotList() {
   const client = useQueryClient();
   const view = useRobotListView();

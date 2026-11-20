@@ -13,6 +13,7 @@ import { useRobotWriteLock } from "../api/robot-mutations";
 import AddRobotSplitButton from "./add-robot-split-button";
 import DeleteRobotDialog from "./delete-robot-dialog";
 import RobotListFilters from "./robot-list-filters/robot-list-filters";
+import type { SearchFieldHandle } from "./robot-list-filters/robot-search-field";
 import RobotStatusFilters from "./robot-list-filters/robot-status-filters";
 import RobotTable from "./robot-table/robot-table";
 import useAddRobots from "./use-add-robots";
@@ -24,9 +25,9 @@ import useRobotList, {
 import useRobotListView from "./use-robot-list-view";
 
 export default function RobotList() {
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchFieldRef = useRef<SearchFieldHandle>(null);
   function focusSearch() {
-    searchInputRef.current?.focus();
+    searchFieldRef.current?.focus();
   }
 
   const { filters } = useRobotListView();
@@ -89,7 +90,7 @@ export default function RobotList() {
           <Stack spacing={2}>
             <RobotStatusFilters />
             <Divider />
-            <RobotListFilters searchInputRef={searchInputRef} />
+            <RobotListFilters searchFieldRef={searchFieldRef} />
           </Stack>
         }
         onFocusSearch={() => {

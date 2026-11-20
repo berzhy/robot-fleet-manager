@@ -58,6 +58,30 @@ export const fleetViewLabels = {
   "low-battery": "Low battery",
 } satisfies Record<RobotFilters["view"], string>;
 
+export const searchFieldId = "fleet-search";
+export const moreFiltersButtonId = "fleet-more-filters";
+
+export function filterFieldId(key: FilterField["key"]) {
+  return `fleet-filter-${key}`;
+}
+
+export function fleetViewId(view: RobotFilters["view"]) {
+  return `fleet-view-${view}`;
+}
+
+/** The control that sets a filter, where focus goes once its chip is removed. */
+export function filterControlId(key: keyof RobotFilters) {
+  if (key === "search") {
+    return searchFieldId;
+  }
+  if (key === "view") {
+    return fleetViewId("all");
+  }
+  return moreFilterFields.some((field) => field.key === key)
+    ? moreFiltersButtonId
+    : filterFieldId(key);
+}
+
 export function formatFilterValue(field: FilterField, value: string) {
   return field.optionLabels?.[value] ?? value;
 }
