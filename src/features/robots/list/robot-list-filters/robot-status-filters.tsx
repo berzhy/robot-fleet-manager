@@ -1,12 +1,16 @@
 "use client";
 
+import Battery1BarIcon from "@mui/icons-material/Battery1Bar";
+import CloudOffOutlinedIcon from "@mui/icons-material/CloudOffOutlined";
+import ErrorOutlineOutlinedIcon from "@mui/icons-material/ErrorOutlineOutlined";
 import Box from "@mui/material/Box";
+import type SvgIcon from "@mui/material/SvgIcon";
 import Stack from "@mui/material/Stack";
 import ToggleButton from "@mui/material/ToggleButton";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import Skeleton from "@mui/material/Skeleton";
-import { fleetViews } from "@/modules/robots/robot-filters";
+import { fleetViews, type RobotFilters } from "@/modules/robots/robot-filters";
 import {
   criticalBatteryPercent,
   lowBatteryPercent,
@@ -18,12 +22,31 @@ import useRobotListView, { setRobotListFilters } from "../use-robot-list-view";
 
 import { fleetViewLabels } from "./filter-fields";
 
+type ProblemView = Exclude<RobotFilters["view"], "all">;
+
 const explanations = {
   all: "All robots within the selected location, manufacturer, type and integration.",
   "needs-attention": `Offline, a reported problem, or critical battery at or below ${criticalBatteryPercent}% while not charging.`,
   offline: `Last report received more than ${delayedReportMaxAgeMs / 1000} seconds ago. Robots with no reports are Unknown.`,
   "low-battery": `Last-reported battery at or below ${lowBatteryPercent}%, including Returning but excluding Charging.`,
 };
+
+/** Faint shapes that name each kind of problem; the total needs none. */
+const problemIcons = {
+  "needs-attention": ErrorOutlineOutlinedIcon,
+  offline: CloudOffOutlinedIcon,
+  "low-battery": Battery1BarIcon,
+} satisfies Record<ProblemView, typeof SvgIcon>;
+
+const problemIconSizePx = 44;
+const largeProblemIconSizePx = 52;
+// Below this width the tiles leave too little room beside the text for the
+// large icon. No MUI breakpoint sits here (lg is 1200, xl is 1536).
+const largeProblemIconMinWidthPx = 1360;
+const quietIconOpacity = 0.09;
+// Red needs more strength than grey to read as red, more so on dark tiles.
+const alertIconOpacity = 0.28;
+const darkAlertIconOpacity = 0.42;
 
 export default function RobotStatusFilters() {
   const { filters } = useRobotListView();
@@ -69,6 +92,14 @@ export default function RobotStatusFilters() {
             // the selected one keeps its primary colour.
             sx={{ py: 1.25, color: "text.primary" }}
           >
+            {view !== "all" && (
+              <ProblemIcon
+                view={view}
+                isAlerting={
+                  view === "needs-attention" && Boolean(summary?.[view])
+                }
+              />
+            )}
             <Stack
               direction="row"
               spacing={1}
@@ -99,5 +130,48 @@ export default function RobotStatusFilters() {
         </Tooltip>
       ))}
     </Box>
+  );
+}
+
+/** Red marks Needs attention while it has robots; the others stay neutral. */
+function ProblemIcon({
+  view,
+  isAlerting,
+}: {
+  view: ProblemView;
+  isAlerting: boolean;
+}) {
+  const Icon = problemIcons[view];
+
+  return (
+    <Icon
+      aria-hidden
+      sx={[
+        (theme) => ({
+          // Two narrow tiles per row leave no room beside the text.
+          display: { xs: "none", md: "block" },
+          position: "absolute",
+          right: 6,
+          top: "50%",
+          // The battery lies with its terminal on the right, like a phone's.
+          transform:
+            view === "low-battery"
+              ? "translateY(-50%) rotate(90deg)"
+              : "translateY(-50%)",
+          fontSize: problemIconSizePx,
+          opacity: quietIconOpacity,
+          [theme.breakpoints.up(largeProblemIconMinWidthPx)]: {
+            right: 12,
+            fontSize: largeProblemIconSizePx,
+          },
+        }),
+        isAlerting &&
+          ((theme) => ({
+            color: "error.main",
+            opacity: alertIconOpacity,
+            ...theme.applyStyles("dark", { opacity: darkAlertIconOpacity }),
+          })),
+      ]}
+    />
   );
 }
