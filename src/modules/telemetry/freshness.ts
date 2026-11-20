@@ -3,6 +3,11 @@ export const delayedReportMaxAgeMs = 15_000;
 
 export type ConnectionStatus = "online" | "delayed" | "offline" | "unknown";
 
+/** A report exists but is too old to describe the robot now. */
+export function isStale(status: ConnectionStatus) {
+  return status === "delayed" || status === "offline";
+}
+
 export function connectionStatus(
   receivedAt: string | null,
   now: number,
