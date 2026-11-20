@@ -81,7 +81,13 @@ export default function RobotStatusFilters() {
                 component="span"
                 sx={{ fontVariantNumeric: "tabular-nums", fontWeight: 600 }}
               >
-                {summary ? summary[view] : <Skeleton width={40} />}
+                {summary ? (
+                  summary[view]
+                ) : status === "error" ? (
+                  "–"
+                ) : (
+                  <Skeleton width={40} />
+                )}
               </Typography>
               <Typography variant="body2" component="span">
                 {fleetViewLabels[view]}
