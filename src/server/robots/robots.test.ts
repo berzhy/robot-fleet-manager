@@ -842,12 +842,12 @@ test("failed bulk deletion returns an error and rolls back every deletion", asyn
 
 test.each(
   (["idle", "charging"] as const).flatMap((activity) =>
-    [10, 10.1, null].map(
+    [20, 20.1, null].map(
       (batteryPercent) => [activity, batteryPercent] as const,
     ),
   ),
 )(
-  "Start activity from %s requires a known battery above 10%% (%s)",
+  "Start activity from %s requires a known battery above 20%% (%s)",
   async (activity, batteryPercent) => {
     const { requestRobotAction } = await import("./robot-actions");
     const robot = createRobot(db, input);
@@ -871,7 +871,7 @@ test.each(
       }),
     );
 
-    const allowed = batteryPercent !== null && batteryPercent > 10;
+    const allowed = batteryPercent !== null && batteryPercent > 20;
     expect(response.status).toBe(allowed ? 202 : 409);
     expect(registryEntry(robot.id)?.controlRevision).toBe(allowed ? 1 : 0);
   },

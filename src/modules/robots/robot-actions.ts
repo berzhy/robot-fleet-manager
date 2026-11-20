@@ -1,4 +1,4 @@
-import { criticalBatteryPercent, type Robot } from "./robot";
+import { lowBatteryPercent, type Robot } from "./robot";
 import { connectionStatus } from "../telemetry/freshness";
 
 export const robotActions = [
@@ -41,13 +41,14 @@ export function actionUnavailable(
           return "Use Retry instead";
         case "unknown":
           return "Waiting for the robot's status";
-        // An operator may cut charging short while the battery is safe.
+        // An operator may cut charging short. Robots head back to base at
+        // the critical level, so a start needs more than that to be useful.
         case "idle":
         case "charging":
           if (robot.batteryPercent === null) {
             return "Battery level unknown";
           }
-          return robot.batteryPercent > criticalBatteryPercent
+          return robot.batteryPercent > lowBatteryPercent
             ? null
             : "Battery too low to start";
       }
