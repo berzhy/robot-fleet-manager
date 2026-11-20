@@ -65,7 +65,9 @@ export default function RobotStatusFilters() {
               }
             }}
             aria-label={fleetViewLabels[view]}
-            sx={{ py: 1.25 }}
+            // Unselected toggle buttons are grey by default and look disabled;
+            // the selected one keeps its primary colour.
+            sx={{ py: 1.25, color: "text.primary" }}
           >
             <Stack
               direction="row"
@@ -89,7 +91,7 @@ export default function RobotStatusFilters() {
                   <Skeleton width={40} />
                 )}
               </Typography>
-              <Typography variant="body2" component="span">
+              <Typography variant="subtitle2" component="span">
                 {fleetViewLabels[view]}
               </Typography>
             </Stack>
