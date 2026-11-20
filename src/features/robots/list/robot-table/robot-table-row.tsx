@@ -87,13 +87,14 @@ export default function RobotTableRow({
             </Box>
           </Tooltip>
           <Box sx={{ minWidth: 0 }}>
-            <Typography data-testid="robot-name" variant="body2">
+            <Typography data-testid="robot-name" variant="body2" noWrap>
               <SearchHighlight text={robot.name} search={search} />
             </Typography>
             <Typography
               data-testid="robot-manufacturer"
               variant="body2"
               color="textSecondary"
+              noWrap
             >
               <SearchHighlight text={robot.manufacturer} search={search} />
             </Typography>
@@ -104,17 +105,22 @@ export default function RobotTableRow({
           component={NextLink}
           href={`/robots/${robot.id}`}
           aria-label={robot.name}
+          // The cell may cut a long name short; hovering the row shows it all.
+          title={robot.name}
           underline="none"
           sx={{ position: "absolute", inset: 0 }}
         />
       </TableCell>
       <TableCell>
-        <SearchHighlight text={robot.site} search={search} />
+        <Typography variant="body2" noWrap>
+          <SearchHighlight text={robot.site} search={search} />
+        </Typography>
         {robot.area && (
           <Typography
             data-testid="robot-area"
             variant="body2"
             color="textSecondary"
+            noWrap
           >
             <SearchHighlight text={robot.area} search={search} />
           </Typography>
@@ -122,8 +128,8 @@ export default function RobotTableRow({
       </TableCell>
       <TableCell sx={{ fontVariantNumeric: "tabular-nums" }}>
         <Typography data-testid="robot-connection" variant="body2">
+          {/* A failed refresh is announced above the table, not on every row. */}
           <SearchHighlight text={connectionLabel} search={search} />
-          {unverified ? " (unverified)" : ""}
         </Typography>
         {stale && robot.lastReceivedAt && (
           <Typography

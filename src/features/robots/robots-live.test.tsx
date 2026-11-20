@@ -124,6 +124,7 @@ test("quiet polling preserves DOM and focus, retains failed data, and recovers",
   expect(screen.getByTestId("fleet-refresh-warning")).toHaveTextContent(
     "Live updates interrupted",
   );
+  expect(row.getByTestId("robot-connection")).toHaveTextContent(/^Online$/);
   expect(row.getByTestId("robot-battery")).toHaveTextContent("49%");
 
   await tick(5000);

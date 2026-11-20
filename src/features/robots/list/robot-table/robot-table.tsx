@@ -10,6 +10,7 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Tooltip from "@mui/material/Tooltip";
+import { visuallyHidden } from "@mui/utils";
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 
 import type { Robot } from "@/modules/robots/robot";
@@ -24,19 +25,29 @@ import RobotTableNoResultsState from "./robot-table-no-results-state";
 import RobotTableRow from "./robot-table-row";
 import RobotTableSkeleton from "./robot-table-skeleton";
 
+// Each width fits the column's longest possible text, or its header, plus
+// the cell padding; Robot fits a generated name such as "Robot 7F37424D"
+// beside its dot. On wider screens the fixed layout shares the extra space
+// across all columns in proportion, so no single column takes all of it.
 const columns = [
-  { label: "Robot", width: "20%" },
-  { label: "Location", width: "12%" },
-  { label: "Connection", width: "13%" },
-  { label: "Activity", width: "13%" },
-  { label: "Battery", width: "7%" },
-  { label: "Type", width: "12%" },
-  { label: "Integration", width: "10%" },
-  { label: "Registered", width: "10%" },
-  { label: "Actions", width: "64px" },
+  { label: "Robot", widthPx: 172 },
+  { label: "Location", widthPx: 148 },
+  { label: "Connection", widthPx: 112 },
+  { label: "Activity", widthPx: 170 },
+  { label: "Battery", widthPx: 96 },
+  { label: "Type", widthPx: 140 },
+  { label: "Integration", widthPx: 104 },
+  { label: "Registered", widthPx: 124 },
+  { label: "Actions", widthPx: 64 },
 ] as const;
 
-const rowHeight = 70;
+// Narrower than this, the table scrolls sideways instead of squeezing columns.
+const tableMinWidthPx = columns.reduce(
+  (total, column) => total + column.widthPx,
+  0,
+);
+
+const rowHeight = 56;
 
 export default function RobotTable({
   toolbar,
@@ -111,10 +122,13 @@ export default function RobotTable({
       >
         <Table
           data-testid="fleet-table"
+          size="small"
           stickyHeader
           aria-label="Robot fleet"
           sx={{
-            minWidth: 900,
+            minWidth: tableMinWidthPx,
+            // Columns keep their widths; longer text is cut short with "…".
+            tableLayout: "fixed",
             flexShrink: 0,
           }}
         >
@@ -123,9 +137,7 @@ export default function RobotTable({
               <Box
                 component="col"
                 key={column.label}
-                sx={{
-                  width: column.width,
-                }}
+                sx={{ width: column.widthPx }}
               />
             ))}
           </colgroup>
@@ -155,6 +167,12 @@ export default function RobotTable({
                         <ArrowDownwardIcon aria-hidden fontSize="inherit" />
                       </Box>
                     </Tooltip>
+                  ) : column.label === "Actions" ? (
+                    // The ⋮ buttons explain themselves; screen readers still
+                    // get the column name.
+                    <Box component="span" sx={visuallyHidden}>
+                      {column.label}
+                    </Box>
                   ) : (
                     column.label
                   )}
