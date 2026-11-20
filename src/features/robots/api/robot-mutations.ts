@@ -1,6 +1,7 @@
 import {
   useIsMutating,
   useMutation,
+  useMutationState,
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
@@ -16,6 +17,9 @@ import {
 import { robotKeys } from "./robot-queries";
 
 const robotMutationKey = [...robotKeys.all, "mutation"] as const;
+const commandMutationKey = [...robotMutationKey, "command"] as const;
+
+type RobotCommand = { id: string; action: RobotAction };
 
 export function useCreateRobots() {
   const client = useQueryClient();
@@ -51,11 +55,21 @@ export function useSendRobotAction() {
   const client = useQueryClient();
 
   return useMutation({
-    mutationKey: [...robotMutationKey, "command"],
-    mutationFn: ({ id, action }: { id: string; action: RobotAction }) =>
-      sendRobotAction(id, action),
+    mutationKey: commandMutationKey,
+    mutationFn: ({ id, action }: RobotCommand) => sendRobotAction(id, action),
     onSettled: () => invalidateRobots(client),
   });
+}
+
+/** The action being sent to this robot, until the refresh after it settles. */
+export function usePendingRobotAction(robotId: string) {
+  const pendingCommands = useMutationState({
+    filters: { mutationKey: commandMutationKey, status: "pending" },
+    // Only useSendRobotAction writes under this key.
+    select: (mutation) => mutation.state.variables as RobotCommand,
+  });
+
+  return pendingCommands.find((command) => command.id === robotId)?.action;
 }
 
 /**
