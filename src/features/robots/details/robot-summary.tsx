@@ -193,7 +193,11 @@ function LiveValues({
               {robot.lastReceivedAt ? (
                 <>
                   Last report{" "}
-                  <TimeAgo timestamp={robot.lastReceivedAt} now={evaluatedAt} />
+                  <TimeAgo
+                    timestamp={robot.lastReceivedAt}
+                    now={evaluatedAt}
+                    tabIndex={0}
+                  />
                 </>
               ) : (
                 "No reports yet"
@@ -274,7 +278,7 @@ function Facts({ robot, evaluatedAt }: { robot: Robot; evaluatedAt: number }) {
       </Field>
       <Field label="Registered">
         <Typography component="dd" variant="subtitle2">
-          <TimeAgo timestamp={robot.createdAt} now={evaluatedAt} />
+          <TimeAgo timestamp={robot.createdAt} now={evaluatedAt} tabIndex={0} />
         </Typography>
       </Field>
       <Field label="ID">

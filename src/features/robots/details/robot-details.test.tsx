@@ -13,6 +13,7 @@ import type { Robot, RobotContext } from "@/modules/robots/robot";
 import { actionLabels } from "@/modules/robots/robot-actions";
 
 import { robotKeys } from "../api/robot-queries";
+import { formatRobotTimestamp } from "../utils/robot-formatters";
 
 import ActivityControls from "./activity-controls";
 import RobotDetails from "./robot-details";
@@ -117,6 +118,24 @@ test("a stale report is labelled as last reported, problem included", () => {
   expect(screen.getByText("Last reported location")).toBeVisible();
   expect(screen.getByRole("alert")).toHaveTextContent(
     "Last reported problem: Path blocked. Clear the obstruction before retrying activity.",
+  );
+});
+
+test("the exact time of the last report is reachable by keyboard", async () => {
+  const lastReceivedAt = "2026-11-14T12:00:00.000Z";
+  renderDetails({
+    robot: { ...robot, lastReceivedAt },
+    siteRobots: [],
+    evaluatedAt: Date.parse("2026-11-14T12:03:00.000Z"),
+  });
+
+  const time = within(screen.getByTestId("robot-last-report")).getByText(
+    "3 min ago",
+  );
+  act(() => time.focus());
+
+  expect(await screen.findByRole("tooltip")).toHaveTextContent(
+    formatRobotTimestamp(lastReceivedAt),
   );
 });
 
