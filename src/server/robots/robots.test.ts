@@ -840,15 +840,21 @@ test("failed bulk deletion returns an error and rolls back every deletion", asyn
   expect(log).toHaveBeenCalledOnce();
 });
 
-test.each([10, 10.1, null])(
-  "Start activity requires a known battery above 10%% (%s)",
-  async (batteryPercent) => {
+test.each(
+  (["idle", "charging"] as const).flatMap((activity) =>
+    [10, 10.1, null].map(
+      (batteryPercent) => [activity, batteryPercent] as const,
+    ),
+  ),
+)(
+  "Start activity from %s requires a known battery above 10%% (%s)",
+  async (activity, batteryPercent) => {
     const { requestRobotAction } = await import("./robot-actions");
     const robot = createRobot(db, input);
     db.insert(latestTelemetry)
       .values({
         robotId: robot.id,
-        activity: "idle",
+        activity,
         batteryPercent,
         area: "Base",
         observedAt: new Date().toISOString(),

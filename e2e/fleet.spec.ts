@@ -173,9 +173,7 @@ test("keyboard explanations and Stop/Retry requests follow reported activity", a
   await page.keyboard.press("Enter");
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("ArrowUp");
-  await expect(page.getByRole("tooltip")).toHaveText(
-    "Robot is already working",
-  );
+  await expect(page.getByRole("tooltip")).toHaveText("Already working");
   await expect(
     page.getByRole("menuitem", { name: "Start activity" }),
   ).toHaveAttribute("aria-disabled", "true");

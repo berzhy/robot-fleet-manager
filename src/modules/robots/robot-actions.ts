@@ -17,44 +17,69 @@ export const actionLabels: Record<RobotAction, string> = {
   retry: "Retry activity",
 };
 
+/**
+ * Why an action cannot be requested now, in the operator's words, or `null`.
+ * The server gives the same answer, so a stale screen cannot sneak one past it.
+ */
 export function actionUnavailable(
   robot: Robot,
   action: RobotAction,
   now: number,
 ): string | null {
   if (connectionStatus(robot.lastReceivedAt, now) !== "online") {
-    return "Robot must be online";
+    return "Robot isn't connected";
   }
 
   switch (action) {
     case "start":
-      if (robot.activity === "working") {
-        return "Robot is already working";
+      switch (robot.activity) {
+        case "working":
+          return "Already working";
+        case "returning":
+          return "Stop the return first";
+        case "needs-attention":
+          return "Use Retry instead";
+        case "unknown":
+          return "Waiting for the robot's status";
+        // An operator may cut charging short while the battery is safe.
+        case "idle":
+        case "charging":
+          if (robot.batteryPercent === null) {
+            return "Battery level unknown";
+          }
+          return robot.batteryPercent > criticalBatteryPercent
+            ? null
+            : "Battery too low to start";
       }
-      if (robot.activity !== "idle") {
-        return "Robot must be idle";
-      }
-      return robot.batteryPercent !== null &&
-        robot.batteryPercent > criticalBatteryPercent
-        ? null
-        : "Battery is too low";
 
     case "stop":
       return robot.activity === "working" || robot.activity === "returning"
         ? null
-        : "Robot has no activity to stop";
+        : "Nothing to stop";
 
     case "return-to-base":
-      return robot.activity === "working" ||
-        (robot.activity === "idle" &&
-          robot.area !== null &&
-          robot.area !== "Base")
-        ? null
-        : "Robot must be working or idle away from base";
+      switch (robot.activity) {
+        case "working":
+          return null;
+        case "idle":
+          return robot.area === "Base"
+            ? "Already at base"
+            : robot.area === null
+              ? "Robot's location is unknown"
+              : null;
+        case "charging":
+          return "Already charging";
+        case "returning":
+          return "Already returning";
+        case "needs-attention":
+          return "Fix the problem first";
+        case "unknown":
+          return "Waiting for the robot's status";
+      }
 
     case "retry":
       return robot.activity === "needs-attention" && robot.problemCode !== null
         ? null
-        : "Robot has no activity to retry";
+        : "Nothing to retry";
   }
 }

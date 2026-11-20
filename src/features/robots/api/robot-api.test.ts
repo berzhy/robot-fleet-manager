@@ -90,7 +90,7 @@ test("a failed response carries the server's error code and message", async () =
           {
             error: {
               code: "ACTION_UNAVAILABLE",
-              message: "Robot must be online",
+              message: "Robot isn't connected",
             },
           },
           { status: 409 },
@@ -102,7 +102,7 @@ test("a failed response carries the server's error code and message", async () =
   );
 
   await expect(sendRobotAction("robot", "stop")).rejects.toEqual(
-    new ApiError(409, "ACTION_UNAVAILABLE", "Robot must be online"),
+    new ApiError(409, "ACTION_UNAVAILABLE", "Robot isn't connected"),
   );
   await expect(sendRobotAction("robot", "stop")).rejects.toMatchObject({
     status: 502,

@@ -39,7 +39,7 @@ test("disabled actions explain their reason on keyboard focus and cannot execute
 
   fireEvent.focus(start);
   expect(await screen.findByRole("tooltip")).toHaveTextContent(
-    "Robot is already working",
+    "Already working",
   );
 
   fireEvent.click(start);
