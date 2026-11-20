@@ -20,7 +20,11 @@ import { connectionStatus } from "@/modules/telemetry/freshness";
 import { useRobotWriteLock } from "../api/robot-mutations";
 import ConnectionStatus from "../connection-status/connection-status";
 import useRobotCommand from "../use-robot-command";
-import { formatBattery, formatRobotTimestamp } from "../utils/robot-formatters";
+import {
+  batteryTone,
+  formatBattery,
+  formatRobotTimestamp,
+} from "../utils/robot-formatters";
 
 import ActivityControls from "./activity-controls";
 import LocationMap from "./location-map";
@@ -38,6 +42,7 @@ export default function RobotDetails({ robotId }: { robotId: string }) {
 
   const connection = connectionStatus(robot.lastReceivedAt, evaluatedAt);
   const stale = connection === "delayed" || connection === "offline";
+  const battery = batteryTone(robot);
 
   return (
     <Stack
@@ -106,12 +111,14 @@ export default function RobotDetails({ robotId }: { robotId: string }) {
                     component="p"
                     data-testid="robot-battery"
                     variant="h6"
+                    sx={{ color: battery && `${battery}.main` }}
                   >
                     {formatBattery(robot.batteryPercent)}
                   </Typography>
                   {robot.batteryPercent !== null && (
                     <LinearProgress
                       variant="determinate"
+                      color={battery ?? "primary"}
                       value={robot.batteryPercent}
                       aria-label="Battery level"
                       sx={{ mt: 0.5, width: 120 }}

@@ -1,6 +1,7 @@
 import { expect, test } from "vitest";
 
 import {
+  batteryTone,
   formatBattery,
   formatRobotTimestamp,
   formatAddedParts,
@@ -27,4 +28,22 @@ test("Registered parts split the same Berlin date and time for two-line display"
   expect(`${parts.date}, ${parts.time}`).toBe(
     formatRobotTimestamp("2026-11-14T12:34:56.000Z"),
   );
+});
+
+test("battery tone follows the Low battery and critical rules, ignoring charging robots", () => {
+  expect(
+    batteryTone({ batteryPercent: 21, activity: "working" }),
+  ).toBeUndefined();
+  expect(batteryTone({ batteryPercent: 20, activity: "returning" })).toBe(
+    "warning",
+  );
+  expect(batteryTone({ batteryPercent: 10, activity: "working" })).toBe(
+    "error",
+  );
+  expect(
+    batteryTone({ batteryPercent: 5, activity: "charging" }),
+  ).toBeUndefined();
+  expect(
+    batteryTone({ batteryPercent: null, activity: "unknown" }),
+  ).toBeUndefined();
 });

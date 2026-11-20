@@ -22,6 +22,7 @@ import { connectionStatus } from "@/modules/telemetry/freshness";
 
 import { ConnectionIndicator } from "../../connection-status/connection-status";
 import {
+  batteryTone,
   formatAddedParts,
   formatBattery,
   formatRobotTimestamp,
@@ -51,6 +52,7 @@ export default function RobotTableRow({
   const connectionLabel = formatConnection(connection);
   const showLastReport = connection === "delayed" || connection === "offline";
   const registered = formatAddedParts(robot.createdAt);
+  const battery = batteryTone(robot);
 
   return (
     <TableRow
@@ -151,7 +153,10 @@ export default function RobotTableRow({
           </Typography>
         )}
       </TableCell>
-      <TableCell data-testid="robot-battery">
+      <TableCell
+        data-testid="robot-battery"
+        sx={{ color: battery && `${battery}.main` }}
+      >
         <SearchHighlight
           text={formatBattery(robot.batteryPercent)}
           search={search}
