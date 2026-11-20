@@ -121,6 +121,32 @@ test("a stale report is labelled as last reported, problem included", () => {
   );
 });
 
+test.each([
+  ["idle", 61, "Battery60Icon"],
+  ["charging", 61, "BatteryCharging60Icon"],
+  ["idle", 100, "BatteryFullIcon"],
+  ["working", 5, "Battery20Icon"],
+  ["idle", null, "BatteryUnknownIcon"],
+] as const)(
+  "%s at %s%% shows %s beside the battery level",
+  (activity, batteryPercent, icon) => {
+    renderDetails({
+      robot: {
+        ...robot,
+        activity,
+        batteryPercent,
+        lastReceivedAt: new Date().toISOString(),
+      },
+      siteRobots: [],
+      evaluatedAt: Date.now(),
+    });
+
+    expect(
+      within(screen.getByTestId("robot-battery")).getByTestId(icon),
+    ).toBeInTheDocument();
+  },
+);
+
 test("the exact time of the last report is reachable by keyboard", async () => {
   const lastReceivedAt = "2026-11-14T12:00:00.000Z";
   renderDetails({

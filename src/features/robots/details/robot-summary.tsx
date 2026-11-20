@@ -3,7 +3,6 @@ import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
-import LinearProgress from "@mui/material/LinearProgress";
 import Paper from "@mui/material/Paper";
 import { useTheme, type SxProps, type Theme } from "@mui/material/styles";
 import Tooltip from "@mui/material/Tooltip";
@@ -29,6 +28,8 @@ import ConnectionStatus from "../connection-status/connection-status";
 import TimeAgo from "../time-ago/time-ago";
 import { batteryTone, formatBattery } from "../utils/robot-formatters";
 
+import BatteryIcon from "./battery-icon";
+
 const illustrations = { cleaning, delivery, inspection, security };
 // The webp files' own size; outside Next's bundler an import is a bare URL.
 const illustrationSizePx = 640;
@@ -36,8 +37,6 @@ const illustrationSizePx = 640;
 const pictureWidthPx = { small: 160, medium: 220, large: 260 };
 // Fits "Last reported location" and "Needs attention" on one line.
 const valueWidthPx = 160;
-// Wide enough to read even under the short label, "Battery".
-const batteryBarMinWidthPx = 120;
 
 /**
  * Who the robot is, how it is doing and what it can do, in one card. Narrow
@@ -218,29 +217,24 @@ function LiveValues({
             {formatActivity(robot.activity)}
           </Typography>
         </Field>
-        <Field
-          label={label("Battery")}
-          // Only as wide as its label, so the bar ends where the label does.
-          sx={{ minWidth: batteryBarMinWidthPx }}
-        >
+        <Field label={label("Battery")}>
           <Typography
             component="dd"
             variant="h6"
             data-testid="robot-battery"
-            sx={{ color: battery && `${battery}.main` }}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 0.5,
+              color: battery && `${battery}.main`,
+            }}
           >
             {formatBattery(robot.batteryPercent)}
+            <BatteryIcon
+              percent={robot.batteryPercent}
+              isCharging={robot.activity === "charging"}
+            />
           </Typography>
-          {robot.batteryPercent !== null && (
-            <Box component="dd" sx={{ m: 0, mt: 0.5 }}>
-              <LinearProgress
-                variant="determinate"
-                color={battery ?? "primary"}
-                value={robot.batteryPercent}
-                aria-label="Battery level"
-              />
-            </Box>
-          )}
         </Field>
       </Box>
       {problem && (
