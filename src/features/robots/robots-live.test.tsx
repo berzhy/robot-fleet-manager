@@ -203,7 +203,9 @@ test.each(["fleet", "detail"] as const)(
     await tick(600);
     fireEvent.click(stop);
 
-    expect(screen.getByRole("alert")).toHaveTextContent("Robot must be online");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Robot isn't connected",
+    );
     expect(screen.getByTestId("robot-connection")).toHaveTextContent(
       /^Online$/,
     );
@@ -303,6 +305,14 @@ test("detail refreshes while Logs is selected and stops when its robot is delete
   expect(screen.getByTestId("robot-unavailable")).toHaveTextContent(
     "Robot is no longer available.",
   );
+  // Nothing invites an action on a robot that is gone.
+  expect(
+    screen.queryByRole("group", { name: "Activity controls" }),
+  ).not.toBeInTheDocument();
+  expect(screen.queryByRole("tab")).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("heading", { level: 1, name: robot.name }),
+  ).toBeVisible();
 
   setPageVisibility(true);
   setPageVisibility(false);

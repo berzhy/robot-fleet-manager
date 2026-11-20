@@ -291,7 +291,7 @@ test("the search box follows a search change from outside", async () => {
   const box = screen.getByRole("textbox", { name: "Search robots" });
   expect(box).toHaveValue("Atlas");
 
-  // A link to the plain list, as the breadcrumb does.
+  // A link to the plain list, as the back link on details does.
   act(() => window.history.replaceState(null, "", "/robots"));
 
   expect(box).toHaveValue("");

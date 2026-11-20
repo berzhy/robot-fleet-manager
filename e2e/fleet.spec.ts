@@ -721,26 +721,24 @@ test("the URL keeps the list view across shared links, reloads and Back", async 
   expect(listResponses).not.toContain(400);
 });
 
-test("the breadcrumb opens the full list with an empty search box", async ({
+test("the back link opens the full list with an empty search box", async ({
   page,
   request,
 }) => {
   const [robot] = await seedFleet(request);
   const search = page.getByRole("textbox", { name: "Search robots" });
-  const breadcrumb = page
-    .getByRole("navigation", { name: "Breadcrumb" })
-    .getByRole("link", { name: "Robots", exact: true });
+  const backLink = page.getByRole("link", { name: "Back to robots" });
 
-  // An applied search, then leave through a robot and come back via the breadcrumb.
+  // An applied search, then leave through a robot and come back via the back link.
   await page.goto("/robots?search=Filter");
   await page.getByRole("link", { name: robot.name }).click();
-  await breadcrumb.click();
+  await backLink.click();
   await expect(search).toHaveValue("");
 
   // Text typed but not yet applied is not applied after returning.
   await search.fill("Zed");
   await page.getByRole("link", { name: robot.name }).click();
-  await breadcrumb.click();
+  await backLink.click();
   await expect(search).toHaveValue("");
   await page.waitForTimeout(500);
   await expect(page).toHaveURL("/robots");

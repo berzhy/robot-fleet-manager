@@ -6,11 +6,13 @@ import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 
 import type { Robot, SiteRobot } from "@/modules/robots/robot";
-import { connectionStatus } from "@/modules/telemetry/freshness";
+import { connectionStatus, isStale } from "@/modules/telemetry/freshness";
 
 import FacilityPlan, { facilityDetails } from "./facility-plan";
 
 const markerLimit = 12;
+// Full page width would draw the plan about 950 px tall; it stays centred.
+const planMaxHeightPx = 640;
 const zones = [
   { name: "Lobby", x: 274, y: 168, peersX: 218, peersY: 206 },
   { name: "Floor 1", x: 636, y: 216, peersX: 680, peersY: 216 },
@@ -36,10 +38,7 @@ export default function LocationMap({
 }) {
   const selectedArea = areaName(robot.area);
   const stale =
-    unverified ||
-    ["delayed", "offline"].includes(
-      connectionStatus(robot.lastReceivedAt, evaluatedAt),
-    );
+    unverified || isStale(connectionStatus(robot.lastReceivedAt, evaluatedAt));
   const groups = zones.map((zone) => ({
     ...zone,
     peers: peers
@@ -70,6 +69,7 @@ export default function LocationMap({
           const palette = (theme.vars ?? theme).palette;
           return {
             width: "100%",
+            maxHeight: planMaxHeightPx,
             display: "block",
             mt: 2,
             color: palette.text.secondary,

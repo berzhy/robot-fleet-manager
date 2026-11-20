@@ -79,12 +79,9 @@ test("investigates a reported problem and retries it from robot details", async 
   await expect(row).toHaveCount(0);
   await expect(page.getByText("No robots match these filters.")).toBeVisible();
 
-  // The breadcrumb is a plain link to the whole fleet.
+  // The back link is a plain link to the whole fleet.
   await page.goForward();
-  await page
-    .getByRole("navigation", { name: "Breadcrumb" })
-    .getByRole("link", { name: "Robots", exact: true })
-    .click();
+  await page.getByRole("link", { name: "Back to robots" }).click();
   await expect(page).toHaveURL("/robots");
   await expect(
     page.getByRole("button", {

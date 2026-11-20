@@ -5,10 +5,12 @@ import {
   waitFor,
   act,
 } from "@testing-library/react";
-import { expect, test, vi, afterEach } from "vitest";
+import type { ComponentProps } from "react";
+import { expect, test, vi, afterEach, onTestFinished } from "vitest";
 
 import { render } from "@/query/test-utils";
 import type { Robot, RobotContext } from "@/modules/robots/robot";
+import { actionLabels } from "@/modules/robots/robot-actions";
 
 import { robotKeys } from "../api/robot-queries";
 
@@ -37,37 +39,39 @@ function renderDetails(context: RobotContext) {
   });
 }
 
-test("details show fields, missing values, and breadcrumbs", async () => {
+test("details show the robot, missing values, and the way back", async () => {
   renderDetails({ robot: robot, siteRobots: [], evaluatedAt: 0 });
 
   const details = within(screen.getByTestId("robot-details"));
   expect(
     screen.getByRole("heading", { level: 1, name: robot.name }),
   ).toBeInTheDocument();
-  const breadcrumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
   expect(
-    within(breadcrumbs).getByRole("link", { name: "Robots" }),
-  ).toHaveAttribute("href", "/robots");
-  expect(within(breadcrumbs).getByText(robot.name)).toHaveAttribute(
-    "aria-current",
-    "page",
-  );
-  expect(
-    screen.getByRole("region", { name: "Robot information" }),
-  ).toHaveTextContent("Vendor API");
-  expect(screen.getByRole("region", { name: "Location" })).toHaveTextContent(
-    "Reported area: Unknown",
+    details.getByText("Test manufacturer · Inspection robot"),
+  ).toBeVisible();
+  expect(details.getByRole("link", { name: "Back to robots" })).toHaveAttribute(
+    "href",
+    "/robots",
   );
   expect(details.getByTestId("robot-activity")).toHaveTextContent(/^Charging$/);
   expect(details.getByTestId("robot-battery")).toHaveTextContent(/^Unknown$/);
   expect(details.getByTestId("robot-connection")).toHaveTextContent(
     /^Unknown$/,
   );
-  expect(screen.getByRole("tab", { name: "Overview" })).toHaveAttribute(
+  expect(details.getByTestId("robot-last-report")).toHaveTextContent(
+    /^No reports yet$/,
+  );
+  expect(details.getByTestId("robot-location")).toHaveTextContent(/^Unknown$/);
+  expect(details.getByText(robot.id)).toBeVisible();
+  expect(details.getByText("Vendor API")).toBeVisible();
+  expect(screen.getByRole("region", { name: "Location" })).toHaveTextContent(
+    "Reported area: Unknown",
+  );
+  expect(screen.getByRole("tab", { name: "Map" })).toHaveAttribute(
     "aria-selected",
     "true",
   );
-  expect(screen.getByRole("tabpanel", { name: "Overview" })).toBeVisible();
+  expect(screen.getByRole("tabpanel", { name: "Map" })).toBeVisible();
 
   await act(async () => {
     fireEvent.click(screen.getByRole("tab", { name: "Logs" }));
@@ -83,11 +87,60 @@ test("details show fields, missing values, and breadcrumbs", async () => {
   ).not.toBeInTheDocument();
 
   await act(async () => {
-    fireEvent.click(screen.getByRole("tab", { name: "Overview" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Map" }));
     await Promise.resolve();
   });
 
   expect(screen.getByRole("region", { name: "Location" })).toBeVisible();
+});
+
+test("a stale report is labelled as last reported, problem included", () => {
+  const evaluatedAt = Date.parse("2026-11-14T12:03:00.000Z");
+  renderDetails({
+    robot: {
+      ...robot,
+      activity: "needs-attention",
+      problemCode: "path-blocked",
+      area: "Lobby",
+      batteryPercent: 40,
+      lastReceivedAt: "2026-11-14T12:00:00.000Z",
+    },
+    siteRobots: [],
+    evaluatedAt,
+  });
+
+  expect(screen.getByTestId("robot-connection")).toHaveTextContent(/^Offline$/);
+  expect(screen.getByTestId("robot-last-report")).toHaveTextContent(
+    /^Last report 3 min ago$/,
+  );
+  expect(screen.getByText("Last reported activity")).toBeVisible();
+  expect(screen.getByText("Last reported location")).toBeVisible();
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "Last reported problem: Path blocked. Clear the obstruction before retrying activity.",
+  );
+});
+
+test("copying the ID puts it on the clipboard and says so", async () => {
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  // jsdom has no clipboard; add one to the real navigator for this test.
+  Object.defineProperty(navigator, "clipboard", {
+    value: { writeText },
+    configurable: true,
+  });
+  onTestFinished(() => {
+    Reflect.deleteProperty(navigator, "clipboard");
+  });
+  renderDetails({ robot: robot, siteRobots: [], evaluatedAt: 0 });
+
+  await act(async () => {
+    fireEvent.click(screen.getByRole("button", { name: "Copy robot ID" }));
+    await Promise.resolve();
+  });
+
+  expect(writeText).toHaveBeenCalledWith(robot.id);
+  expect(await screen.findByRole("status")).toHaveTextContent(
+    "Robot ID copied.",
+  );
 });
 
 afterEach(() => {
@@ -95,51 +148,105 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-test.each([
-  ["idle", "Start activity", false],
-  ["working", "Stop activity", false],
-  ["returning", "Stop activity", false],
-  ["charging", "Start activity", true],
-  ["needs-attention", "Start activity", true],
-  ["unknown", "Start activity", true],
-] as const)(
-  "%s shows one start/stop control with the correct availability",
-  async (activity, label, disabled) => {
-    const now = Date.now();
-    const onAction = vi.fn();
-    render(
-      <ActivityControls
-        robot={{
-          ...robot,
-          activity,
-          batteryPercent: 80,
-          lastReceivedAt: new Date(now).toISOString(),
-        }}
-        evaluatedAt={now}
-        unverified={false}
-        pending={false}
-        onAction={onAction}
-      />,
-    );
+function renderControls(
+  overrides: Partial<Robot>,
+  props: Partial<ComponentProps<typeof ActivityControls>> = {},
+) {
+  const now = Date.now();
+  render(
+    <ActivityControls
+      robot={{
+        ...robot,
+        batteryPercent: 80,
+        lastReceivedAt: new Date(now).toISOString(),
+        ...overrides,
+      }}
+      evaluatedAt={now}
+      unverified={false}
+      pending={false}
+      onAction={vi.fn()}
+      {...props}
+    />,
+  );
+}
 
-    const buttons = screen.getAllByRole("button", {
-      name: /^(Start|Stop) activity$/,
-    });
-    expect(buttons).toHaveLength(1);
-    expect(buttons[0]).toHaveAccessibleName(label);
-    expect(buttons[0]).toHaveAttribute("aria-disabled", String(disabled));
+test.each([
+  ["idle", "start", false],
+  ["working", "stop", false],
+  ["returning", "stop", false],
+  // An operator may cut charging short.
+  ["charging", "start", false],
+  // Without a problem code there is nothing to retry yet.
+  ["needs-attention", "retry", true],
+  ["unknown", "start", true],
+] as const)(
+  "%s shows one activity control with the correct availability",
+  async (activity, action, isUnavailable) => {
+    const onAction = vi.fn();
+    renderControls({ activity }, { onAction });
+
+    const button = screen.getByRole("button", { name: actionLabels[action] });
+    expect(screen.getAllByRole("button")).toHaveLength(2);
+    expect(button).toHaveAttribute("aria-disabled", String(isUnavailable));
 
     await act(async () => {
-      fireEvent.click(buttons[0]);
+      fireEvent.click(button);
       await Promise.resolve();
     });
 
-    if (disabled) {
-      expect(onAction).not.toHaveBeenCalled();
-    } else {
-      expect(onAction).toHaveBeenCalledWith(
-        activity === "idle" ? "start" : "stop",
-      );
+    expect(onAction.mock.calls).toEqual(isUnavailable ? [] : [[action]]);
+  },
+);
+
+test("one control follows the robot: Start, Stop or Retry", () => {
+  renderControls({ activity: "needs-attention", problemCode: "path-blocked" });
+
+  expect(
+    screen.getAllByRole("button").map((button) => button.textContent),
+  ).toEqual(["Retry activity", "Return to base"]);
+});
+
+test("Return to base at base says so to assistive technology", () => {
+  renderControls({ activity: "idle", area: "Base" });
+
+  const start = screen.getByRole("button", { name: "Start activity" });
+  expect(start).toHaveAttribute("aria-disabled", "false");
+  expect(start).not.toHaveAccessibleDescription();
+  const returnToBase = screen.getByRole("button", { name: "Return to base" });
+  expect(returnToBase).toHaveAttribute("aria-disabled", "true");
+  expect(returnToBase).toHaveAccessibleDescription("Already at base");
+});
+
+test("an unavailable control says why on hover or focus, not on the card", async () => {
+  renderControls({ activity: "idle", lastReceivedAt: null });
+
+  const start = screen.getByRole("button", { name: "Start activity" });
+  expect(start).toHaveAttribute("aria-disabled", "true");
+  expect(start).toHaveAccessibleDescription("Robot isn't connected");
+  expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+
+  act(() => start.focus());
+  expect(await screen.findByRole("tooltip")).toHaveTextContent(
+    "Robot isn't connected",
+  );
+});
+
+test.each([
+  ["stop", "Stop activity"],
+  ["start", "Stop activity"],
+  ["return-to-base", "Return to base"],
+] as const)(
+  "a pending %s spins on its own slot, even after a poll swaps the label",
+  (pendingAction, spinning) => {
+    renderControls({ activity: "working" }, { pending: true, pendingAction });
+
+    const spinners = screen.getAllByRole("progressbar", { hidden: true });
+    expect(spinners).toHaveLength(1);
+    expect(screen.getByRole("button", { name: spinning })).toContainElement(
+      spinners[0],
+    );
+    for (const button of screen.getAllByRole("button")) {
+      expect(button).toHaveAccessibleDescription("Sending command…");
     }
   },
 );
@@ -554,7 +661,7 @@ test("an action the server refuses shows the server's reason", async () => {
               {
                 error: {
                   code: "ACTION_UNAVAILABLE",
-                  message: "Robot must be online",
+                  message: "Robot isn't connected",
                 },
               },
               { status: 409 },
@@ -572,6 +679,6 @@ test("an action the server refuses shows the server's reason", async () => {
   fireEvent.click(screen.getByRole("button", { name: /^Stop activity$/ }));
 
   expect(await screen.findByRole("alert")).toHaveTextContent(
-    "Robot must be online. Check the latest report before trying again.",
+    "Robot isn't connected. Check the latest report before trying again.",
   );
 });

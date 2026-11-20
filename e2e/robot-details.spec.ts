@@ -110,9 +110,9 @@ test("detail context and controls follow reported telemetry", async ({
     page.getByRole("button", { name: "Stop activity", exact: true }),
   ).toHaveCount(0);
 
-  const overviewTab = page.getByRole("tab", { name: "Overview" });
+  const mapTab = page.getByRole("tab", { name: "Map" });
   const logsTab = page.getByRole("tab", { name: "Logs" });
-  await overviewTab.focus();
+  await mapTab.focus();
   await page.keyboard.press("ArrowRight");
   await expect(logsTab).toBeFocused();
   await page.keyboard.press("Enter");
@@ -129,9 +129,7 @@ test("detail context and controls follow reported telemetry", async ({
   await page.keyboard.press("Enter");
   await expect(location).toBeVisible();
 
-  const illustration = page
-    .getByRole("region", { name: "Robot information" })
-    .locator("img");
+  const illustration = page.getByTestId("robot-details").locator("img");
   await expect(illustration).toBeVisible();
   await expect(illustration).toHaveJSProperty("complete", true);
   await expect(illustration).not.toHaveJSProperty("naturalWidth", 0);
@@ -151,10 +149,7 @@ test("detail context and controls follow reported telemetry", async ({
     ),
   ).toBe(true);
 
-  await page
-    .getByRole("navigation", { name: "Breadcrumb" })
-    .getByRole("link", { name: "Robots", exact: true })
-    .click();
+  await page.getByRole("link", { name: "Back to robots" }).click();
   await expect(page).toHaveURL("/robots");
   await expect(page.getByTestId(`robot-row-${selected.id}`)).toBeVisible();
   expect(browserErrors).toEqual([]);
