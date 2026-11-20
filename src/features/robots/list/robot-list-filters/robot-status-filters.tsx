@@ -4,9 +4,10 @@ import Battery1BarIcon from "@mui/icons-material/Battery1Bar";
 import CloudOffOutlinedIcon from "@mui/icons-material/CloudOffOutlined";
 import ErrorOutlineOutlinedIcon from "@mui/icons-material/ErrorOutlineOutlined";
 import Box from "@mui/material/Box";
+import Card from "@mui/material/Card";
+import CardActionArea from "@mui/material/CardActionArea";
 import type SvgIcon from "@mui/material/SvgIcon";
 import Stack from "@mui/material/Stack";
-import ToggleButton from "@mui/material/ToggleButton";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import Skeleton from "@mui/material/Skeleton";
@@ -30,6 +31,10 @@ const explanations = {
   offline: `Last report received more than ${delayedReportMaxAgeMs / 1000} seconds ago. Robots with no reports are Unknown.`,
   "low-battery": `Last-reported battery at or below ${lowBatteryPercent}%, including Returning but excluding Charging.`,
 };
+
+// Lifted off the table card by a soft shadow, so the tiles read as things to
+// press. In dark mode a lower elevation would make them darker than the card.
+const tileElevation = 2;
 
 /** Faint shapes that name each kind of problem; the total needs none. */
 const problemIcons = {
@@ -66,69 +71,79 @@ export default function RobotStatusFilters() {
         flexShrink: 0,
       }}
     >
-      {fleetViews.map((view) => (
-        <Tooltip
-          key={view}
-          title={explanations[view]}
-          // Below the tile: above it, the tooltip covers the Add robot button.
-          placement="bottom"
-          // Help on demand, not a popup every time the pointer crosses a tile.
-          enterDelay={700}
-          enterNextDelay={700}
-          describeChild
-        >
-          <ToggleButton
-            value={view}
-            color="primary"
-            data-view={view}
-            selected={filters.view === view}
-            onChange={() => {
-              if (view !== filters.view) {
-                setRobotListFilters({ view });
-              }
-            }}
-            aria-label={fleetViewLabels[view]}
-            // Unselected toggle buttons are grey by default and look disabled;
-            // the selected one keeps its primary colour.
-            sx={{ py: 1.25, color: "text.primary" }}
-          >
-            {view !== "all" && (
-              <ProblemIcon
-                view={view}
-                isAlerting={
-                  view === "needs-attention" && Boolean(summary?.[view])
-                }
-              />
-            )}
-            <Stack
-              direction="row"
-              spacing={1}
-              sx={{
-                alignItems: "center",
-                flexWrap: "wrap",
-                justifyContent: "center",
-              }}
+      {fleetViews.map((view) => {
+        const selected = filters.view === view;
+        return (
+          <Card key={view} elevation={tileElevation}>
+            <Tooltip
+              title={explanations[view]}
+              // Below the tile: above it, the tooltip covers the Add robot button.
+              placement="bottom"
+              // Help on demand, not a popup every time the pointer crosses a tile.
+              enterDelay={700}
+              enterNextDelay={700}
+              describeChild
             >
-              <Typography
-                variant="h5"
-                component="span"
-                sx={{ fontVariantNumeric: "tabular-nums", fontWeight: 600 }}
+              <CardActionArea
+                data-view={view}
+                aria-pressed={selected}
+                aria-label={fleetViewLabels[view]}
+                onClick={() => {
+                  if (!selected) {
+                    setRobotListFilters({ view });
+                  }
+                }}
+                sx={[
+                  {
+                    height: "100%",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    py: 1.25,
+                    px: 2,
+                  },
+                  selected && { bgcolor: "action.selected" },
+                ]}
               >
-                {summary ? (
-                  summary[view]
-                ) : status === "error" ? (
-                  "–"
-                ) : (
-                  <Skeleton width={40} />
+                {view !== "all" && (
+                  <ProblemIcon
+                    view={view}
+                    isAlerting={
+                      view === "needs-attention" && Boolean(summary?.[view])
+                    }
+                  />
                 )}
-              </Typography>
-              <Typography variant="subtitle2" component="span">
-                {fleetViewLabels[view]}
-              </Typography>
-            </Stack>
-          </ToggleButton>
-        </Tooltip>
-      ))}
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  sx={{
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Typography
+                    variant="h5"
+                    component="span"
+                    sx={{ fontVariantNumeric: "tabular-nums", fontWeight: 600 }}
+                  >
+                    {summary ? (
+                      summary[view]
+                    ) : status === "error" ? (
+                      "–"
+                    ) : (
+                      <Skeleton width={40} />
+                    )}
+                  </Typography>
+                  <Typography variant="subtitle2" component="span">
+                    {fleetViewLabels[view]}
+                  </Typography>
+                </Stack>
+              </CardActionArea>
+            </Tooltip>
+          </Card>
+        );
+      })}
     </Box>
   );
 }

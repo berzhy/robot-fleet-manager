@@ -40,10 +40,6 @@ const theme = createTheme({
       defaultProps: { disableFocusRipple: true },
       styleOverrides: { root: { textTransform: "none" } },
     },
-    MuiToggleButton: {
-      defaultProps: { disableFocusRipple: true },
-      styleOverrides: { root: { textTransform: "none" } },
-    },
   },
 });
 
