@@ -26,33 +26,28 @@ export function batteryTone({
   return batteryPercent <= lowBatteryPercent ? "warning" : undefined;
 }
 
-const timestampFormatter = new Intl.DateTimeFormat("en-GB", {
+// One fixed locale and zone, so the server render and the browser agree and
+// every time reads as at the fleet's German sites: English words, European
+// dates and the 24-hour clock.
+const locale = "en-GB";
+const timeZone = "Europe/Berlin";
+
+const timestampFormatter = new Intl.DateTimeFormat(locale, {
   dateStyle: "medium",
   timeStyle: "long",
-  timeZone: "Europe/Berlin",
+  timeZone,
 });
 
 export function formatRobotTimestamp(timestamp: string) {
   return timestampFormatter.format(new Date(timestamp));
 }
 
-const dateFormatter = new Intl.DateTimeFormat("en-GB", {
+const dateFormatter = new Intl.DateTimeFormat(locale, {
   dateStyle: "medium",
-  timeZone: "Europe/Berlin",
+  timeZone,
 });
-const addedTimeFormatter = new Intl.DateTimeFormat("en-GB", {
-  timeStyle: "long",
-  timeZone: "Europe/Berlin",
-});
-export function formatAddedParts(createdAt: string) {
-  const date = new Date(createdAt);
-  return {
-    date: dateFormatter.format(date),
-    time: addedTimeFormatter.format(date),
-  };
-}
 
-const relativeTimeFormatter = new Intl.RelativeTimeFormat("en-GB", {
+const relativeTimeFormatter = new Intl.RelativeTimeFormat(locale, {
   style: "short",
 });
 const minuteMs = 60_000;

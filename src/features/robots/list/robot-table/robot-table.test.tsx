@@ -204,8 +204,19 @@ test("columns put identity and operational context before catalog metadata", asy
     "Actions",
   ]);
   expect(addedAt).toHaveAttribute("dateTime", robot.createdAt);
-  expect(addedAt).toHaveTextContent("14 Nov 2026");
-  expect(addedAt).toHaveTextContent("13:00:00 CET");
+  expect(addedAt).toHaveTextContent(/^14 Nov 2026$/);
+  expect(
+    screen.getByRole("columnheader", { name: "Registered" }),
+  ).toHaveAttribute("aria-sort", "descending");
+});
+
+test("a robot registered today shows how long ago, with the exact time kept", async () => {
+  const createdAt = new Date(Date.now() - 3 * 60_000).toISOString();
+  renderTable(robotPage([{ ...robot, createdAt }]));
+
+  const addedAt = await screen.findByTestId("robot-added-at");
+  expect(addedAt).toHaveTextContent(/^3 min ago$/);
+  expect(addedAt).toHaveAttribute("dateTime", createdAt);
 });
 
 test("a search with no matches names the query, lists searchable fields and offers Clear search", async () => {

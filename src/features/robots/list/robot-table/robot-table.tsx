@@ -1,5 +1,6 @@
 "use client";
 
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
 import Table from "@mui/material/Table";
@@ -8,6 +9,7 @@ import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
+import Tooltip from "@mui/material/Tooltip";
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 
 import type { Robot } from "@/modules/robots/robot";
@@ -138,7 +140,24 @@ export default function RobotTable({
                   }
                   align={column.label === "Actions" ? "right" : "left"}
                 >
-                  {column.label}
+                  {column.label === "Registered" ? (
+                    // The only order the list has, so it needs no control.
+                    <Tooltip title="Newest first" describeChild>
+                      <Box
+                        component="span"
+                        sx={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 0.5,
+                        }}
+                      >
+                        {column.label}
+                        <ArrowDownwardIcon aria-hidden fontSize="inherit" />
+                      </Box>
+                    </Tooltip>
+                  ) : (
+                    column.label
+                  )}
                 </TableCell>
               ))}
             </TableRow>

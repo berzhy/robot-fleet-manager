@@ -23,7 +23,6 @@ import { connectionStatus } from "@/modules/telemetry/freshness";
 import { ConnectionIndicator } from "../../connection-status/connection-status";
 import {
   batteryTone,
-  formatAddedParts,
   formatBattery,
   formatRobotTimestamp,
   formatTimeAgo,
@@ -52,7 +51,6 @@ export default function RobotTableRow({
   const connection = connectionStatus(robot.lastReceivedAt, evaluatedAt);
   const connectionLabel = formatConnection(connection);
   const stale = connection === "delayed" || connection === "offline";
-  const registered = formatAddedParts(robot.createdAt);
   const battery = batteryTone(robot);
 
   return (
@@ -133,19 +131,7 @@ export default function RobotTableRow({
             variant="body2"
             color="textSecondary"
           >
-            <Tooltip
-              title={formatRobotTimestamp(robot.lastReceivedAt)}
-              describeChild
-            >
-              {/* Above the row link, so the pointer reaches the exact time. */}
-              <Box
-                component="time"
-                dateTime={robot.lastReceivedAt}
-                sx={{ position: "relative", zIndex: 1 }}
-              >
-                {formatTimeAgo(robot.lastReceivedAt, evaluatedAt)}
-              </Box>
-            </Tooltip>
+            <TimeAgo timestamp={robot.lastReceivedAt} now={evaluatedAt} />
           </Typography>
         )}
       </TableCell>
@@ -185,23 +171,13 @@ export default function RobotTableRow({
           search={search}
         />
       </TableCell>
-      <TableCell>
-        <Typography
-          component="time"
-          variant="body2"
-          data-testid="robot-added-at"
-          dateTime={robot.createdAt}
-          sx={{ fontVariantNumeric: "tabular-nums" }}
-        >
-          {registered.date}
-          <Typography
-            component="span"
-            variant="caption"
-            color="textSecondary"
-            sx={{ display: "block" }}
-          >
-            {registered.time}
-          </Typography>
+      <TableCell sx={{ fontVariantNumeric: "tabular-nums" }}>
+        <Typography variant="body2">
+          <TimeAgo
+            data-testid="robot-added-at"
+            timestamp={robot.createdAt}
+            now={evaluatedAt}
+          />
         </Typography>
       </TableCell>
       <TableCell align="right" sx={{ position: "relative" }}>
@@ -213,5 +189,30 @@ export default function RobotTableRow({
         />
       </TableCell>
     </TableRow>
+  );
+}
+
+/** A relative time, with the exact one on hover. */
+function TimeAgo({
+  timestamp,
+  now,
+  "data-testid": testId,
+}: {
+  timestamp: string;
+  now: number;
+  "data-testid"?: string;
+}) {
+  return (
+    <Tooltip title={formatRobotTimestamp(timestamp)} describeChild>
+      {/* Above the row link, so the pointer reaches the exact time. */}
+      <Box
+        component="time"
+        data-testid={testId}
+        dateTime={timestamp}
+        sx={{ position: "relative", zIndex: 1 }}
+      >
+        {formatTimeAgo(timestamp, now)}
+      </Box>
+    </Tooltip>
   );
 }
