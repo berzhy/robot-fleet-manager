@@ -52,7 +52,7 @@ export default function RobotTableNoResultsState({
               ? `No robots match “${search}” with the selected filters.`
               : `No robots match “${search}”.`}
           </Typography>
-          <Typography variant="body2" color="text.secondary" align="center">
+          <Typography variant="body2" color="textSecondary" align="center">
             Search matches name, manufacturer, location, area, type,
             integration, activity, problem, connection and battery.
           </Typography>

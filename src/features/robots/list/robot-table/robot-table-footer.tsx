@@ -99,7 +99,7 @@ export default function RobotTableFooter() {
       <Typography
         data-testid="fleet-result-count"
         variant="body2"
-        color="text.secondary"
+        color="textSecondary"
         sx={{ ml: "auto", pr: 2, fontVariantNumeric: "tabular-nums" }}
       >
         {status === "success" && snapshot ? (

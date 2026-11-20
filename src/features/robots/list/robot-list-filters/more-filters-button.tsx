@@ -72,7 +72,7 @@ export default function MoreFiltersButton({
             direction="row"
             sx={{ alignItems: "center", justifyContent: "space-between" }}
           >
-            <Typography id={titleId} variant="subtitle1">
+            <Typography id={titleId} variant="subtitle1" component="h2">
               More filters
             </Typography>
             <IconButton

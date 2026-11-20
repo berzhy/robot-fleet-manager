@@ -44,9 +44,10 @@ test("details show the robot, missing values, and the way back", async () => {
   renderDetails({ robot: robot, siteRobots: [], evaluatedAt: 0 });
 
   const details = within(screen.getByTestId("robot-details"));
-  expect(
+  expect(screen.getAllByRole("heading", { hidden: true })).toEqual([
     screen.getByRole("heading", { level: 1, name: robot.name }),
-  ).toBeInTheDocument();
+    screen.getByRole("heading", { level: 2, name: robot.site }),
+  ]);
   expect(
     details.getByText("Test manufacturer · Inspection robot"),
   ).toBeVisible();
@@ -65,14 +66,14 @@ test("details show the robot, missing values, and the way back", async () => {
   expect(details.getByTestId("robot-location")).toHaveTextContent(/^Unknown$/);
   expect(details.getByText(robot.id)).toBeVisible();
   expect(details.getByText("Vendor API")).toBeVisible();
-  expect(screen.getByRole("region", { name: "Location" })).toHaveTextContent(
-    "Reported area: Unknown",
+  expect(screen.getByRole("tabpanel", { name: "Location" })).toHaveTextContent(
+    "Area unknown: this robot",
   );
-  expect(screen.getByRole("tab", { name: "Map" })).toHaveAttribute(
+  expect(screen.getByRole("tab", { name: "Location" })).toHaveAttribute(
     "aria-selected",
     "true",
   );
-  expect(screen.getByRole("tabpanel", { name: "Map" })).toBeVisible();
+  expect(screen.getByRole("tabpanel", { name: "Location" })).toBeVisible();
 
   await act(async () => {
     fireEvent.click(screen.getByRole("tab", { name: "Logs" }));
@@ -84,15 +85,15 @@ test("details show the robot, missing values, and the way back", async () => {
   expect(logs).toHaveTextContent("Integration initialized: Vendor API");
   expect(logs).toHaveTextContent("Location configuration loaded: Munich");
   expect(
-    screen.queryByRole("region", { name: "Location" }),
+    screen.queryByRole("tabpanel", { name: "Location" }),
   ).not.toBeInTheDocument();
 
   await act(async () => {
-    fireEvent.click(screen.getByRole("tab", { name: "Map" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Location" }));
     await Promise.resolve();
   });
 
-  expect(screen.getByRole("region", { name: "Location" })).toBeVisible();
+  expect(screen.getByRole("tabpanel", { name: "Location" })).toBeVisible();
 });
 
 test("a stale report is labelled as last reported, problem included", () => {

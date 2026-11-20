@@ -1,31 +1,35 @@
 import Box from "@mui/material/Box";
-import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
-import { useTheme } from "@mui/material/styles";
+import type { SxProps, Theme } from "@mui/material/styles";
 import Typography from "@mui/material/Typography";
-import { visuallyHidden } from "@mui/utils";
+import type { ReactNode } from "react";
 
 import type { Robot, SiteRobot } from "@/modules/robots/robot";
 import { connectionStatus, isStale } from "@/modules/telemetry/freshness";
 
 import {
   facilityAreas,
-  facilityPlanViewBox,
   getFacilityLayout,
+  planHeight,
+  planWidth,
+  type FacilityArea,
+  type PlanPoint,
 } from "./facility-layouts";
 import FacilityPlan from "./facility-plan";
+import {
+  ChargingStationSymbol,
+  PeerDot,
+  PeerDots,
+  SelectedRobotMarker,
+  selectedMarkerSizePx,
+} from "./map-symbols";
 
-const markerColumns = 4;
-const markerSpacing = 16;
-const markerLimit = 12;
+// Below this width an area has room for its name only, so who is where moves
+// to a list under the plan.
+const narrowPlanWidthPx = 480;
+const onNarrowPlan = `@container (max-width: ${narrowPlanWidthPx - 1}px)`;
 
-const planMinWidthPx = 400;
-const planMaxHeightPx = 640;
-const sidebarWidthPx = 288;
-
-const unknownArea = "Area unknown";
-const unknownZone = { name: unknownArea, label: unknownArea, x: 62, y: 468 };
-
+/** Where the robot is at its site, among the site's other robots. */
 export default function LocationMap({
   robot,
   peers,
@@ -37,329 +41,238 @@ export default function LocationMap({
   evaluatedAt: number;
   unverified: boolean;
 }) {
-  const theme = useTheme();
-  const palette = (theme.vars ?? theme).palette;
-
   const layout = getFacilityLayout(robot.site);
-  const zones = facilityAreas.map((area) => {
-    const [x, y] = layout.zoneAnchors[area.name];
-    return { ...area, x, y };
-  });
+  const robotArea = planArea(robot.area);
+  // The robot may have moved since the report that placed it.
+  const isLastKnown =
+    unverified ||
+    isStale(connectionStatus(robot.lastReceivedAt, evaluatedAt)) ||
+    robot.problemCode === "position-lost";
 
-  const selectedArea = areaName(robot.area);
-  const stale =
-    unverified || isStale(connectionStatus(robot.lastReceivedAt, evaluatedAt));
-  const groups = [...zones, unknownZone].map((zone) => ({
-    ...zone,
-    peers: peers
-      .filter(
-        (peer) => peer.id !== robot.id && areaName(peer.area) === zone.name,
-      )
-      .sort((a, b) => a.id.localeCompare(b.id)),
+  const others = peers.filter((peer) => peer.id !== robot.id);
+  const otherCountIn = (area: FacilityArea | undefined) =>
+    others.filter((peer) => planArea(peer.area) === area).length;
+  const areas = facilityAreas.map((area) => ({
+    ...area,
+    anchor: layout.labelAnchors[area.name],
+    hasRobot: robotArea === area.name,
+    otherCount: otherCountIn(area.name),
   }));
+  const occupiedAreas = areas.filter(
+    (area) => area.hasRobot || area.otherCount > 0,
+  );
+  const otherCountOffPlan = otherCountIn(undefined);
 
   return (
-    <Paper
-      component="section"
-      aria-label="Location"
-      variant="outlined"
-      sx={{
-        p: 3,
-        display: "grid",
-        gridTemplateColumns: {
-          xs: "minmax(0, 1fr)",
-          lg: `minmax(0, 1fr) ${sidebarWidthPx}px`,
-        },
-        columnGap: 3,
-        alignItems: "start",
-      }}
-    >
-      <Box sx={{ gridColumn: "1 / -1", mb: 2, overflowWrap: "anywhere" }}>
-        <Typography variant="h6" component="h2">
-          {robot.site} · Location
+    <Stack spacing={1.5} sx={{ containerType: "inline-size" }}>
+      <Box>
+        <Typography
+          variant="h6"
+          component="h2"
+          sx={{ overflowWrap: "anywhere" }}
+        >
+          {robot.site}
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-          {stale ? "Last reported area" : "Reported area"}:{" "}
-          {robot.area ?? "Unknown"}
-        </Typography>
+        {layout.details && (
+          <Typography color="textSecondary" sx={{ mt: 0.5 }}>
+            {layout.details.type} · {layout.details.floorArea}
+          </Typography>
+        )}
       </Box>
-      <Box
-        role="group"
-        aria-label="Facility floor plan"
-        tabIndex={0}
-        sx={{ containerType: "inline-size", overflowX: "auto" }}
-      >
+      <Box sx={{ position: "relative" }}>
         <Box
           component="svg"
-          viewBox={facilityPlanViewBox}
+          viewBox={`0 0 ${planWidth} ${planHeight}`}
           aria-hidden="true"
-          sx={{
-            display: "block",
-            width: "100%",
-            minWidth: planMinWidthPx,
-            height: "auto",
-            maxHeight: planMaxHeightPx,
-          }}
+          sx={{ display: "block", width: "100%", height: "auto" }}
         >
           <FacilityPlan layout={layout} />
-          {groups.map((zone) => {
-            const isSelected = zone.name === selectedArea;
-            const isUnknown = zone.name === unknownArea;
-
-            if (isUnknown && !isSelected && zone.peers.length === 0) {
-              return null;
-            }
-
-            return (
-              <g key={zone.name} transform={`translate(${zone.x} ${zone.y})`}>
-                {isUnknown && (
-                  <rect
-                    x="-30"
-                    y="-38"
-                    width="312"
-                    height="108"
-                    rx="6"
-                    fill={palette.action.hover}
-                    stroke={palette.text.disabled}
-                    strokeDasharray="5 5"
-                  />
-                )}
-                <Box
-                  component="text"
-                  fill={palette.text.primary}
-                  sx={{
-                    fontSize: 34,
-                    fontWeight: 600,
-                    "@container (min-width: 600px)": { fontSize: 26 },
-                    "@container (min-width: 900px)": { fontSize: 22 },
-                  }}
-                >
-                  {zone.label}
-                </Box>
-                {isSelected && (
-                  <g
-                    transform="translate(19 44)"
-                    fill={palette.primary.main}
-                    opacity={stale ? 0.5 : 1}
-                  >
-                    <circle r="19" opacity={0.12} />
-                    <circle
-                      r="10"
-                      fill={palette.background.paper}
-                      stroke={palette.primary.main}
-                      strokeWidth="2.5"
-                    />
-                    <circle r="4" />
-                  </g>
-                )}
-                <g fill={palette.text.secondary}>
-                  {zone.peers.slice(0, markerLimit).map((peer, index) => (
-                    <circle
-                      key={peer.id}
-                      cx={64 + (index % markerColumns) * markerSpacing}
-                      cy={
-                        28 + Math.floor(index / markerColumns) * markerSpacing
-                      }
-                      r="5"
-                      opacity={
-                        unverified ||
-                        connectionStatus(peer.lastReceivedAt, evaluatedAt) !==
-                          "online"
-                          ? 0.35
-                          : 0.8
-                      }
-                    />
-                  ))}
-                  {zone.peers.length > markerLimit && (
-                    <Box
-                      component="text"
-                      x="136"
-                      y="44"
-                      dominantBaseline="central"
-                      sx={{
-                        fontSize: 26,
-                        "@container (min-width: 600px)": { fontSize: 18 },
-                        "@container (min-width: 900px)": { fontSize: 16 },
-                      }}
-                    >
-                      +{zone.peers.length - markerLimit}
-                    </Box>
-                  )}
-                </g>
-              </g>
-            );
-          })}
         </Box>
-      </Box>
-      <Box component="ul" sx={visuallyHidden}>
-        {groups
-          .filter((zone) => zone.peers.length > 0)
-          .map((zone) => (
-            <li key={zone.name}>
-              {zone.name}: {zone.peers.length} other{" "}
-              {zone.peers.length === 1 ? "robot" : "robots"}
-            </li>
-          ))}
+        {areas.map((area) => (
+          <AreaLabel
+            key={area.name}
+            label={area.label}
+            anchor={area.anchor}
+            hasRobot={area.hasRobot}
+            isLastKnown={isLastKnown}
+            otherCount={area.otherCount}
+          />
+        ))}
       </Box>
       <Box
+        component="ul"
         sx={{
-          display: "grid",
-          gridTemplateColumns: {
-            xs: "repeat(2, minmax(0, 1fr))",
-            lg: "minmax(0, 1fr)",
-          },
-          gap: { xs: 2, sm: 3, lg: 5 },
-          alignSelf: { lg: "stretch" },
-          alignContent: "start",
-          alignItems: "start",
-          mt: { xs: 2, lg: 0 },
-          pt: { xs: 3, lg: 0 },
-          pl: { lg: 3 },
-          borderWidth: { xs: "1px 0 0", lg: "0 0 0 1px" },
-          borderStyle: "solid",
-          borderColor: "divider",
+          display: "none",
+          m: 0,
+          p: 0,
+          listStyle: "none",
+          [onNarrowPlan]: { display: "block" },
         }}
       >
-        <Box>
+        {occupiedAreas.map((area) => (
           <Typography
-            component="h3"
-            variant="subtitle2"
-            sx={{ mb: { xs: 2, lg: 2.5 } }}
+            key={area.name}
+            component="li"
+            variant="body2"
+            color="textSecondary"
           >
-            Facility details
+            {area.label}: {describeOccupants(area.hasRobot, area.otherCount)}
           </Typography>
-          <Box
-            component="dl"
-            sx={{
-              m: 0,
-              display: "grid",
-              gridTemplateColumns: {
-                xs: "minmax(0, 1fr)",
-                sm: "max-content minmax(0, 1fr)",
-              },
-              columnGap: 1.5,
-              rowGap: { xs: 0.5, sm: 1.5, lg: 2 },
-              "& dd:not(:last-child)": { mb: { xs: 1, sm: 0 } },
-            }}
-          >
-            <Typography component="dt" variant="body2" color="text.secondary">
-              Type
-            </Typography>
-            <Typography component="dd" variant="subtitle2" sx={{ m: 0 }}>
-              {layout.type}
-            </Typography>
-            <Typography component="dt" variant="body2" color="text.secondary">
-              Floor area
-            </Typography>
-            <Typography component="dd" variant="subtitle2" sx={{ m: 0 }}>
-              {layout.floorArea}
-            </Typography>
-            <Typography component="dt" variant="body2" color="text.secondary">
-              Charging bays
-            </Typography>
-            <Typography component="dd" variant="subtitle2" sx={{ m: 0 }}>
-              {layout.chargingBays.length}
-            </Typography>
-          </Box>
-        </Box>
-        <Box
-          role="group"
-          aria-label="Map legend"
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            gap: { xs: 2, lg: 2.5 },
-            alignItems: "flex-start",
-          }}
-        >
-          <Typography component="h3" variant="subtitle2">
-            Map legend
-          </Typography>
-          <Stack
-            direction="row"
-            spacing={1.5}
-            sx={{ alignItems: "center", minWidth: 0 }}
-          >
-            <Box
-              component="svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-              sx={{ color: "primary.main", flexShrink: 0 }}
-            >
-              <circle
-                cx="12"
-                cy="12"
-                r="9"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              />
-              <circle cx="12" cy="12" r="4" fill="currentColor" />
-            </Box>
-            <Box sx={{ minWidth: 0 }}>
-              <Typography variant="body2" color="text.secondary">
-                Selected robot
-              </Typography>
-              <Typography
-                variant="subtitle2"
-                component="p"
-                sx={{ overflowWrap: "anywhere" }}
-              >
-                {robot.name}
-              </Typography>
-            </Box>
-          </Stack>
-          <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-            <Box
-              component="svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-              sx={{ color: "text.secondary", flexShrink: 0 }}
-            >
-              <circle cx="12" cy="12" r="4" fill="currentColor" />
-            </Box>
-            <Typography variant="body2">Other robots</Typography>
-          </Stack>
-          <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-            <Box
-              component="svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-              sx={{ color: "info.main", flexShrink: 0 }}
-            >
-              <rect
-                x="5"
-                y="2"
-                width="14"
-                height="20"
-                rx="2"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              />
-              <path
-                d="M13 5l-5 8h8l-5 7"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              />
-            </Box>
-            <Typography variant="body2">Charging stations</Typography>
-          </Stack>
-        </Box>
+        ))}
       </Box>
-    </Paper>
+      {(robotArea === undefined || otherCountOffPlan > 0) && (
+        <Typography variant="body2" color="textSecondary">
+          Area unknown:{" "}
+          {describeOccupants(robotArea === undefined, otherCountOffPlan)}
+        </Typography>
+      )}
+      <MapLegend isLastKnown={isLastKnown} />
+    </Stack>
   );
 }
 
-function areaName(area: string | null) {
+/** An area's name and who is in it, placed over the area on the plan. */
+function AreaLabel({
+  label,
+  anchor: [x, y],
+  hasRobot,
+  isLastKnown,
+  otherCount,
+}: {
+  label: string;
+  anchor: PlanPoint;
+  hasRobot: boolean;
+  isLastKnown: boolean;
+  otherCount: number;
+}) {
   return (
-    facilityAreas.find((option) => option.name === area)?.name ?? unknownArea
+    <Box
+      sx={{
+        position: "absolute",
+        left: `${(x / planWidth) * 100}%`,
+        top: `${(y / planHeight) * 100}%`,
+      }}
+    >
+      <Typography
+        variant="subtitle2"
+        component="p"
+        sx={{
+          whiteSpace: "nowrap",
+          // Smaller, with the name's weight.
+          [onNarrowPlan]: { typography: "caption", fontWeight: 500 },
+        }}
+      >
+        {label}
+      </Typography>
+      <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
+        {hasRobot && (
+          <SelectedRobotMarker
+            isLastKnown={isLastKnown}
+            label={
+              isLastKnown ? "This robot, last reported here" : "This robot"
+            }
+          />
+        )}
+        {otherCount > 0 && (
+          // The list under a narrow plan says this instead.
+          <Stack
+            direction="row"
+            spacing={0.75}
+            sx={{ alignItems: "center", [onNarrowPlan]: { display: "none" } }}
+          >
+            <PeerDots count={otherCount} />
+            <Typography
+              variant="caption"
+              color="textSecondary"
+              sx={{ whiteSpace: "nowrap" }}
+            >
+              {formatOtherRobots(otherCount)}
+            </Typography>
+          </Stack>
+        )}
+      </Stack>
+    </Box>
   );
+}
+
+function MapLegend({ isLastKnown }: { isLastKnown: boolean }) {
+  return (
+    <Stack
+      component="ul"
+      aria-label="Map legend"
+      direction="row"
+      useFlexGap
+      sx={{
+        m: 0,
+        p: 0,
+        listStyle: "none",
+        flexWrap: "wrap",
+        alignItems: "center",
+        columnGap: 3,
+        rowGap: 1,
+      }}
+    >
+      <LegendItem symbol={<SelectedRobotMarker isLastKnown={isLastKnown} />}>
+        {isLastKnown ? "This robot, last reported area" : "This robot"}
+      </LegendItem>
+      {/* A narrow plan has no dots; the list under it counts robots instead. */}
+      <LegendItem
+        symbol={<PeerDot />}
+        sx={{ [onNarrowPlan]: { display: "none" } }}
+      >
+        Other robots
+      </LegendItem>
+      <LegendItem symbol={<ChargingStationSymbol />}>
+        Charging station
+      </LegendItem>
+    </Stack>
+  );
+}
+
+function LegendItem({
+  symbol,
+  sx,
+  children,
+}: {
+  symbol: ReactNode;
+  sx?: SxProps<Theme>;
+  children: ReactNode;
+}) {
+  return (
+    <Box component="li" sx={sx}>
+      <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            // The widest symbol, so the legend texts line up.
+            width: selectedMarkerSizePx,
+          }}
+        >
+          {symbol}
+        </Box>
+        <Typography variant="body2" color="textSecondary">
+          {children}
+        </Typography>
+      </Stack>
+    </Box>
+  );
+}
+
+/** The plan's area for a reported one; undefined when it is not on the plan. */
+function planArea(area: string | null): FacilityArea | undefined {
+  return facilityAreas.find((option) => option.name === area)?.name;
+}
+
+function formatOtherRobots(count: number) {
+  return `${count} other ${count === 1 ? "robot" : "robots"}`;
+}
+
+function describeOccupants(hasRobot: boolean, otherCount: number) {
+  return [
+    hasRobot && "this robot",
+    otherCount > 0 && formatOtherRobots(otherCount),
+  ]
+    .filter(Boolean)
+    .join(", ");
 }

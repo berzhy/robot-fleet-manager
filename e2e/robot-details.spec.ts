@@ -63,9 +63,11 @@ test("detail context and controls follow reported telemetry", async ({
       .getByRole("navigation", { name: "Main navigation" })
       .getByRole("link", { name: "Robots", exact: true }),
   ).toHaveAttribute("aria-current", "page");
-  await expect(page.getByRole("region", { name: "Location" })).toContainText(
-    "Lobby: 3 other robots",
-  );
+  const location = page.getByRole("tabpanel", { name: "Location" });
+  await expect(location.getByRole("img", { name: "This robot" })).toBeVisible();
+  await expect(
+    location.getByText("3 other robots", { exact: true }),
+  ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Stop activity", exact: true }),
   ).toHaveAttribute("aria-disabled", "false");
@@ -80,7 +82,6 @@ test("detail context and controls follow reported telemetry", async ({
     await route.continue();
   });
 
-  const location = page.getByRole("region", { name: "Location" });
   await report("working", 0);
   await page
     .getByRole("button", { name: "Stop activity", exact: true })
@@ -110,9 +111,9 @@ test("detail context and controls follow reported telemetry", async ({
     page.getByRole("button", { name: "Stop activity", exact: true }),
   ).toHaveCount(0);
 
-  const mapTab = page.getByRole("tab", { name: "Map" });
+  const locationTab = page.getByRole("tab", { name: "Location" });
   const logsTab = page.getByRole("tab", { name: "Logs" });
-  await mapTab.focus();
+  await locationTab.focus();
   await page.keyboard.press("ArrowRight");
   await expect(logsTab).toBeFocused();
   await page.keyboard.press("Enter");
