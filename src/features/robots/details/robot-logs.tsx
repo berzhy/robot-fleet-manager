@@ -33,7 +33,7 @@ export default function RobotLogs({ robot }: { robot: Robot }) {
             sx={(theme) =>
               entry.level === "WARN"
                 ? theme.applyStyles("light", {
-                    color: theme.vars?.palette.Alert.warningColor,
+                    color: theme.vars.palette.Alert.warningColor,
                   })
                 : {}
             }

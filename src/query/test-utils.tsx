@@ -13,6 +13,7 @@ import type { ReactNode } from "react";
 import { afterEach } from "vitest";
 
 import { NotificationProvider } from "@/shared/notifications/notification-provider";
+import AppThemeProvider from "@/theme/theme-provider";
 
 import { createQueryClient } from "./query-client";
 
@@ -38,11 +39,14 @@ function createWrapper(queryData: QueryData = []) {
     client.setQueryData(key, data);
   }
 
+  // The app's theme, so components read the same theme variables as in production.
   return function Wrapper({ children }: { children: ReactNode }) {
     return (
-      <QueryClientProvider client={client}>
-        <NotificationProvider>{children}</NotificationProvider>
-      </QueryClientProvider>
+      <AppThemeProvider>
+        <QueryClientProvider client={client}>
+          <NotificationProvider>{children}</NotificationProvider>
+        </QueryClientProvider>
+      </AppThemeProvider>
     );
   };
 }

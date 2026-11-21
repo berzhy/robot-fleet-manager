@@ -22,7 +22,6 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  document.documentElement.classList.remove("light", "dark");
   vi.unstubAllGlobals();
 });
 

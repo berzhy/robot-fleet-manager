@@ -43,4 +43,6 @@ vi.mock("next/navigation", async (importOriginal) => ({
 afterEach(() => {
   cleanup();
   window.history.replaceState(null, "", "/");
+  // The theme marks <html> with its scheme, which outlives the rendered tree.
+  document.documentElement.classList.remove("light", "dark");
 });

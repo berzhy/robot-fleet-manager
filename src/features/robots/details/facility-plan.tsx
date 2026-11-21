@@ -3,8 +3,7 @@ import { useTheme } from "@mui/material/styles";
 import type { FacilityLayout } from "./facility-layouts";
 
 export default function FacilityPlan({ layout }: { layout: FacilityLayout }) {
-  const theme = useTheme();
-  const palette = (theme.vars ?? theme).palette;
+  const { palette } = useTheme().vars;
 
   return (
     <g>

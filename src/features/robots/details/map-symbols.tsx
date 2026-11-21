@@ -25,8 +25,7 @@ export function SelectedRobotMarker({
   /** Names the marker for screen readers; leave it out next to visible text. */
   label?: string;
 }) {
-  const theme = useTheme();
-  const palette = (theme.vars ?? theme).palette;
+  const { palette } = useTheme().vars;
 
   return (
     <Box

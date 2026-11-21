@@ -1,5 +1,7 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { expect, test } from "vitest";
+
+import { render } from "@/query/test-utils";
 
 import RobotNotFound from "./not-found";
 

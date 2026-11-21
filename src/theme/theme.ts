@@ -3,6 +3,8 @@
 import { grey } from "@mui/material/colors";
 import { createTheme } from "@mui/material/styles";
 import { tabClasses } from "@mui/material/Tab";
+// Types `theme.vars` as always present: this app always uses CSS variables.
+import type {} from "@mui/material/themeCssVarsAugmentation";
 
 const theme = createTheme({
   cssVariables: {

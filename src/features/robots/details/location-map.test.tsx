@@ -1,7 +1,8 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { expect, test } from "vitest";
 
 import type { Robot } from "@/modules/robots/robot";
+import { render } from "@/query/test-utils";
 
 import LocationMap from "./location-map";
 
