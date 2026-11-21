@@ -6,6 +6,7 @@ import Typography from "@mui/material/Typography";
 import Image from "next/image";
 
 import fleetEmpty from "@/assets/fleet-empty.png";
+import { brandArtworkSx } from "@/theme/brand-artwork";
 
 export default function RobotTableEmptyState({
   onAdd,
@@ -38,9 +39,8 @@ export default function RobotTableEmptyState({
             maxWidth: "100%",
             height: "auto",
             objectFit: "contain",
-            filter: "brightness(0.8)",
           },
-          (theme) => theme.applyStyles("dark", { filter: "brightness(1.6)" }),
+          ...brandArtworkSx,
         ]}
       />
       <Typography data-testid="fleet-empty" role="status">

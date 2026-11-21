@@ -6,6 +6,10 @@ import { tabClasses } from "@mui/material/Tab";
 // Types `theme.vars` as always present: this app always uses CSS variables.
 import type {} from "@mui/material/themeCssVarsAugmentation";
 
+// Font stacks over the CSS variables next/font sets in the root layout.
+const sansFontFamily = "var(--font-geist-sans), Arial, sans-serif";
+export const monospaceFontFamily = "var(--font-geist-mono), monospace";
+
 const theme = createTheme({
   // The scheme is a class on <html>, so the toggle can override the system
   // setting. CSS variables switch it without re-rendering, and
@@ -35,8 +39,7 @@ const theme = createTheme({
   // A softer corner than MUI's 4px, shared by cards, tiles and buttons.
   shape: { borderRadius: 8 },
   typography: {
-    // The app font, loaded by next/font in the root layout.
-    fontFamily: "var(--font-geist-sans), Arial, sans-serif",
+    fontFamily: sansFontFamily,
     // Page titles anchor the page; MUI's h4 weight is 400.
     h4: { fontWeight: 600 },
     // Sentence case reads better than MUI's uppercase labels.

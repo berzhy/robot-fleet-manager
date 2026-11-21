@@ -2,6 +2,7 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 
 import type { Robot } from "@/modules/robots/robot";
+import { monospaceFontFamily } from "@/theme/theme";
 
 import { robotLogFixture } from "./robot-log-fixture";
 
@@ -13,7 +14,7 @@ export default function RobotLogs({ robot }: { robot: Robot }) {
       sx={{
         m: 0,
         minHeight: 320,
-        fontFamily: "var(--font-geist-mono), monospace",
+        fontFamily: monospaceFontFamily,
         lineHeight: 1.8,
         whiteSpace: "pre-wrap",
         overflowWrap: "anywhere",

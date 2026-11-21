@@ -5,6 +5,7 @@ import Image from "next/image";
 import NextLink from "next/link";
 
 import fleetLogo from "@/assets/fleet-orchestrator-logo.png";
+import { brandArtworkSx } from "@/theme/brand-artwork";
 
 export default function AppBrand({ onNavigate }: { onNavigate?: () => void }) {
   return (
@@ -22,10 +23,7 @@ export default function AppBrand({ onNavigate }: { onNavigate?: () => void }) {
           width={48}
           height={48}
           priority
-          sx={[
-            { display: "block", filter: "brightness(0.8)" },
-            (theme) => theme.applyStyles("dark", { filter: "brightness(1.6)" }),
-          ]}
+          sx={[{ display: "block" }, ...brandArtworkSx]}
         />
       </Link>
     </Tooltip>

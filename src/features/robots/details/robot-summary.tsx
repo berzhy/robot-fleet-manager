@@ -23,6 +23,7 @@ import {
 import { robotProblemDetails } from "@/modules/robots/robot-problems";
 import { connectionStatus, isStale } from "@/modules/telemetry/freshness";
 import { useNotifications } from "@/shared/notifications/notification-provider";
+import { monospaceFontFamily } from "@/theme/theme";
 
 import ConnectionStatus from "../connection-status/connection-status";
 import TimeAgo from "../time-ago/time-ago";
@@ -286,7 +287,7 @@ function Facts({ robot, evaluatedAt }: { robot: Robot; evaluatedAt: number }) {
             sx={{
               minWidth: 0,
               overflowWrap: "anywhere",
-              fontFamily: "var(--font-geist-mono), monospace",
+              fontFamily: monospaceFontFamily,
             }}
           >
             {robot.id}
