@@ -9,7 +9,7 @@ import type { Robot } from "@/modules/robots/robot";
 import { actionLabels, type RobotAction } from "@/modules/robots/robot-actions";
 
 import { actionIcons } from "../robot-action-icons";
-import { commandUnavailable } from "../use-robot-command";
+import { commandUnavailable, isActionQueued } from "../use-robot-command";
 
 const tileSizePx = 120;
 const tileIconSizePx = 32;
@@ -34,6 +34,8 @@ export default function ActivityControls({
   onAction: (action: RobotAction) => void;
 }) {
   const activity = activityAction(robot);
+  const isActivityQueued = isActionQueued(robot, activity, evaluatedAt);
+  const isReturnQueued = isActionQueued(robot, "return-to-base", evaluatedAt);
 
   function reason(action: RobotAction) {
     if (pendingAction) {
@@ -50,7 +52,7 @@ export default function ActivityControls({
     <Box
       role="group"
       aria-label="Activity controls"
-      aria-busy={pending}
+      aria-busy={pending || isActivityQueued || isReturnQueued}
       sx={{
         display: "grid",
         gridAutoFlow: { xs: "column", lg: "row" },
@@ -62,15 +64,16 @@ export default function ActivityControls({
       <ActionTile
         action={activity}
         reason={reason(activity)}
-        isSending={
-          pendingAction !== undefined && pendingAction !== "return-to-base"
+        isInProgress={
+          (pendingAction !== undefined && pendingAction !== "return-to-base") ||
+          isActivityQueued
         }
         onAction={onAction}
       />
       <ActionTile
         action="return-to-base"
         reason={reason("return-to-base")}
-        isSending={pendingAction === "return-to-base"}
+        isInProgress={pendingAction === "return-to-base" || isReturnQueued}
         onAction={onAction}
       />
     </Box>
@@ -96,12 +99,13 @@ function activityAction(robot: Robot): RobotAction {
 function ActionTile({
   action,
   reason,
-  isSending,
+  isInProgress,
   onAction,
 }: {
   action: RobotAction;
   reason: string | null;
-  isSending: boolean;
+  /** Its command is being sent, or is queued until the robot applies it. */
+  isInProgress: boolean;
   onAction: (action: RobotAction) => void;
 }) {
   const reasonId = useId();
@@ -132,7 +136,7 @@ function ActionTile({
             }
           }}
         >
-          {isSending ? (
+          {isInProgress ? (
             <CircularProgress
               size={tileIconSizePx}
               color="inherit"

@@ -1,4 +1,4 @@
-import { lowBatteryPercent, type Robot } from "./robot";
+import { lowBatteryPercent, type ControlTarget, type Robot } from "./robot";
 import { connectionStatus } from "../telemetry/freshness";
 
 export const robotActions = [
@@ -15,6 +15,14 @@ export const actionLabels: Record<RobotAction, string> = {
   stop: "Stop activity",
   "return-to-base": "Return to base",
   retry: "Retry activity",
+};
+
+/** What the robot is told to do when an action is requested. */
+export const actionControlTargets: Record<RobotAction, ControlTarget> = {
+  start: "work",
+  retry: "work",
+  stop: "stop",
+  "return-to-base": "base",
 };
 
 /**

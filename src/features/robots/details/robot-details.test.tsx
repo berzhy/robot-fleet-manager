@@ -30,6 +30,7 @@ const robot: Robot = {
   activity: "charging",
   batteryPercent: null,
   lastTelemetryAt: null,
+  queuedControlTarget: null,
   lastReceivedAt: null,
   createdAt: "2026-11-14T12:00:00.000Z",
 };
@@ -275,6 +276,43 @@ test("an unavailable control says why on hover or focus, not on the card", async
   expect(await screen.findByRole("tooltip")).toHaveTextContent(
     "Robot isn't connected",
   );
+});
+
+test.each([
+  ["work", "idle", "Start activity"],
+  ["stop", "working", "Stop activity"],
+  ["base", "working", "Return to base"],
+] as const)(
+  "a queued %s command spins on its slot until the robot applies it, leaving the other free",
+  (queuedControlTarget, activity, spinning) => {
+    renderControls({ activity, area: "Lobby", queuedControlTarget });
+
+    const spinners = screen.getAllByRole("progressbar", { hidden: true });
+    expect(spinners).toHaveLength(1);
+    const queued = screen.getByRole("button", { name: spinning });
+    expect(queued).toContainElement(spinners[0]);
+    expect(queued).toHaveAttribute("aria-disabled", "true");
+    expect(queued).toHaveAccessibleDescription("Waiting for the robot…");
+    const other = screen
+      .getAllByRole("button")
+      .find((button) => button !== queued);
+    expect(other).toHaveAttribute("aria-disabled", "false");
+  },
+);
+
+test("a command a disconnected robot has yet to apply shows the connection instead", () => {
+  renderControls({
+    activity: "idle",
+    queuedControlTarget: "work",
+    lastReceivedAt: null,
+  });
+
+  expect(
+    screen.queryByRole("progressbar", { hidden: true }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Start activity" }),
+  ).toHaveAccessibleDescription("Robot isn't connected");
 });
 
 test.each([

@@ -21,6 +21,7 @@ const robot: RegistryRobot = {
   site: "Munich",
   createdAt: "2026-01-01T00:00:00.000Z",
   lastTelemetryAt: null,
+  queuedControlTarget: null,
   lastReceivedAt: null,
   batteryPercent: null,
   area: null,

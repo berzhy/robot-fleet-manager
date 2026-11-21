@@ -2,6 +2,7 @@ import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 import { robotProblemCodes } from "@/modules/robots/robot-problems";
 import {
+  controlTargets,
   robotTypes,
   integrationTypes,
   type RobotActivity,
@@ -18,7 +19,7 @@ export const robots = sqliteTable("robots", {
   }).notNull(),
   site: text("site").notNull(),
   createdAt: text("created_at").notNull(),
-  controlTarget: text("control_target", { enum: ["work", "stop", "base"] })
+  controlTarget: text("control_target", { enum: controlTargets })
     .notNull()
     .default("work"),
   controlRevision: integer("control_revision").notNull().default(0),

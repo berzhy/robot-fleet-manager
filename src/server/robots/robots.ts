@@ -42,6 +42,9 @@ const selection = {
   batteryPercent: latestTelemetry.batteryPercent,
   lastReceivedAt: latestTelemetry.receivedAt,
   lastTelemetryAt: latestTelemetry.observedAt,
+  queuedControlTarget: sql<
+    Robot["queuedControlTarget"]
+  >`case when ${robots.controlRevision} > coalesce(${latestTelemetry.appliedControlRevision}, 0) then ${robots.controlTarget} end`,
 };
 
 const registrySelection = {
@@ -183,6 +186,7 @@ export function createRobots(
       batteryPercent: null,
       lastTelemetryAt: null,
       lastReceivedAt: null,
+      queuedControlTarget: null,
     }));
   });
 }

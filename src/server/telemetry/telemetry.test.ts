@@ -78,6 +78,7 @@ test("ingestion persists latest telemetry and receipt times in list, registry an
   expect(robot).toMatchObject({
     batteryPercent: 50,
     lastTelemetryAt: observedAt,
+    queuedControlTarget: null,
   });
   expect(Date.parse(robot.lastReceivedAt!)).toBeGreaterThan(
     Date.parse(observedAt),
@@ -128,9 +129,13 @@ test("older, duplicate, unknown and deleted reports do not replace data or recei
 });
 
 test("invalid batches and future timestamps write nothing", async () => {
+  const unacknowledged: Partial<ReturnType<typeof report>> = report();
+  delete unacknowledged.appliedControlRevision;
   for (const reports of [
     [],
     [report(), report()],
+    // Without it, a sent command would look queued for as long as the robot reports.
+    [unacknowledged],
     [report(), { ...report(), robotId: "other", batteryPercent: -1 }],
     [{ ...report(), observedAt: "2999-01-01T00:00:00Z" }],
     Array.from({ length: 101 }, (_, index) => ({

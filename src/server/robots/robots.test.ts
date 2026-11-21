@@ -67,6 +67,7 @@ test("created metadata persists after reopening with unknown telemetry", () => {
     area: null,
     batteryPercent: null,
     lastTelemetryAt: null,
+    queuedControlTarget: null,
     lastReceivedAt: null,
   });
   expect(Number.isNaN(Date.parse(robot.createdAt))).toBe(false);
@@ -142,6 +143,7 @@ test("deletion cascades only the selected robot's telemetry", () => {
     batteryPercent: 42,
     area: "Lobby",
     lastTelemetryAt: observedAt,
+    queuedControlTarget: null,
   });
 
   expect(deleteRobot(db, first.id)).toBe(true);
@@ -389,7 +391,7 @@ test("fresh schema rejects missing and unsupported integrations outside the API"
   expect(listRobots(db, 0).total).toBe(0);
 });
 
-test("actions validate current state, persist latest intent, and leave observations untouched", async () => {
+test("actions validate current state, persist latest intent, and stay queued until applied", async () => {
   const { requestRobotAction } = await import("./robot-actions");
   const robot = createRobot(db, input);
   const action = (value: unknown, id = robot.id) =>
@@ -425,13 +427,22 @@ test("actions validate current state, persist latest intent, and leave observati
     controlTarget: "stop",
     controlRevision: 1,
     appliedControlRevision: 0,
+    queuedControlTarget: "stop",
   });
 
   expect((await action({ action: "return-to-base" })).status).toBe(202);
   expect(registryEntry(robot.id)).toMatchObject({
     controlTarget: "base",
     controlRevision: 2,
+    queuedControlTarget: "base",
   });
+
+  db.$client
+    .prepare(
+      "UPDATE latest_telemetry SET applied_control_revision = 2 WHERE robot_id = ?",
+    )
+    .run(robot.id);
+  expect(registryEntry(robot.id)?.queuedControlTarget).toBeNull();
 
   db.$client
     .prepare("UPDATE latest_telemetry SET received_at = ? WHERE robot_id = ?")

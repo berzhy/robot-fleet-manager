@@ -136,11 +136,14 @@ test("detail context and controls follow reported telemetry", async ({
   await expect(illustration).not.toHaveJSProperty("naturalWidth", 0);
 
   await page.setViewportSize({ width: 390, height: 844 });
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= window.innerWidth,
-    ),
-  ).toBe(true);
+  // Polled: a tooltip still fading out sits where it was before the resize.
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    )
+    .toBe(true);
 
   await logsTab.click();
   await expect(logs).toBeVisible();

@@ -29,6 +29,7 @@ const robot: Robot = {
   activity: "unknown",
   batteryPercent: null,
   lastTelemetryAt: null,
+  queuedControlTarget: null,
   lastReceivedAt: null,
   createdAt: "2026-11-14T12:00:00.000Z",
 };

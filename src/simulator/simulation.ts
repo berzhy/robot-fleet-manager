@@ -1,15 +1,13 @@
 import { robotProblemCodes } from "@/modules/robots/robot-problems";
-import type { RegistryRobot } from "@/modules/robots/robot";
+import type { ControlTarget, RegistryRobot } from "@/modules/robots/robot";
 import type { TelemetryReport } from "@/modules/telemetry/telemetry";
-
-type Target = RegistryRobot["controlTarget"];
 
 export type SimulatedRobot = {
   battery: number;
   problemCode: RegistryRobot["problemCode"];
   activity: RegistryRobot["activity"];
   area: string;
-  target: Target;
+  target: ControlTarget;
   appliedRevision: number;
   remaining: number;
   workingSeconds: number;

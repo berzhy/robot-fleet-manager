@@ -2,10 +2,12 @@
 
 import type { Robot } from "@/modules/robots/robot";
 import {
+  actionControlTargets,
   actionLabels,
   actionUnavailable,
   type RobotAction,
 } from "@/modules/robots/robot-actions";
+import { connectionStatus } from "@/modules/telemetry/freshness";
 import { useNotifications } from "@/shared/notifications/notification-provider";
 
 import { ApiError, isRequestTimeout } from "./api/robot-api";
@@ -13,7 +15,8 @@ import { useRobotWriteLock, useSendRobotAction } from "./api/robot-mutations";
 
 /**
  * Why a screen cannot offer an action now. Data that may be out of date
- * blocks every action before the robot's own state is considered.
+ * blocks every action before the robot's own state is considered. A queued
+ * action blocks only itself, so another command can always replace it.
  */
 export function commandUnavailable(
   robot: Robot,
@@ -21,9 +24,29 @@ export function commandUnavailable(
   evaluatedAt: number,
   unverified: boolean,
 ) {
-  return unverified
-    ? "Waiting for live updates"
-    : actionUnavailable(robot, action, evaluatedAt);
+  if (unverified) {
+    return "Waiting for live updates";
+  }
+  if (isActionQueued(robot, action, evaluatedAt)) {
+    return "Waiting for the robot…";
+  }
+  return actionUnavailable(robot, action, evaluatedAt);
+}
+
+/**
+ * Whether this action was sent and a connected robot has yet to apply it, so
+ * the reported activity is from before it. A disconnected robot may never
+ * apply it, so its connection is the reason to show instead.
+ */
+export function isActionQueued(
+  robot: Robot,
+  action: RobotAction,
+  evaluatedAt: number,
+) {
+  return (
+    robot.queuedControlTarget === actionControlTargets[action] &&
+    connectionStatus(robot.lastReceivedAt, evaluatedAt) === "online"
+  );
 }
 
 /** Sends a robot action from any screen and reports the outcome as a notification. */

@@ -27,6 +27,10 @@ export const robotActivities = [
 ] as const;
 export type RobotActivity = (typeof robotActivities)[number];
 
+/** What the robot's latest command asks of it. */
+export const controlTargets = ["work", "stop", "base"] as const;
+export type ControlTarget = (typeof controlTargets)[number];
+
 export type Robot = {
   id: string;
   name: string;
@@ -41,6 +45,8 @@ export type Robot = {
   batteryPercent: number | null;
   lastTelemetryAt: string | null;
   lastReceivedAt: string | null;
+  /** The latest command's target until the robot reports applying it, else `null`. */
+  queuedControlTarget: ControlTarget | null;
 };
 
 /**
@@ -48,7 +54,7 @@ export type Robot = {
  * command (target and revision) and the revision the robot last applied.
  */
 export type RegistryRobot = Robot & {
-  controlTarget: "work" | "stop" | "base";
+  controlTarget: ControlTarget;
   controlRevision: number;
   appliedControlRevision: number;
 };

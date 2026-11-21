@@ -11,7 +11,7 @@ export const telemetryBatchSchema = z
             robotId: z.string().trim().min(1).max(100),
             activity: z.enum(robotActivities),
             problemCode: z.enum(robotProblemCodes).nullable().default(null),
-            appliedControlRevision: z.number().int().nonnegative().default(0),
+            appliedControlRevision: z.number().int().nonnegative(),
             batteryPercent: z.number().min(0).max(100),
             area: z.string().trim().min(1).max(100).nullable(),
             observedAt: z.iso

@@ -127,6 +127,7 @@ test("creates robots in one batch POST and requires a 201 response", async () =>
     area: null,
     batteryPercent: null,
     lastTelemetryAt: null,
+    queuedControlTarget: null,
     lastReceivedAt: null,
   };
   const fetcher = vi

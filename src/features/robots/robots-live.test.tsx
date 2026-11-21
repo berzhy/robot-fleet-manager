@@ -37,6 +37,7 @@ const robot: Robot = {
   activity: "working",
   area: "Lobby",
   lastTelemetryAt: "2026-01-01T00:00:00.000Z",
+  queuedControlTarget: null,
   lastReceivedAt: "2026-01-01T00:00:00.000Z",
 };
 

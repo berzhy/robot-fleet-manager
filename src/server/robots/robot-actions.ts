@@ -2,6 +2,7 @@ import "server-only";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
+  actionControlTargets,
   actionUnavailable,
   robotActions,
 } from "@/modules/robots/robot-actions";
@@ -41,16 +42,9 @@ export async function requestRobotAction(
         return errorResponse(409, "ACTION_UNAVAILABLE", reason);
       }
 
-      const controlTarget =
-        parsed.data.action === "stop"
-          ? "stop"
-          : parsed.data.action === "return-to-base"
-            ? "base"
-            : "work";
-
       tx.update(robots)
         .set({
-          controlTarget,
+          controlTarget: actionControlTargets[parsed.data.action],
           controlRevision: sql`${robots.controlRevision} + 1`,
         })
         .where(eq(robots.id, id))
