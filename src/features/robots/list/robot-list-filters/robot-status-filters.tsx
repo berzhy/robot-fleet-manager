@@ -101,7 +101,18 @@ export default function RobotStatusFilters() {
                     py: 1.25,
                     px: 2,
                   },
-                  selected && { bgcolor: "action.selected" },
+                  // MUI's selected tint for lists and menus: a neutral grey
+                  // fill reads as a pressed or disabled tile.
+                  selected &&
+                    ((theme) => {
+                      const palette = (theme.vars ?? theme).palette;
+                      return {
+                        bgcolor: theme.alpha(
+                          palette.primary.main,
+                          palette.action.selectedOpacity,
+                        ),
+                      };
+                    }),
                 ]}
               >
                 {view !== "all" && (
