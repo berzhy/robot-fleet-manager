@@ -1,7 +1,7 @@
 "use client";
 
-import { grey } from "@mui/material/colors";
-import { createTheme } from "@mui/material/styles";
+import { grey, orange } from "@mui/material/colors";
+import { createTheme, darken } from "@mui/material/styles";
 import { tabClasses } from "@mui/material/Tab";
 // Types `theme.vars` as always present: this app always uses CSS variables.
 import type {} from "@mui/material/themeCssVarsAugmentation";
@@ -20,6 +20,10 @@ const theme = createTheme({
         // it uses primary.dark (see MuiLink and MuiTab below): the default
         // blue reaches only 4.2:1 there.
         background: { default: grey[100] },
+        // Warning text (low battery, log warnings) needs 4.5:1; MUI's light
+        // orange reaches only 3.1:1 on white. This one is 5.1:1 on white and
+        // 4.7:1 on the grey page.
+        warning: { main: darken(orange[800], 0.25) },
       },
     },
     dark: true,

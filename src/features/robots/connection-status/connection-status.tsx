@@ -6,7 +6,7 @@ import type { ConnectionStatus } from "@/modules/telemetry/freshness";
 
 const colors = {
   online: "success.main",
-  delayed: "warning.dark",
+  delayed: "warning.main",
   offline: "text.secondary",
   unknown: "text.secondary",
 } satisfies Record<ConnectionStatus, string>;
