@@ -17,6 +17,10 @@ import useRobotListView, {
   setRobotListPageSize,
 } from "../use-robot-list-view";
 
+// MUI's pager toolbar height, kept while the pager is hidden (loading or no
+// robots) so the footer does not jump.
+const footerMinHeightPx = 52;
+
 function robotWord(count: number) {
   return count === 1 ? "robot" : "robots";
 }
@@ -52,7 +56,7 @@ export default function RobotTableFooter() {
   return (
     <Box
       sx={{
-        minHeight: 52,
+        minHeight: footerMinHeightPx,
         flexShrink: 0,
         bgcolor: "background.default",
         display: "flex",

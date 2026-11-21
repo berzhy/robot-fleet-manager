@@ -159,7 +159,10 @@ function AreaLabel({
         sx={{
           whiteSpace: "nowrap",
           // Smaller, with the name's weight.
-          [onNarrowPlan]: { typography: "caption", fontWeight: 500 },
+          [onNarrowPlan]: {
+            typography: "caption",
+            fontWeight: "fontWeightMedium",
+          },
         }}
       >
         {label}

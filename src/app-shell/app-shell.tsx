@@ -47,8 +47,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
         href="#main-content"
         sx={{
           position: "fixed",
-          top: 8,
-          left: 8,
+          top: (theme) => theme.spacing(1),
+          left: (theme) => theme.spacing(1),
           zIndex: (theme) => theme.zIndex.modal + 1,
           bgcolor: "background.paper",
           p: 1,

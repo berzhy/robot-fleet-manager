@@ -63,7 +63,12 @@ export default function MoreFiltersButton({
             role: "dialog",
             "aria-modal": true,
             "aria-labelledby": titleId,
-            sx: { p: 2, width: 280, maxWidth: "calc(100vw - 32px)" },
+            sx: (theme) => ({
+              p: 2,
+              width: 280,
+              // Leaves a page gutter on each side on narrow screens.
+              maxWidth: `calc(100vw - ${theme.spacing(4)})`,
+            }),
           },
         }}
       >
