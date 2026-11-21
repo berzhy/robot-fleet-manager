@@ -1,7 +1,7 @@
 "use client";
 
 import Box from "@mui/material/Box";
-import Link from "@mui/material/Link";
+import Link, { linkClasses } from "@mui/material/Link";
 import Stack from "@mui/material/Stack";
 import TableCell from "@mui/material/TableCell";
 import TableRow from "@mui/material/TableRow";
@@ -108,7 +108,13 @@ export default function RobotTableRow({
           // The cell may cut a long name short; hovering the row shows it all.
           title={robot.name}
           underline="none"
-          sx={{ position: "absolute", inset: 0 }}
+          sx={{
+            position: "absolute",
+            inset: 0,
+            // The link covers the row, where the table clips a ring drawn
+            // outside it; MUI insets the ring this way for Tabs and Cards.
+            [`&.${linkClasses.focusVisible}`]: { outlineOffset: -2 },
+          }}
         />
       </TableCell>
       <TableCell>

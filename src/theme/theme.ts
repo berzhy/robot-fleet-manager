@@ -7,6 +7,9 @@ import { tabClasses } from "@mui/material/Tab";
 import type {} from "@mui/material/themeCssVarsAugmentation";
 
 const theme = createTheme({
+  // The scheme is a class on <html>, so the toggle can override the system
+  // setting. CSS variables switch it without re-rendering, and
+  // InitColorSchemeScript sets it before the first paint.
   cssVariables: {
     colorSchemeSelector: "class",
   },
@@ -21,10 +24,18 @@ const theme = createTheme({
     },
     dark: true,
   },
+  // MUI's own keyboard focus ring: its default focus feedback is a faint
+  // ripple. MUI draws the ring inside Tabs, Cards and menu items, where an
+  // outside ring would be clipped.
+  focusVisible: true,
+  // A softer corner than MUI's 4px, shared by cards, tiles and buttons.
   shape: { borderRadius: 8 },
   typography: {
+    // The app font, loaded by next/font in the root layout.
     fontFamily: "var(--font-geist-sans), Arial, sans-serif",
+    // Page titles anchor the page; MUI's h4 weight is 400.
     h4: { fontWeight: 600 },
+    // Sentence case reads better than MUI's uppercase labels.
     button: { textTransform: "none", fontWeight: 600 },
   },
   components: {
@@ -39,24 +50,15 @@ const theme = createTheme({
         },
       ],
     },
-    MuiButtonBase: {
-      styleOverrides: {
-        // A crisp outline instead of the ripple-shaped focus highlight.
-        root: ({ theme }) => ({
-          "&.Mui-focusVisible": {
-            outline: `2px solid ${theme.vars.palette.primary.main}`,
-            outlineOffset: 2,
-          },
-        }),
-      },
-    },
-    // The outline above replaces the focus ripple.
+    // The focus ring is the focus signal; MUI's focus ripple on top fills the
+    // whole control with a pulsing blob.
     MuiButton: { defaultProps: { disableFocusRipple: true } },
     MuiIconButton: { defaultProps: { disableFocusRipple: true } },
     MuiTab: {
       defaultProps: { disableFocusRipple: true },
       styleOverrides: {
         root: ({ theme }) => ({
+          // Sentence case, like buttons.
           textTransform: "none",
           [`&.${tabClasses.selected}`]: theme.applyStyles("light", {
             color: theme.vars.palette.primary.dark,
