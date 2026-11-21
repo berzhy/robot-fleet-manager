@@ -58,7 +58,9 @@ export default function RobotTableNoResultsState({
           </Typography>
           <Stack direction="row" spacing={1}>
             <Button onClick={clearSearch}>Clear search</Button>
-            <Button onClick={clearFilters}>Clear filters</Button>
+            {otherFilters && (
+              <Button onClick={clearFilters}>Clear filters</Button>
+            )}
           </Stack>
         </>
       ) : (

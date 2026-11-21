@@ -55,8 +55,8 @@ export default function MoreFiltersButton({
         open={anchor !== null}
         anchorEl={anchor}
         onClose={close}
-        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-        transformOrigin={{ vertical: "top", horizontal: "left" }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        transformOrigin={{ vertical: "top", horizontal: "right" }}
         slotProps={{
           paper: {
             id: popoverId,
@@ -84,12 +84,7 @@ export default function MoreFiltersButton({
             </IconButton>
           </Stack>
           {moreFilterFields.map((field) => (
-            <FilterSelect
-              key={field.key}
-              field={field}
-              available={available}
-              onSelect={close}
-            />
+            <FilterSelect key={field.key} field={field} available={available} />
           ))}
         </Stack>
       </Popover>

@@ -251,6 +251,10 @@ async function chooseFilter(page: Page, label: string, value: string) {
 
   await page.getByRole("combobox", { name: label, exact: true }).click();
   await page.getByRole("option", { name: value, exact: true }).click();
+
+  if (secondary) {
+    await page.getByRole("button", { name: "Close more filters" }).click();
+  }
 }
 
 async function sendProblem(

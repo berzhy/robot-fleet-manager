@@ -234,7 +234,7 @@ test("chip removal and Clear filters cancel pending search", async () => {
   expect(screen.queryByText("Location: Munich")).not.toBeInTheDocument();
 });
 
-test("more filters opens a named dialog and applies a selection immediately", async () => {
+test("more filters opens a named dialog that applies each selection and stays open", async () => {
   renderFilters(<ListFilters />);
   await filterOptionsLoaded();
 
@@ -255,20 +255,19 @@ test("more filters opens a named dialog and applies a selection immediately", as
   fireEvent.click(screen.getByRole("option", { name: "Maker" }));
 
   expect(screen.getByText("Manufacturer: Maker")).toBeVisible();
+  expect(screen.getByRole("dialog", { name: "More filters" })).toBe(dialog);
+  expect(
+    within(dialog).getByRole("combobox", { name: "Manufacturer" }),
+  ).toHaveTextContent("Maker");
+
+  fireEvent.click(screen.getByRole("button", { name: "Close more filters" }));
+
   expect(
     screen.queryByRole("dialog", { name: "More filters" }),
   ).not.toBeInTheDocument();
   expect(
     screen.getByRole("button", { name: "More filters (1)" }),
   ).toBeVisible();
-
-  fireEvent.click(screen.getByRole("button", { name: "More filters (1)" }));
-
-  expect(
-    screen.getByRole("combobox", { name: "Manufacturer" }),
-  ).toHaveTextContent("Maker");
-
-  fireEvent.click(screen.getByRole("button", { name: "Close more filters" }));
 
   const chip = screen.getByTestId("fleet-chip-manufacturer");
   fireEvent.keyDown(chip, { key: "Delete" });

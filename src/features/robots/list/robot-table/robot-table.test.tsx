@@ -240,6 +240,13 @@ test("a search with no matches names the query, lists searchable fields and offe
     ),
   ).toBeVisible();
 
+  // With no other filter, Clear filters would do the same as Clear search.
+  expect(
+    within(screen.getByTestId("fleet-no-results")).queryByRole("button", {
+      name: "Clear filters",
+    }),
+  ).not.toBeInTheDocument();
+
   fireEvent.click(screen.getByRole("button", { name: "Clear search" }));
 
   expect(window.location.search).toBe("");

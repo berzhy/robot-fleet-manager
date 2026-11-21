@@ -101,6 +101,8 @@ test.each(["Clear search", "Clear filters"])(
         return Promise.resolve(Response.json(result));
       }),
     );
+    // Clear filters is offered only with a filter besides the search.
+    window.history.replaceState(null, "", "/robots?view=offline");
     render(<RobotList />);
     await screen.findByTestId("robot-row-one");
 

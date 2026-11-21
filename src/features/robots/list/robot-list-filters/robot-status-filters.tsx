@@ -26,7 +26,7 @@ import { fleetViewId, fleetViewLabels } from "./filter-fields";
 type ProblemView = Exclude<RobotFilters["view"], "all">;
 
 const explanations = {
-  all: "All robots within the selected location, manufacturer, type and integration.",
+  all: "All robots matching the search and the selected location, manufacturer, type and integration.",
   "needs-attention": `Offline, a reported problem, or critical battery at or below ${criticalBatteryPercent}% while not charging.`,
   offline: `Last report received more than ${delayedReportMaxAgeMs / 1000} seconds ago. Robots with no reports are Unknown.`,
   "low-battery": `Last-reported battery at or below ${lowBatteryPercent}%, including Returning but excluding Charging.`,
@@ -162,8 +162,8 @@ function ProblemIcon({
       aria-hidden
       sx={[
         (theme) => ({
-          // Two narrow tiles per row leave no room beside the text.
-          display: { xs: "none", md: "block" },
+          // Narrower tiles leave no room beside the text.
+          display: { xs: "none", lg: "block" },
           position: "absolute",
           right: 6,
           top: "50%",

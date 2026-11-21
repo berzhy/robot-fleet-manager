@@ -18,13 +18,11 @@ import {
 export default function FilterSelect({
   field,
   available,
-  onSelect,
   sx,
 }: {
   field: FilterField;
   /** From the parent: a list query subscribed here would refetch on mount. */
   available: FilterOptions | undefined;
-  onSelect?: () => void;
   sx?: SxProps<Theme>;
 }) {
   const { filters } = useRobotListView();
@@ -32,9 +30,13 @@ export default function FilterSelect({
   // Keep a focused option mounted even if the next poll removes it.
   const [openOptions, setOpenOptions] = useState<readonly string[]>();
 
+  const selected = filters[field.key];
   const displayedOptions =
     openOptions ?? (available ? field.options(available) : []);
-  const selected = filters[field.key];
+  // A value from the URL stays selectable even if the fleet no longer has it.
+  const options = [
+    ...new Set([...displayedOptions, ...(selected ? [selected] : [])]),
+  ];
 
   return (
     <TextField
@@ -56,17 +58,14 @@ export default function FilterSelect({
       }}
       onChange={(event) => {
         setRobotListFilters({ [field.key]: event.target.value || undefined });
-        onSelect?.();
       }}
     >
       <MenuItem value="">{field.allLabel}</MenuItem>
-      {[...new Set([...displayedOptions, ...(selected ? [selected] : [])])].map(
-        (value) => (
-          <MenuItem key={value} value={value}>
-            {formatFilterValue(field, value)}
-          </MenuItem>
-        ),
-      )}
+      {options.map((value) => (
+        <MenuItem key={value} value={value}>
+          {formatFilterValue(field, value)}
+        </MenuItem>
+      ))}
     </TextField>
   );
 }
