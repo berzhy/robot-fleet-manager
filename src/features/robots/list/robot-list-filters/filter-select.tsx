@@ -1,5 +1,3 @@
-"use client";
-
 import MenuItem from "@mui/material/MenuItem";
 import type { SxProps, Theme } from "@mui/material/styles";
 import TextField from "@mui/material/TextField";

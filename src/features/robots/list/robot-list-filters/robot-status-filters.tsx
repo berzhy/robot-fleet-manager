@@ -1,5 +1,3 @@
-"use client";
-
 import Battery1BarIcon from "@mui/icons-material/Battery1Bar";
 import CloudOffOutlinedIcon from "@mui/icons-material/CloudOffOutlined";
 import ErrorOutlineOutlinedIcon from "@mui/icons-material/ErrorOutlineOutlined";

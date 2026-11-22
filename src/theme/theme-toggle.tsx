@@ -1,5 +1,3 @@
-"use client";
-
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
 import IconButton from "@mui/material/IconButton";

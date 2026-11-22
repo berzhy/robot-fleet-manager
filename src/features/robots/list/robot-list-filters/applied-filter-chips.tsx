@@ -1,5 +1,3 @@
-"use client";
-
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";

@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useRef } from "react";
 
 import { useNotifications } from "@/shared/notifications/notification-provider";

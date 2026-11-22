@@ -1,5 +1,3 @@
-"use client";
-
 import Box from "@mui/material/Box";
 import Link, { linkClasses } from "@mui/material/Link";
 import Stack from "@mui/material/Stack";

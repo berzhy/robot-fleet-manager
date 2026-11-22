@@ -1,5 +1,3 @@
-"use client";
-
 import type { Robot } from "@/modules/robots/robot";
 import {
   actionControlTargets,

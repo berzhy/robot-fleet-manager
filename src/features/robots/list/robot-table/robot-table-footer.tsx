@@ -1,5 +1,3 @@
-"use client";
-
 import Box from "@mui/material/Box";
 import type { IconButtonProps } from "@mui/material/IconButton";
 import Skeleton from "@mui/material/Skeleton";

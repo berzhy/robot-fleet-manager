@@ -1,5 +1,3 @@
-"use client";
-
 import { grey, orange } from "@mui/material/colors";
 import { createTheme, darken } from "@mui/material/styles";
 import { tabClasses } from "@mui/material/Tab";

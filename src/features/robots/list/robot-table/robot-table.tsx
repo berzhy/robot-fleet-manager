@@ -1,5 +1,3 @@
-"use client";
-
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
