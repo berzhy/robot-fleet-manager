@@ -15,11 +15,8 @@ import {
 import type { Robot } from "@/modules/robots/robot";
 import type { RobotReading } from "@/modules/robots/robot-reading";
 
-import { useRobotWriteLocks } from "../../api/robot-mutations";
 import { actionIcons } from "../../robot-action-icons";
-import useRobotCommand, {
-  otherChangePendingReason,
-} from "../../use-robot-command";
+import useRobotCommand from "../../use-robot-command";
 
 export default function RobotTableRowMenu({
   reading,
@@ -30,8 +27,6 @@ export default function RobotTableRowMenu({
 }) {
   const { robot } = reading;
   const { requestAction, waitReason } = useRobotCommand(robot);
-  const locks = useRobotWriteLocks();
-  const isDeleteLocked = locks.isDeleteLocked();
   const [anchor, setAnchor] = useState<HTMLButtonElement | null>(null);
   const id = useId();
   const buttonId = `${id}-button`;
@@ -41,8 +36,8 @@ export default function RobotTableRowMenu({
       <IconButton
         data-testid="robot-actions"
         size="small"
-        // Stays enabled during a write: closing the menu returns focus here,
-        // and a disabled button would drop it. The items say why they wait.
+        // Stays enabled while a command is sent: closing the menu returns
+        // focus here, and a disabled button would drop it.
         id={buttonId}
         aria-label={`Actions for ${robot.name}`}
         aria-haspopup="menu"
@@ -87,9 +82,8 @@ export default function RobotTableRowMenu({
         })}
         <MenuItem
           data-testid="robot-delete"
-          disabled={isDeleteLocked}
           onClick={() => {
-            if (anchor && !isDeleteLocked) {
+            if (anchor) {
               onDelete(robot, anchor);
             }
             setAnchor(null);
@@ -98,10 +92,7 @@ export default function RobotTableRowMenu({
           <ListItemIcon>
             <DeleteIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText
-            primary="Delete"
-            secondary={isDeleteLocked ? otherChangePendingReason : undefined}
-          />
+          <ListItemText primary="Delete" />
         </MenuItem>
       </Menu>
     </>

@@ -116,13 +116,14 @@ test("a command holds up only its own robot, without replacing the table", async
   expect(
     within(pendingMenu).getByRole("menuitem", { name: /Start activity/ }),
   ).toHaveTextContent("Sending command…");
-  // A delete waits for every write, so it would not hold up this one alone.
-  expect(
-    within(pendingMenu).getByRole("menuitem", { name: /Delete/ }),
-  ).toHaveTextContent("Another change is in progress");
-  for (const item of within(pendingMenu).getAllByRole("menuitem")) {
-    expect(item).toHaveAttribute("aria-disabled", "true");
+  for (const label of ["Start activity", "Stop activity"]) {
+    expect(
+      within(pendingMenu).getByRole("menuitem", { name: new RegExp(label) }),
+    ).toHaveAttribute("aria-disabled", "true");
   }
+  expect(
+    within(pendingMenu).getByRole("menuitem", { name: "Delete" }),
+  ).not.toHaveAttribute("aria-disabled");
   fireEvent.keyDown(pendingMenu, { key: "Escape" });
   expect(screen.getByTestId("robot-row-control")).toBe(row);
 

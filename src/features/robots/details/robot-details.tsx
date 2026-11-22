@@ -9,7 +9,6 @@ import NextLink from "next/link";
 import type { RobotContext } from "@/modules/robots/robot";
 import { robotReading } from "@/modules/robots/robot-reading";
 
-import { usePendingRobotAction } from "../api/robot-mutations";
 import { robotListHref } from "../robot-list-return";
 import useRobotCommand from "../use-robot-command";
 
@@ -25,8 +24,7 @@ export default function RobotDetails({
 }) {
   const { robot, peerCounts, missing, refreshFailed, evaluatedAt } =
     useLiveRobot(initialContext);
-  const { requestAction, waitReason } = useRobotCommand(robot);
-  const pendingAction = usePendingRobotAction(robot.id);
+  const { requestAction, waitReason, pendingAction } = useRobotCommand(robot);
   const reading = robotReading(robot, evaluatedAt, refreshFailed);
 
   return (

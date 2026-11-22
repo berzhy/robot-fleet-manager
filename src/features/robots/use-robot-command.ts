@@ -7,26 +7,16 @@ import {
 import { useNotifications } from "@/shared/notifications/notification-provider";
 
 import { ApiError, isRequestTimeout } from "./api/robot-api";
-import { useRobotWriteLocks, useSendRobotAction } from "./api/robot-mutations";
-
-/** A delete and every other write wait for each other. */
-export const otherChangePendingReason = "Another change is in progress";
+import { useSendRobotAction } from "./api/robot-mutations";
 
 /**
  * Sends this robot's actions from any screen and reports each outcome as a
- * notification. `waitReason` says why the robot cannot take a command yet.
+ * notification. One command at a time: `pendingAction` is the one being sent,
+ * and `waitReason` says so.
  */
 export default function useRobotCommand(robot: Robot) {
   const sendAction = useSendRobotAction(robot.id);
-  const locks = useRobotWriteLocks();
   const notifications = useNotifications();
-
-  function currentWaitReason() {
-    if (locks.isCommandPending(robot.id)) {
-      return "Sending command…";
-    }
-    return locks.isDeletePending() ? otherChangePendingReason : null;
-  }
 
   function showUnavailable(reason: string) {
     notifications.show({
@@ -36,7 +26,7 @@ export default function useRobotCommand(robot: Robot) {
   }
 
   function requestAction(action: RobotAction) {
-    if (currentWaitReason()) {
+    if (sendAction.isPending) {
       return;
     }
 
@@ -73,5 +63,9 @@ export default function useRobotCommand(robot: Robot) {
     );
   }
 
-  return { requestAction, waitReason: currentWaitReason() };
+  return {
+    requestAction,
+    pendingAction: sendAction.isPending ? sendAction.variables : undefined,
+    waitReason: sendAction.isPending ? "Sending command…" : null,
+  };
 }

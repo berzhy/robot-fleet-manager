@@ -3,11 +3,7 @@ import { useState, type ComponentProps } from "react";
 import { useNotifications } from "@/shared/notifications/notification-provider";
 
 import { isRequestTimeout } from "../api/robot-api";
-import {
-  useDeleteAllRobots,
-  useDeleteRobot,
-  useRobotWriteLocks,
-} from "../api/robot-mutations";
+import { useDeleteAllRobots, useDeleteRobot } from "../api/robot-mutations";
 
 import type DeleteRobotDialog from "./delete-robot-dialog";
 import type { DeleteTarget } from "./delete-robot-dialog";
@@ -25,7 +21,6 @@ export default function useDeleteRobotFlow({
   const deleteRobot = useDeleteRobot();
   const deleteAllRobots = useDeleteAllRobots();
   const notifications = useNotifications();
-  const locks = useRobotWriteLocks();
 
   // Kept after close until the exit transition ends, so focus returns afterwards.
   const [confirmation, setConfirmation] = useState<{
@@ -34,9 +29,10 @@ export default function useDeleteRobotFlow({
     open: boolean;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const pending = deleteRobot.isPending || deleteAllRobots.isPending;
 
   function requestDelete(target: DeleteTarget, trigger: HTMLButtonElement) {
-    if (locks.isDeleteLocked() || confirmation) {
+    if (confirmation) {
       return;
     }
 
@@ -46,7 +42,7 @@ export default function useDeleteRobotFlow({
   }
 
   function cancel() {
-    if (!confirmation?.open || locks.isDeletePending()) {
+    if (!confirmation?.open || pending) {
       return;
     }
 
@@ -55,7 +51,7 @@ export default function useDeleteRobotFlow({
   }
 
   function confirm() {
-    if (!confirmation?.open || locks.isDeleteLocked()) {
+    if (!confirmation?.open || pending) {
       return;
     }
 
@@ -116,7 +112,7 @@ export default function useDeleteRobotFlow({
     ? {
         target: confirmation.target,
         open: confirmation.open,
-        pending: deleteRobot.isPending || deleteAllRobots.isPending,
+        pending,
         error: error ?? undefined,
         onClearError: () => setError(null),
         onCancel: cancel,
@@ -125,5 +121,5 @@ export default function useDeleteRobotFlow({
       }
     : null;
 
-  return { requestDelete, dialog, isDeleteLocked: locks.isDeleteLocked() };
+  return { requestDelete, dialog };
 }

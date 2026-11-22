@@ -37,12 +37,10 @@ export default function RobotList() {
   const announcement = useRobotListAnnouncement(filters, list);
   useRobotListPageCorrection(list);
 
-  const { requestDelete, dialog, isDeleteLocked } = useDeleteRobotFlow({
+  const { requestDelete, dialog } = useDeleteRobotFlow({
     focusFallback: focusSearch,
   });
-  const { addRobots, adding, isAddLocked, addButtonRef } = useAddRobots({
-    blocked: isLoading || dialog !== null,
-  });
+  const { addRobots, adding, addButtonRef } = useAddRobots();
 
   return (
     <Stack spacing={2}>
@@ -63,8 +61,6 @@ export default function RobotList() {
           onDeleteAll={(trigger) => requestDelete({ kind: "all" }, trigger)}
           buttonRef={addButtonRef}
           loading={adding}
-          disabled={isAddLocked || isLoading || Boolean(dialog?.open)}
-          deleteAllDisabled={isDeleteLocked}
           onAdd={addRobots}
         />
       </Stack>

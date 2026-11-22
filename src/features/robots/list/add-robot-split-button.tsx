@@ -13,16 +13,11 @@ import { type Ref, useId, useState } from "react";
 export default function AddRobotSplitButton({
   buttonRef,
   loading,
-  disabled,
-  deleteAllDisabled,
   onAdd,
   onDeleteAll,
 }: {
   buttonRef: Ref<HTMLButtonElement>;
   loading: boolean;
-  disabled: boolean;
-  /** Delete all waits for every other write, including commands. */
-  deleteAllDisabled: boolean;
   onDeleteAll: (trigger: HTMLButtonElement) => void;
   onAdd: (trigger: HTMLButtonElement, count: 1 | 10 | 100) => void;
 }) {
@@ -37,7 +32,6 @@ export default function AddRobotSplitButton({
           ref={buttonRef}
           startIcon={<AddIcon />}
           loading={loading}
-          disabled={disabled}
           onClick={(event) => onAdd(event.currentTarget, 1)}
         >
           Add robot
@@ -45,7 +39,7 @@ export default function AddRobotSplitButton({
         <Button
           data-testid="fleet-add-options"
           size="small"
-          disabled={disabled || loading}
+          disabled={loading}
           id={optionsButtonId}
           aria-label="More add options"
           aria-haspopup="menu"
@@ -79,7 +73,6 @@ export default function AddRobotSplitButton({
         ))}
         <Divider component="li" />
         <MenuItem
-          disabled={deleteAllDisabled}
           onClick={() => {
             if (anchor) {
               onDeleteAll(anchor);

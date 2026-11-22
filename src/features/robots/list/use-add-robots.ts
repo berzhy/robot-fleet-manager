@@ -3,21 +3,14 @@ import { useEffect, useRef } from "react";
 import { useNotifications } from "@/shared/notifications/notification-provider";
 
 import { isRequestTimeout } from "../api/robot-api";
-import { useCreateRobots, useRobotWriteLocks } from "../api/robot-mutations";
+import { useCreateRobots } from "../api/robot-mutations";
 
 import { generateRobotInput } from "./generate-robot-input";
 
 /** Adds generated robots, reports the outcome, and returns focus once the list settles. */
-export default function useAddRobots({
-  blocked,
-}: {
-  /** The list is loading or a dialog is open. */
-  blocked: boolean;
-}) {
+export default function useAddRobots() {
   const createRobots = useCreateRobots();
   const notifications = useNotifications();
-  const locks = useRobotWriteLocks();
-  const isAddLocked = locks.isAddLocked();
 
   const addButtonRef = useRef<HTMLButtonElement>(null);
   const focusTargetRef = useRef<HTMLButtonElement | null>(null);
@@ -26,20 +19,16 @@ export default function useAddRobots({
   // drops focus; return it once they are enabled again.
   useEffect(() => {
     const target = focusTargetRef.current;
-    if (!target || isAddLocked || blocked) {
+    if (!target || createRobots.isPending) {
       return;
     }
 
     // A list refresh can remove the recorded trigger before focus returns.
     focusTargetRef.current = null;
     (target.isConnected ? target : addButtonRef.current)?.focus();
-  }, [isAddLocked, blocked]);
+  }, [createRobots.isPending]);
 
   function addRobots(trigger: HTMLButtonElement, count: 1 | 10 | 100 = 1) {
-    if (locks.isAddLocked() || blocked) {
-      return;
-    }
-
     notifications.clear();
     focusTargetRef.current = trigger;
 
@@ -73,10 +62,5 @@ export default function useAddRobots({
       );
   }
 
-  return {
-    addRobots,
-    adding: createRobots.isPending,
-    isAddLocked,
-    addButtonRef,
-  };
+  return { addRobots, adding: createRobots.isPending, addButtonRef };
 }

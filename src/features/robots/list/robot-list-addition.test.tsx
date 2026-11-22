@@ -151,7 +151,7 @@ test.each(["HTTP", "network"])(
   },
 );
 
-test("creation holds up deletion but not paging, then refreshes the current later page", async () => {
+test("creation does not hold up paging, then refreshes the current later page", async () => {
   let complete!: (response: Response) => void;
   const fetcher = vi
     .fn()
@@ -185,18 +185,6 @@ test("creation holds up deletion but not paging, then refreshes the current late
     await Promise.resolve();
   });
   expect(screen.getByTestId("fleet-previous-page")).toBeEnabled();
-  const actions = within(screen.getByTestId("robot-row-new")).getByTestId(
-    "robot-actions",
-  );
-  vi.spyOn(actions, "getBoundingClientRect").mockReturnValue(
-    new DOMRect(0, 0, 40, 40),
-  );
-  fireEvent.click(actions);
-  expect(await screen.findByTestId("robot-delete")).toHaveAttribute(
-    "aria-disabled",
-    "true",
-  );
-  fireEvent.keyDown(screen.getByRole("menu"), { key: "Escape" });
 
   act(() => complete(createdResponse([robot])));
   await waitFor(() =>
