@@ -32,3 +32,19 @@ test("a reading is last known once its report is stale or live updates fail", ()
     isLastKnown: true,
   });
 });
+
+test("a lost position makes only the location last known", () => {
+  const lost = testRobot(
+    {
+      activity: "needs-attention",
+      problemCode: "position-lost",
+      lastReceivedAt: new Date(evaluatedAt).toISOString(),
+    },
+    evaluatedAt,
+  );
+
+  expect(robotReading(lost, evaluatedAt, false)).toMatchObject({
+    isLastKnown: false,
+    isLocationLastKnown: true,
+  });
+});

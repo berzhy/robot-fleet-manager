@@ -143,11 +143,18 @@ export default function RobotSummary({
 
 /** Telemetry, labelled as last reported once it may be out of date. */
 function LiveValues({ reading }: { reading: RobotReading }) {
-  const { robot, evaluatedAt, isStale, unverified, isLastKnown } = reading;
+  const {
+    robot,
+    evaluatedAt,
+    isStale,
+    unverified,
+    isLastKnown,
+    isLocationLastKnown,
+  } = reading;
   const { connection, batteryLevel, problemCode } = robot;
 
-  function label(name: string) {
-    return isLastKnown ? `Last reported ${name.toLowerCase()}` : name;
+  function label(name: string, lastKnown = isLastKnown) {
+    return lastKnown ? `Last reported ${name.toLowerCase()}` : name;
   }
 
   return (
@@ -193,7 +200,10 @@ function LiveValues({ reading }: { reading: RobotReading }) {
             </Typography>
           )}
         </Field>
-        <Field label={label("Location")} sx={{ width: valueWidthPx }}>
+        <Field
+          label={label("Location", isLocationLastKnown)}
+          sx={{ width: valueWidthPx }}
+        >
           <Typography component="dd" variant="h6" data-testid="robot-location">
             {robot.area ?? "Unknown"}
           </Typography>

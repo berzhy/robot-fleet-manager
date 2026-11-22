@@ -103,6 +103,32 @@ test.each(["Clear search", "Clear filters"])(
   },
 );
 
+test("Clear filters in the no-results view drops search text not yet applied", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn((url: string) => {
+      const { searchParams } = new URL(url, "http://localhost");
+      const result = searchParams.has("view")
+        ? testRobotPage([], { fleetTotal: 1 })
+        : page([robot]);
+      return Promise.resolve(Response.json(result));
+    }),
+  );
+  window.history.replaceState(null, "", "/robots?view=offline");
+  render(<RobotList />);
+  const noResults = await screen.findByTestId("fleet-no-results");
+
+  const search = screen.getByRole("textbox", { name: "Search robots" });
+  fireEvent.change(search, { target: { value: "Atlas" } });
+  fireEvent.click(
+    within(noResults).getByRole("button", { name: "Clear filters" }),
+  );
+  await waitPastSearchDebounce();
+
+  expect(search).toHaveValue("");
+  expect(window.location.search).toBe("");
+});
+
 test("requests pages and keeps the pager usable while loading", async () => {
   const rows = Array.from({ length: 10 }, (_, i) =>
     testRobot({

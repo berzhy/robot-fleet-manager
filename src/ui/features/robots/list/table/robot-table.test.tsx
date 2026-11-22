@@ -16,6 +16,7 @@ const tableHandlers = {
   onAdd: () => {},
   onDelete: () => {},
   onFocusSearch: () => {},
+  onFiltersCleared: () => {},
   adding: false,
 };
 
@@ -214,7 +215,7 @@ test("a robot registered today shows how long ago, with the exact time kept", as
 });
 
 test("a search with no matches names the query, lists searchable fields and offers Clear search", async () => {
-  const onFocusSearch = vi.fn();
+  const onFiltersCleared = vi.fn();
   window.history.replaceState(null, "", "/robots?search=no-such-robot");
   vi.stubGlobal(
     "fetch",
@@ -222,7 +223,7 @@ test("a search with no matches names the query, lists searchable fields and offe
       Promise.resolve(Response.json({ ...robotPage([]), fleetTotal: 5 })),
     ),
   );
-  render(<RobotTable {...tableHandlers} onFocusSearch={onFocusSearch} />);
+  render(<RobotTable {...tableHandlers} onFiltersCleared={onFiltersCleared} />);
 
   expect(
     await screen.findByText("No robots match “no-such-robot”."),
@@ -243,7 +244,7 @@ test("a search with no matches names the query, lists searchable fields and offe
   fireEvent.click(screen.getByRole("button", { name: "Clear search" }));
 
   expect(window.location.search).toBe("");
-  expect(onFocusSearch).toHaveBeenCalledOnce();
+  expect(onFiltersCleared).toHaveBeenCalledOnce();
 });
 
 test("a search with no matches mentions other applied filters, which may be the cause", async () => {

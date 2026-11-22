@@ -52,8 +52,9 @@ export function useSendRobotAction(robotId: string) {
 
 // Returned from onSettled, so each mutation stays pending until fresh data arrives.
 function invalidateRobots(client: QueryClient) {
-  // Cached views that are not on screen hold pre-write data, such as deleted
-  // robots; dropping them stops a later page or filter showing them as current.
-  client.removeQueries({ queryKey: robotKeys.all, type: "inactive" });
+  // List pages not on screen hold pre-write data, such as deleted robots;
+  // dropping them stops a later page or filter showing them as current. Robot
+  // details stay: one already known to be deleted must not show it again.
+  client.removeQueries({ queryKey: robotKeys.lists, type: "inactive" });
   return client.invalidateQueries({ queryKey: robotKeys.all });
 }

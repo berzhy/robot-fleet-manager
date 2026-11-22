@@ -10,8 +10,8 @@ export const robotContextPollIntervalMs = 2_000;
 
 export const robotKeys = {
   all: ["robots"] as const,
-  list: (params: RobotListParams) =>
-    [...robotKeys.all, "list", params] as const,
+  lists: ["robots", "list"] as const,
+  list: (params: RobotListParams) => [...robotKeys.lists, params] as const,
   context: (id: string) => [...robotKeys.all, "context", id] as const,
 };
 

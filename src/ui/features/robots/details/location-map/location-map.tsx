@@ -41,9 +41,7 @@ export default function LocationMap({
   const { robot } = reading;
   const layout = getFacilityLayout(robot.site);
   const robotArea = planArea(robot.area);
-  // The robot may have moved since the report that placed it.
-  const isLastKnown =
-    reading.isLastKnown || robot.problemCode === "position-lost";
+  const isLastKnown = reading.isLocationLastKnown;
 
   // Areas the plan does not draw all count as one unknown area.
   const otherCountIn = (area: FacilityArea | undefined) =>

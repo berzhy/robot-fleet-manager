@@ -93,6 +93,11 @@ export default function RobotList() {
             focusSearch();
           }
         }}
+        onFiltersCleared={() => {
+          // Text the debounce has not applied yet would bring a search back.
+          searchFieldRef.current?.discardDraft();
+          focusSearch();
+        }}
         onDelete={({ id, name }, trigger) =>
           requestDelete({ kind: "robot", id, name }, trigger)
         }

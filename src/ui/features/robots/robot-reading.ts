@@ -14,6 +14,8 @@ export type RobotReading = {
   unverified: boolean;
   /** The reported values may no longer hold: stale or unverified. */
   isLastKnown: boolean;
+  /** The reported area may no longer hold, as when the robot lost its position. */
+  isLocationLastKnown: boolean;
 };
 
 export function robotReading(
@@ -23,12 +25,14 @@ export function robotReading(
 ): RobotReading {
   const isStale =
     robot.connection === "delayed" || robot.connection === "offline";
+  const isLastKnown = isStale || unverified;
 
   return {
     robot,
     evaluatedAt,
     isStale,
     unverified,
-    isLastKnown: isStale || unverified,
+    isLastKnown,
+    isLocationLastKnown: isLastKnown || robot.problemCode === "position-lost",
   };
 }

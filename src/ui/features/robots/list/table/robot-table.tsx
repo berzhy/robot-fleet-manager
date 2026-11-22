@@ -60,12 +60,15 @@ const rowHeightPx = 56;
 export default function RobotTable({
   toolbar,
   onFocusSearch,
+  onFiltersCleared,
   onAdd,
   adding,
   onDelete,
 }: {
   toolbar?: ReactNode;
   onFocusSearch: () => void;
+  /** The no-results view cleared the search or filters. */
+  onFiltersCleared: () => void;
   onAdd: (trigger: HTMLButtonElement) => void;
   adding: boolean;
   onDelete: (robot: Robot, trigger: HTMLButtonElement) => void;
@@ -205,7 +208,7 @@ export default function RobotTable({
         {data?.total === 0 &&
           !isLoading &&
           (data.fleetTotal > 0 ? (
-            <RobotTableNoResultsState onCleared={onFocusSearch} />
+            <RobotTableNoResultsState onCleared={onFiltersCleared} />
           ) : (
             <RobotTableEmptyState onAdd={onAdd} adding={adding} />
           ))}

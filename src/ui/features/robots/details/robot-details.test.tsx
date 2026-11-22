@@ -363,6 +363,13 @@ test.each([
     expect(
       screen.getByRole("button", { name: "Retry activity" }),
     ).toHaveAttribute("aria-disabled", "false");
+    // A robot that lost its position may have moved since it reported its area.
+    expect(
+      screen.getByText(
+        problemCode === "position-lost" ? "Last reported location" : "Location",
+        { selector: "dt" },
+      ),
+    ).toBeVisible();
   },
 );
 
