@@ -50,7 +50,7 @@ Trust in the data is the theme that runs through it. Telemetry arrives about onc
 
 ### Data flow
 
-URL → `useRobotListView()` parses it → `useRobotList()` turns it into a query key and polls every 3 s → each section of the page (tiles, filters, table, footer) calls the hook itself and React Query shares the one request. Writes go the other way: a control calls `useRobotCommand(robot)`, the mutation settles only after the refresh it triggers lands, and the screen never shows "done" over stale data.
+URL → `useRobotListParams()` parses it → `useRobotList()` turns it into a query key and polls every 3 s → each section of the page (tiles, filters, table, footer) calls the hook itself and React Query shares the one request. Writes go the other way: a control calls `useRobotAction(robot)`, the mutation settles only after the refresh it triggers lands, and the screen never shows "done" over stale data.
 
 Sections read their own data instead of receiving everything from one root component. I built the root-controller version and reverted it: the root grew, layout and focus leaked into it, and every command would have had to be passed down to the rows. The rule I kept is to lift a _derivation_ when sections must agree, not to lift the components.
 

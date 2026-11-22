@@ -11,21 +11,17 @@ import { afterEach, expect, test, vi } from "vitest";
 import type { RobotPage } from "@/common/types";
 import { render } from "@/ui/test-render";
 
-import { pageMetadata } from "@/ui/features/robots/test-robots";
+import { testRobotPage } from "@/ui/features/robots/test-robots";
 
 import RobotListFilters from "./robot-list-filters";
 import type { SearchFieldHandle } from "./robot-search-field";
 import RobotStatusFilters from "./robot-status-filters";
 
-const filterPage: RobotPage = {
-  items: [],
+const filterPage: RobotPage = testRobotPage([], {
   total: 12,
-  page: 0,
-  pageSize: 10,
-  ...pageMetadata(12),
   summary: { all: 12, offline: 3, "needs-attention": 5, "low-battery": 2 },
   filterOptions: { sites: ["Munich", "Berlin"], manufacturers: ["Maker"] },
-};
+});
 
 afterEach(() => {
   vi.useRealTimers();

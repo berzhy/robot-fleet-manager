@@ -68,6 +68,35 @@ export function isRequestTimeout(error: unknown) {
   );
 }
 
+/** Sends a request to the robot API; a failed response throws an ApiError. */
+async function request(
+  path: string,
+  failureMessage: string,
+  {
+    method,
+    json,
+    signal,
+  }: { method?: "POST" | "DELETE"; json?: unknown; signal?: AbortSignal } = {},
+) {
+  const response = await fetch(path, {
+    method,
+    cache: "no-store",
+    signal: requestSignal(signal),
+    ...(json !== undefined && {
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(json),
+    }),
+  });
+  if (!response.ok) {
+    throw await apiError(response, failureMessage);
+  }
+  return response;
+}
+
+function robotPath(id: string) {
+  return `/api/robots/${encodeURIComponent(id)}`;
+}
+
 export async function getRobots(
   { page, pageSize, filters }: RobotListParams,
   signal?: AbortSignal,
@@ -77,88 +106,60 @@ export async function getRobots(
     pageSize: String(pageSize),
     ...Object.fromEntries(robotFilterSearchParams(filters)),
   });
-
-  const response = await fetch(`/api/robots?${params}`, {
-    signal: requestSignal(signal),
-    cache: "no-store",
-  });
-
-  if (!response.ok) {
-    throw await apiError(response, "Unable to load robots.");
-  }
-  return response.json() as Promise<RobotPage>;
-}
-
-export async function deleteRobot(id: string) {
-  const response = await fetch(`/api/robots/${encodeURIComponent(id)}`, {
-    method: "DELETE",
-    signal: requestSignal(),
-  });
-  if (response.status === 204) {
-    return "deleted";
-  }
-
-  const error = await apiError(response, "Unable to delete robot.");
-  if (isRobotNotFound(error)) {
-    return "already-removed";
-  }
-  throw error;
-}
-
-export async function createRobots(
-  robots: CreateRobotInput[],
-): Promise<Robot[]> {
-  const response = await fetch("/api/robots/batch", {
-    method: "POST",
-    signal: requestSignal(),
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ robots }),
-  });
-  if (response.status !== 201) {
-    throw await apiError(response, "Unable to add robots.");
-  }
-  const result = (await response.json()) as { items: Robot[] };
-  return result.items;
-}
-
-export async function sendRobotAction(
-  id: string,
-  action: RobotAction,
-): Promise<void> {
-  const response = await fetch(
-    `/api/robots/${encodeURIComponent(id)}/actions`,
-    {
-      method: "POST",
-      signal: requestSignal(),
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action }),
-    },
+  const response = await request(
+    `/api/robots?${params}`,
+    "Unable to load robots.",
+    { signal },
   );
-  if (response.status !== 202) {
-    throw await apiError(response, "Unable to request robot action.");
-  }
+  return response.json() as Promise<RobotPage>;
 }
 
 export async function getRobotContext(
   id: string,
   signal?: AbortSignal,
 ): Promise<RobotContext> {
-  const response = await fetch(
-    `/api/robots/${encodeURIComponent(id)}/context`,
-    { cache: "no-store", signal: requestSignal(signal) },
+  const response = await request(
+    `${robotPath(id)}/context`,
+    "Unable to refresh robot context.",
+    { signal },
   );
-  if (!response.ok) {
-    throw await apiError(response, "Unable to refresh robot context.");
-  }
   return response.json() as Promise<RobotContext>;
 }
 
-export async function deleteAllRobots(): Promise<void> {
-  const response = await fetch("/api/robots", {
-    method: "DELETE",
-    signal: requestSignal(),
+export async function createRobots(
+  robots: CreateRobotInput[],
+): Promise<Robot[]> {
+  const response = await request("/api/robots/batch", "Unable to add robots.", {
+    method: "POST",
+    json: { robots },
   });
-  if (response.status !== 204) {
-    throw await apiError(response, "Unable to delete all robots.");
+  const result = (await response.json()) as { items: Robot[] };
+  return result.items;
+}
+
+export async function sendRobotAction(id: string, action: RobotAction) {
+  await request(`${robotPath(id)}/actions`, "Unable to request robot action.", {
+    method: "POST",
+    json: { action },
+  });
+}
+
+export async function deleteRobot(id: string) {
+  try {
+    await request(robotPath(id), "Unable to delete robot.", {
+      method: "DELETE",
+    });
+    return "deleted";
+  } catch (error) {
+    if (isRobotNotFound(error)) {
+      return "already-removed";
+    }
+    throw error;
   }
+}
+
+export async function deleteAllRobots() {
+  await request("/api/robots", "Unable to delete all robots.", {
+    method: "DELETE",
+  });
 }

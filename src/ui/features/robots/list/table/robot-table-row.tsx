@@ -194,7 +194,7 @@ export default function RobotTableRow({
         </Typography>
       </TableCell>
       <TableCell align="right" sx={{ position: "relative" }}>
-        <RobotTableRowMenu reading={reading} onDelete={onDelete} />
+        <RobotTableRowMenu robot={robot} onDelete={onDelete} />
       </TableCell>
     </TableRow>
   );

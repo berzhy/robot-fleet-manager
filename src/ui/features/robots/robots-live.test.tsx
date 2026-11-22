@@ -17,7 +17,7 @@ import useRobotList, {
   useRobotListPageCorrection,
 } from "./list/use-robot-list";
 import { setRobotListPage } from "./list/robot-list-url";
-import { pageMetadata, testRobot } from "@/ui/features/robots/test-robots";
+import { testRobotPage, testRobot } from "@/ui/features/robots/test-robots";
 
 const reportedAt = "2026-01-01T00:00:00.000Z";
 // As the server answered it when the report arrived; each mocked response
@@ -37,13 +37,12 @@ const robot = testRobot(
 );
 
 const page = (battery = 50) =>
-  Response.json({
-    items: [testRobot({ ...robot, batteryPercent: battery })],
-    total: 1,
-    page: 0,
-    pageSize: 20,
-    ...pageMetadata(1),
-  });
+  Response.json(
+    testRobotPage([testRobot({ ...robot, batteryPercent: battery })], {
+      total: 1,
+      pageSize: 20,
+    }),
+  );
 
 const robotContext = (batteryPercent: number) =>
   Response.json({
@@ -782,13 +781,7 @@ test("page correction after a hidden fleet shrinks immediately verifies the dest
       new URL(url, "http://localhost").searchParams.get("page"),
     );
     return Promise.resolve(
-      Response.json({
-        items: [robot],
-        total,
-        page: requestedPage,
-        pageSize: 10,
-        ...pageMetadata(total),
-      }),
+      Response.json(testRobotPage([robot], { total, page: requestedPage })),
     );
   });
   vi.stubGlobal("fetch", fetcher);

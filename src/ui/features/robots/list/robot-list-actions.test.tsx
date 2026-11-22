@@ -4,7 +4,7 @@ import { afterEach, expect, test, vi } from "vitest";
 import { render } from "@/ui/test-render";
 
 import {
-  pageMetadata,
+  testRobotPage,
   testRobot,
   workingRobot,
 } from "@/ui/features/robots/test-robots";
@@ -45,18 +45,17 @@ test.each([
         );
       }
       return Promise.resolve(
-        Response.json({
-          items: [
-            testRobot({
-              ...workingRobot,
-              lastReceivedAt: new Date().toISOString(),
-            }),
-          ],
-          page: 0,
-          pageSize: 20,
-          ...pageMetadata(1),
-          total: 1,
-        }),
+        Response.json(
+          testRobotPage(
+            [
+              testRobot({
+                ...workingRobot,
+                lastReceivedAt: new Date().toISOString(),
+              }),
+            ],
+            { total: 1, pageSize: 20 },
+          ),
+        ),
       );
     });
     vi.stubGlobal("fetch", fetcher);
@@ -94,21 +93,20 @@ test("a command holds up only its own robot, without replacing the table", async
       });
     }
     return Promise.resolve(
-      Response.json({
-        items: [
-          testRobot({ ...workingRobot, lastReceivedAt: reportedNow }),
-          testRobot({
-            ...workingRobot,
-            id: "other",
-            name: "Bolt",
-            lastReceivedAt: reportedNow,
-          }),
-        ],
-        total: 2,
-        page: 0,
-        pageSize: 20,
-        ...pageMetadata(2),
-      }),
+      Response.json(
+        testRobotPage(
+          [
+            testRobot({ ...workingRobot, lastReceivedAt: reportedNow }),
+            testRobot({
+              ...workingRobot,
+              id: "other",
+              name: "Bolt",
+              lastReceivedAt: reportedNow,
+            }),
+          ],
+          { total: 2, pageSize: 20 },
+        ),
+      ),
     );
   });
   vi.stubGlobal("fetch", fetcher);

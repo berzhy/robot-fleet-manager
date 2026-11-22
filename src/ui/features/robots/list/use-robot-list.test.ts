@@ -5,7 +5,7 @@ import { renderHook } from "@/ui/test-render";
 import type { RobotPage } from "@/common/types";
 
 import { getRobots } from "../api/robot-api";
-import { pageMetadata } from "@/ui/features/robots/test-robots";
+import { testRobotPage } from "@/ui/features/robots/test-robots";
 import useRobotList, {
   useRobotListAnnouncement,
   useRobotListPageCorrection,
@@ -42,13 +42,7 @@ test("aborts old requests and ignores their late responses", async () => {
         resolveOld = resolve;
       }),
     )
-    .mockResolvedValue({
-      items: [],
-      total: 0,
-      page: 1,
-      pageSize: 10,
-      ...pageMetadata(),
-    });
+    .mockResolvedValue(testRobotPage([], { page: 1 }));
   const { result } = renderHook(() => useListUnderTest());
   const signal = vi.mocked(getRobots).mock.calls[0][1];
 
@@ -57,13 +51,7 @@ test("aborts old requests and ignores their late responses", async () => {
   await waitFor(() => expect(result.current.isLoading).toBe(false));
 
   await act(async () => {
-    resolveOld({
-      items: [],
-      total: 100,
-      page: 0,
-      pageSize: 10,
-      ...pageMetadata(),
-    });
+    resolveOld(testRobotPage([], { total: 100, fleetTotal: 0 }));
     await Promise.resolve();
   });
   expect(result.current.data?.total).toBe(0);
@@ -71,13 +59,7 @@ test("aborts old requests and ignores their late responses", async () => {
 });
 
 test("page size changes cancel old requests and reload preserves the selection", async () => {
-  vi.mocked(getRobots).mockResolvedValue({
-    items: [],
-    total: 0,
-    page: 0,
-    pageSize: 20,
-    ...pageMetadata(),
-  });
+  vi.mocked(getRobots).mockResolvedValue(testRobotPage([], { pageSize: 20 }));
   const { result } = renderHook(() => useListUnderTest());
   await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -101,27 +83,13 @@ test("page size changes cancel old requests and reload preserves the selection",
 
 test("failed page correction retains only cached destination data under the corrected pager", async () => {
   vi.mocked(getRobots)
-    .mockResolvedValueOnce({
-      items: [],
-      total: 11,
-      page: 0,
-      pageSize: 10,
-      ...pageMetadata(),
-    })
-    .mockResolvedValueOnce({
-      items: [],
-      total: 11,
-      page: 1,
-      pageSize: 10,
-      ...pageMetadata(),
-    })
-    .mockResolvedValueOnce({
-      items: [],
-      total: 10,
-      page: 1,
-      pageSize: 10,
-      ...pageMetadata(),
-    })
+    .mockResolvedValueOnce(testRobotPage([], { total: 11, fleetTotal: 0 }))
+    .mockResolvedValueOnce(
+      testRobotPage([], { total: 11, page: 1, fleetTotal: 0 }),
+    )
+    .mockResolvedValueOnce(
+      testRobotPage([], { total: 10, page: 1, fleetTotal: 0 }),
+    )
     .mockRejectedValueOnce(new Error("correction failed"));
   const { result } = renderHook(() => useListUnderTest());
   await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -148,13 +116,7 @@ test("failed page correction retains only cached destination data under the corr
 
 test("filter changes cancel old scope requests and reset page while retaining page size", async () => {
   let stale!: (value: RobotPage) => void;
-  const response = {
-    items: [],
-    total: 30,
-    page: 0,
-    pageSize: 10,
-    ...pageMetadata(30),
-  };
+  const response = testRobotPage([], { total: 30 });
   vi.mocked(getRobots).mockResolvedValue(response);
   const { result } = renderHook(() => useListUnderTest());
   await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -200,13 +162,7 @@ test("filter changes cancel old scope requests and reset page while retaining pa
 });
 
 test("zero matching results correct a later page and preserve filters", async () => {
-  const response = {
-    items: [],
-    total: 11,
-    page: 0,
-    pageSize: 10,
-    ...pageMetadata(21),
-  };
+  const response = testRobotPage([], { total: 11, fleetTotal: 21 });
   vi.mocked(getRobots).mockResolvedValue(response);
   const { result } = renderHook(() => useListUnderTest());
   await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -236,13 +192,7 @@ test("zero matching results correct a later page and preserve filters", async ()
 });
 
 test("announces explicit search results but keeps background refreshes quiet", async () => {
-  const response = {
-    items: [],
-    total: 2,
-    page: 0,
-    pageSize: 10,
-    ...pageMetadata(2),
-  };
+  const response = testRobotPage([], { total: 2 });
   vi.mocked(getRobots).mockResolvedValue(response);
   const { result } = renderHook(() => useListUnderTest());
   await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -261,13 +211,7 @@ test("announces explicit search results but keeps background refreshes quiet", a
 });
 
 test("an uncached view keeps the previous result on screen until its own arrives", async () => {
-  const initial: RobotPage = {
-    items: [],
-    total: 30,
-    page: 0,
-    pageSize: 10,
-    ...pageMetadata(30),
-  };
+  const initial: RobotPage = testRobotPage([], { total: 30 });
   let complete!: (response: RobotPage) => void;
   vi.mocked(getRobots)
     .mockResolvedValueOnce(initial)
@@ -297,13 +241,7 @@ test("an uncached view keeps the previous result on screen until its own arrives
 });
 
 test("returning to a cached filter shows only that scope and retains it after refresh failure", async () => {
-  const initial: RobotPage = {
-    items: [],
-    total: 30,
-    page: 0,
-    pageSize: 10,
-    ...pageMetadata(30),
-  };
+  const initial: RobotPage = testRobotPage([], { total: 30 });
   let failRefresh!: (error: Error) => void;
   vi.mocked(getRobots)
     .mockResolvedValueOnce(initial)
@@ -339,13 +277,7 @@ test("returning to a cached filter shows only that scope and retains it after re
 });
 
 test("equivalent filters do not issue an extra request", async () => {
-  vi.mocked(getRobots).mockResolvedValue({
-    items: [],
-    total: 0,
-    page: 0,
-    pageSize: 10,
-    ...pageMetadata(),
-  });
+  vi.mocked(getRobots).mockResolvedValue(testRobotPage());
   const { result } = renderHook(() => useListUnderTest());
   await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -359,13 +291,7 @@ test("equivalent filters do not issue an extra request", async () => {
 });
 
 function emptyPage(total = 0): RobotPage {
-  return {
-    items: [],
-    total,
-    page: 0,
-    pageSize: 10,
-    ...pageMetadata(total),
-  };
+  return testRobotPage([], { total });
 }
 
 test("the URL's view drives the first request", () => {

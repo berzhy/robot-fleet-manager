@@ -13,8 +13,8 @@ import { testRobot } from "@/ui/features/robots/test-robots";
 import type { Robot, RobotContext } from "@/common/types";
 
 import { actionLabels } from "../robot-action-display";
-import { robotReading } from "../robot-reading";
 import { formatRobotTimestamp } from "../time-ago";
+import { actionUnavailable } from "../use-robot-action";
 
 import ActivityControls from "./activity-controls";
 import RobotDetails from "./robot-details";
@@ -183,20 +183,16 @@ function renderControls(
   overrides: Parameters<typeof testRobot>[0],
   props: Partial<ComponentProps<typeof ActivityControls>> = {},
 ) {
-  const now = Date.now();
+  const controlled = testRobot({
+    ...robot,
+    batteryPercent: 80,
+    lastReceivedAt: new Date().toISOString(),
+    ...overrides,
+  });
   render(
     <ActivityControls
-      reading={robotReading(
-        testRobot({
-          ...robot,
-          batteryPercent: 80,
-          lastReceivedAt: new Date(now).toISOString(),
-          ...overrides,
-        }),
-        now,
-        false,
-      )}
-      waitReason={null}
+      robot={controlled}
+      unavailableReason={(action) => actionUnavailable(controlled, action)}
       onAction={vi.fn()}
       {...props}
     />,
@@ -310,7 +306,7 @@ test.each([
   (pendingAction, spinning) => {
     renderControls(
       { activity: "working" },
-      { waitReason: "Sending command…", pendingAction },
+      { unavailableReason: () => "Sending command…", pendingAction },
     );
 
     const spinners = screen.getAllByRole("progressbar", { hidden: true });

@@ -29,7 +29,15 @@ import RobotTableSkeleton from "./robot-table-skeleton";
 // the cell padding; Robot fits a generated name such as "Robot 7F37424D"
 // beside its dot. On wider screens the fixed layout shares the extra space
 // across all columns in proportion, so no single column takes all of it.
-const columns = [
+const columns: {
+  label: string;
+  widthPx: number;
+  align?: "right";
+  /** The list's only order, so the header says so instead of offering a sort. */
+  isSortedNewestFirst?: boolean;
+  /** The ⋮ buttons explain themselves; screen readers still get the name. */
+  isLabelHidden?: boolean;
+}[] = [
   { label: "Robot", widthPx: 172 },
   { label: "Location", widthPx: 148 },
   { label: "Connection", widthPx: 112 },
@@ -37,9 +45,9 @@ const columns = [
   { label: "Battery", widthPx: 96 },
   { label: "Type", widthPx: 140 },
   { label: "Integration", widthPx: 104 },
-  { label: "Registered", widthPx: 124 },
-  { label: "Actions", widthPx: 64 },
-] as const;
+  { label: "Registered", widthPx: 124, isSortedNewestFirst: true },
+  { label: "Actions", widthPx: 64, align: "right", isLabelHidden: true },
+];
 
 // Narrower than this, the table scrolls sideways instead of squeezing columns.
 const tableMinWidthPx = columns.reduce(
@@ -144,11 +152,10 @@ export default function RobotTable({
                 <TableCell
                   key={column.label}
                   scope="col"
-                  sortDirection={column.label === "Registered" ? "desc" : false}
-                  align={column.label === "Actions" ? "right" : "left"}
+                  sortDirection={column.isSortedNewestFirst ? "desc" : false}
+                  align={column.align ?? "left"}
                 >
-                  {column.label === "Registered" ? (
-                    // The only order the list has, so it needs no control.
+                  {column.isSortedNewestFirst ? (
                     <Tooltip title="Newest first" describeChild>
                       <Box
                         component="span"
@@ -162,9 +169,7 @@ export default function RobotTable({
                         <ArrowDownwardIcon aria-hidden fontSize="inherit" />
                       </Box>
                     </Tooltip>
-                  ) : column.label === "Actions" ? (
-                    // The ⋮ buttons explain themselves; screen readers still
-                    // get the column name.
+                  ) : column.isLabelHidden ? (
                     <Box component="span" sx={visuallyHidden}>
                       {column.label}
                     </Box>

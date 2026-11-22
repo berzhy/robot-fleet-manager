@@ -144,8 +144,7 @@ export default function RobotSummary({
 /** Telemetry, labelled as last reported once it may be out of date. */
 function LiveValues({ reading }: { reading: RobotReading }) {
   const { robot, evaluatedAt, isStale, unverified, isLastKnown } = reading;
-  const { connection, batteryLevel } = robot;
-  const { problemCode } = robot;
+  const { connection, batteryLevel, problemCode } = robot;
 
   function label(name: string) {
     return isLastKnown ? `Last reported ${name.toLowerCase()}` : name;

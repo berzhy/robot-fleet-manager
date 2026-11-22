@@ -11,18 +11,13 @@ import { afterEach, expect, test, vi } from "vitest";
 import { render } from "@/ui/test-render";
 import type { Robot, RobotPage } from "@/common/types";
 
-import { pageMetadata, testRobot } from "@/ui/features/robots/test-robots";
+import { testRobotPage, testRobot } from "@/ui/features/robots/test-robots";
 import RobotList from "./robot-list";
 
 const robot = testRobot({ id: "one", name: "Atlas", manufacturer: "Maker" });
 
-const page = (items: Robot[], total = items.length, index = 0): RobotPage => ({
-  items,
-  total,
-  page: index,
-  pageSize: 10,
-  ...pageMetadata(total),
-});
+const page = (items: Robot[], total = items.length, index = 0): RobotPage =>
+  testRobotPage(items, { total, page: index });
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -159,13 +154,7 @@ test("changing rows per page resets to the first page and requests the selected 
     .mockResolvedValueOnce(Response.json(page([robot], 21)))
     .mockResolvedValueOnce(Response.json(page([robot], 21, 1)))
     .mockResolvedValueOnce(
-      Response.json({
-        items: [robot],
-        total: 21,
-        page: 0,
-        pageSize: 50,
-        ...pageMetadata(21),
-      }),
+      Response.json(testRobotPage([robot], { total: 21, pageSize: 50 })),
     );
   vi.stubGlobal("fetch", fetcher);
   render(<RobotList />);

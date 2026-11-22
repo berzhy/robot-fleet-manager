@@ -29,14 +29,29 @@ const testRow: RobotRow = {
   queuedControlTarget: null,
 };
 
-export function pageMetadata(
-  total = 0,
-): Pick<RobotPage, "summary" | "fleetTotal" | "filterOptions" | "evaluatedAt"> {
+/**
+ * A list response holding `items`. Counts follow `total`, which defaults to the
+ * items given; `fleetTotal` sets the fleet and matching counts on their own.
+ */
+export function testRobotPage(
+  items: Robot[] = [],
+  {
+    fleetTotal,
+    ...overrides
+  }: Partial<RobotPage> & { fleetTotal?: number } = {},
+): RobotPage {
+  const total = overrides.total ?? items.length;
+  const fleet = fleetTotal ?? total;
   return {
-    summary: { all: total, "needs-attention": 0, offline: 0, "low-battery": 0 },
-    fleetTotal: total,
+    items,
+    total,
+    page: 0,
+    pageSize: 10,
+    summary: { all: fleet, "needs-attention": 0, offline: 0, "low-battery": 0 },
+    fleetTotal: fleet,
     filterOptions: { sites: ["Munich"], manufacturers: ["Maker"] },
     evaluatedAt: Date.now(),
+    ...overrides,
   };
 }
 

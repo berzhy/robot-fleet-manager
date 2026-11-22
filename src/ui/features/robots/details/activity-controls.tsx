@@ -8,8 +8,6 @@ import { useId } from "react";
 import type { Robot, RobotAction } from "@/common/types";
 
 import { actionIcons, actionLabels } from "../robot-action-display";
-import type { RobotReading } from "../robot-reading";
-import { commandUnavailable } from "../use-robot-command";
 
 const tileSizePx = 120;
 const tileIconSizePx = 32;
@@ -19,31 +17,28 @@ const tileIconSizePx = 32;
  * (Start, Stop or Retry), and Return to base.
  */
 export default function ActivityControls({
-  reading,
-  waitReason,
+  robot,
   pendingAction,
+  unavailableReason,
   onAction,
 }: {
-  reading: RobotReading;
-  /** Why the robot cannot take a command yet, such as one being sent. */
-  waitReason: string | null;
+  robot: Robot;
+  /** The action being sent, if any. */
   pendingAction?: RobotAction;
+  unavailableReason: (action: RobotAction) => string | null;
   onAction: (action: RobotAction) => void;
 }) {
-  const { robot } = reading;
   const activity = mainActivityAction(robot);
   const isActivityQueued = robot.queuedActions.includes(activity);
   const isReturnQueued = robot.queuedActions.includes("return-to-base");
-
-  function reason(action: RobotAction) {
-    return waitReason ?? commandUnavailable(robot, action);
-  }
 
   return (
     <Box
       role="group"
       aria-label="Activity controls"
-      aria-busy={waitReason !== null || isActivityQueued || isReturnQueued}
+      aria-busy={
+        pendingAction !== undefined || isActivityQueued || isReturnQueued
+      }
       sx={{
         display: "grid",
         gridAutoFlow: { xs: "column", lg: "row" },
@@ -54,7 +49,7 @@ export default function ActivityControls({
       {/* One element for Start, Stop and Retry, so focus survives the swap. */}
       <ActionTile
         action={activity}
-        reason={reason(activity)}
+        reason={unavailableReason(activity)}
         isInProgress={
           (pendingAction !== undefined && pendingAction !== "return-to-base") ||
           isActivityQueued
@@ -63,7 +58,7 @@ export default function ActivityControls({
       />
       <ActionTile
         action="return-to-base"
-        reason={reason("return-to-base")}
+        reason={unavailableReason("return-to-base")}
         isInProgress={pendingAction === "return-to-base" || isReturnQueued}
         onAction={onAction}
       />

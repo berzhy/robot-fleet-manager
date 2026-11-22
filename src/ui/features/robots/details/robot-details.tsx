@@ -10,7 +10,7 @@ import type { RobotContext } from "@/common/types";
 
 import { robotReading } from "../robot-reading";
 import { robotListHref } from "../robot-list-return";
-import useRobotCommand from "../use-robot-command";
+import useRobotAction from "../use-robot-action";
 
 import ActivityControls from "./activity-controls";
 import RobotDetailsTabs from "./robot-details-tabs";
@@ -24,7 +24,8 @@ export default function RobotDetails({
 }) {
   const { robot, peerCounts, missing, refreshFailed, evaluatedAt } =
     useLiveRobot(initialContext);
-  const { requestAction, waitReason, pendingAction } = useRobotCommand(robot);
+  const { requestAction, pendingAction, unavailableReason } =
+    useRobotAction(robot);
   const reading = robotReading(robot, evaluatedAt, refreshFailed);
 
   return (
@@ -57,9 +58,9 @@ export default function RobotDetails({
         missing={missing}
         actions={
           <ActivityControls
-            reading={reading}
-            waitReason={waitReason}
+            robot={robot}
             pendingAction={pendingAction}
+            unavailableReason={unavailableReason}
             onAction={requestAction}
           />
         }

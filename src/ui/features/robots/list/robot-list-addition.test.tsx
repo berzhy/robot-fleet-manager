@@ -11,7 +11,7 @@ import { render } from "@/ui/test-render";
 import { createRobotBatchSchema, createRobotSchema } from "@/common/schemas";
 import type { Robot } from "@/common/types";
 
-import { pageMetadata, testRobot } from "@/ui/features/robots/test-robots";
+import { testRobotPage, testRobot } from "@/ui/features/robots/test-robots";
 import RobotList from "./robot-list";
 
 const robot = testRobot({
@@ -20,13 +20,7 @@ const robot = testRobot({
   manufacturer: "Maker",
 });
 function response(items: Robot[], total = items.length, page = 0) {
-  return Response.json({
-    items,
-    total,
-    page,
-    pageSize: 10,
-    ...pageMetadata(total),
-  });
+  return Response.json(testRobotPage(items, { total, page }));
 }
 
 function createdResponse(robots: Robot[]) {
@@ -341,14 +335,7 @@ test("batch failure preserves rows and resumes fleet updates", async () => {
 });
 
 test("addition outside the selected view retains filters and reports success without revealing the robot", async () => {
-  const filtered = () =>
-    Response.json({
-      items: [],
-      total: 0,
-      page: 0,
-      pageSize: 10,
-      ...pageMetadata(1),
-    });
+  const filtered = () => Response.json(testRobotPage([], { fleetTotal: 1 }));
   const fetcher = vi
     .fn()
     .mockResolvedValueOnce(response([robot]))

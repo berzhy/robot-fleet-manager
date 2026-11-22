@@ -6,7 +6,7 @@ import type { Robot, RobotPage } from "@/common/types";
 
 import { render } from "@/ui/test-render";
 
-import { pageMetadata, testRobot } from "@/ui/features/robots/test-robots";
+import { testRobotPage, testRobot } from "@/ui/features/robots/test-robots";
 import { setRobotListFilters } from "../robot-list-url";
 import RobotTable from "./robot-table";
 
@@ -22,13 +22,7 @@ const tableHandlers = {
 afterEach(() => vi.unstubAllGlobals());
 
 function robotPage(items: Robot[]): RobotPage {
-  return {
-    items,
-    total: items.length,
-    page: 0,
-    pageSize: 20,
-    ...pageMetadata(items.length),
-  };
+  return testRobotPage(items, { pageSize: 20 });
 }
 
 /** Renders the table for a URL view, with the robot API answering `snapshot`. */
@@ -102,11 +96,9 @@ test("table renders the supplied server page without slicing or sorting", async 
     ...robot,
     problemCode: "path-blocked",
   });
-  const metadata = pageMetadata(42);
-
   renderTable(
-    {
-      items: [
+    testRobotPage(
+      [
         testRobot({
           ...robotNeedingAttention,
           id: "zulu",
@@ -121,13 +113,19 @@ test("table renders the supplied server page without slicing or sorting", async 
         }),
         robotNeedingAttention,
       ],
-      total: 23,
-      page: 1,
-      pageSize: 20,
-      ...metadata,
-      fleetTotal: 60,
-      summary: { ...metadata.summary, "needs-attention": 23 },
-    },
+      {
+        total: 23,
+        page: 1,
+        pageSize: 20,
+        fleetTotal: 60,
+        summary: {
+          all: 42,
+          "needs-attention": 23,
+          offline: 0,
+          "low-battery": 0,
+        },
+      },
+    ),
     "?site=Munich&view=needs-attention&pageSize=20&page=1",
   );
 

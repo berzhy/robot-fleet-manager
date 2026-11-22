@@ -10,18 +10,12 @@ import { afterEach, expect, test, vi } from "vitest";
 import { render } from "@/ui/test-render";
 import type { Robot } from "@/common/types";
 
-import { pageMetadata, testRobot } from "@/ui/features/robots/test-robots";
+import { testRobotPage, testRobot } from "@/ui/features/robots/test-robots";
 import RobotList from "./robot-list";
 
 const robot = testRobot({ id: "one", name: "Atlas", manufacturer: "Maker" });
 function response(items: Robot[], total = items.length, page = 0) {
-  return Response.json({
-    items,
-    total,
-    page,
-    pageSize: 10,
-    ...pageMetadata(total),
-  });
+  return Response.json(testRobotPage(items, { total, page }));
 }
 
 afterEach(() => {
@@ -173,6 +167,7 @@ test("pending deletion blocks duplicate submission and dismissal; failure permit
     "/api/robots/one",
     {
       method: "DELETE",
+      cache: "no-store",
       signal: expect.any(AbortSignal) as AbortSignal,
     },
   ];
@@ -459,6 +454,7 @@ test("bulk deletion blocks duplicate clicks and dismissal, supports retry and re
     "/api/robots",
     {
       method: "DELETE",
+      cache: "no-store",
       signal: expect.any(AbortSignal) as AbortSignal,
     },
   ];

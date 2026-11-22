@@ -1,4 +1,4 @@
-import { pageMetadata } from "@/ui/features/robots/test-robots";
+import { testRobotPage } from "@/ui/features/robots/test-robots";
 import { afterEach, expect, test, vi } from "vitest";
 import {
   ApiError,
@@ -17,13 +17,7 @@ test("requests a server page with cancellation and rejects HTTP failures", async
   const fetcher = vi
     .fn()
     .mockResolvedValueOnce(
-      Response.json({
-        items: [],
-        total: 0,
-        page: 2,
-        pageSize: 20,
-        ...pageMetadata(),
-      }),
+      Response.json(testRobotPage([], { page: 2, pageSize: 20 })),
     )
     .mockResolvedValueOnce(new Response(null, { status: 500 }));
   vi.stubGlobal("fetch", fetcher);
@@ -34,14 +28,13 @@ test("requests a server page with cancellation and rejects HTTP failures", async
       { page: 2, pageSize: 20, filters: { view: "all" } },
       controller.signal,
     ),
-  ).toEqual({
-    items: [],
-    total: 0,
-    page: 2,
-    pageSize: 20,
-    ...pageMetadata(),
-    evaluatedAt: expect.any(Number) as number,
-  });
+  ).toEqual(
+    testRobotPage([], {
+      page: 2,
+      pageSize: 20,
+      evaluatedAt: expect.any(Number) as number,
+    }),
+  );
   expect(fetcher).toHaveBeenCalledWith("/api/robots?page=2&pageSize=20", {
     signal: expect.any(AbortSignal) as AbortSignal,
     cache: "no-store",
@@ -68,6 +61,7 @@ test("deletes an encoded robot id and distinguishes an already removed robot fro
   await expect(dataDeleteRobot("robot/id")).resolves.toBe("deleted");
   expect(fetcher).toHaveBeenCalledWith("/api/robots/robot%2Fid", {
     method: "DELETE",
+    cache: "no-store",
     signal: expect.any(AbortSignal) as AbortSignal,
   });
 
@@ -102,7 +96,7 @@ test("a failed response carries its status and the server's message", async () =
   });
 });
 
-test("creates robots in one batch POST and requires a 201 response", async () => {
+test("creates robots in one batch POST", async () => {
   const input = {
     name: "Robot ABCD1234",
     manufacturer: "Maker",
@@ -132,6 +126,7 @@ test("creates robots in one batch POST and requires a 201 response", async () =>
   expect(await createRobots([input])).toEqual([created]);
   expect(fetcher).toHaveBeenCalledWith("/api/robots/batch", {
     method: "POST",
+    cache: "no-store",
     signal: expect.any(AbortSignal) as AbortSignal,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ robots: [input] }),
@@ -172,15 +167,9 @@ test("detail requests encode IDs, support cancellation, and distinguish deletion
 });
 
 test("encodes literal search text and combined filters in the list request", async () => {
-  const fetcher = vi.fn().mockResolvedValue(
-    Response.json({
-      items: [],
-      total: 0,
-      page: 0,
-      pageSize: 20,
-      ...pageMetadata(),
-    }),
-  );
+  const fetcher = vi
+    .fn()
+    .mockResolvedValue(Response.json(testRobotPage([], { pageSize: 20 })));
   vi.stubGlobal("fetch", fetcher);
 
   await getRobots({

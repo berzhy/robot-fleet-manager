@@ -7,10 +7,9 @@ import { actionLabels } from "./robot-action-display";
 
 /**
  * Sends this robot's actions from any screen and reports each outcome as a
- * notification. One command at a time: `pendingAction` is the one being sent,
- * and `waitReason` says so.
+ * notification. One action at a time: `pendingAction` is the one being sent.
  */
-export default function useRobotCommand(robot: Robot) {
+export default function useRobotAction(robot: Robot) {
   const sendAction = useSendRobotAction(robot.id);
   const notifications = useNotifications();
 
@@ -55,15 +54,19 @@ export default function useRobotCommand(robot: Robot) {
   return {
     requestAction,
     pendingAction: sendAction.isPending ? sendAction.variables : undefined,
-    waitReason: sendAction.isPending ? "Sending command…" : null,
+    /** Why the screen cannot offer the action now, or null when it can. */
+    unavailableReason: (action: RobotAction) =>
+      sendAction.isPending
+        ? "Sending command…"
+        : actionUnavailable(robot, action),
   };
 }
 
 /**
- * Why a screen cannot offer an action now. A queued action blocks only
- * itself, so another command can always replace it.
+ * Why the robot's state rules an action out. A queued action blocks only
+ * itself, so another action can always replace it.
  */
-export function commandUnavailable(robot: Robot, action: RobotAction) {
+export function actionUnavailable(robot: Robot, action: RobotAction) {
   if (robot.queuedActions.includes(action)) {
     return "Waiting for the robot…";
   }

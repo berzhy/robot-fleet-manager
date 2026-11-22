@@ -11,18 +11,16 @@ import { robotActions } from "@/common/constants";
 import type { Robot } from "@/common/types";
 
 import { actionIcons, actionLabels } from "../../robot-action-display";
-import type { RobotReading } from "../../robot-reading";
-import useRobotCommand, { commandUnavailable } from "../../use-robot-command";
+import useRobotAction from "../../use-robot-action";
 
 export default function RobotTableRowMenu({
-  reading,
+  robot,
   onDelete,
 }: {
-  reading: RobotReading;
+  robot: Robot;
   onDelete: (robot: Robot, trigger: HTMLButtonElement) => void;
 }) {
-  const { robot } = reading;
-  const { requestAction, waitReason } = useRobotCommand(robot);
+  const { requestAction, unavailableReason } = useRobotAction(robot);
   const [anchor, setAnchor] = useState<HTMLButtonElement | null>(null);
   const id = useId();
   const buttonId = `${id}-button`;
@@ -53,7 +51,7 @@ export default function RobotTableRowMenu({
         onClose={() => setAnchor(null)}
       >
         {robotActions.map((action) => {
-          const reason = waitReason ?? commandUnavailable(robot, action);
+          const reason = unavailableReason(action);
           const Icon = actionIcons[action];
           return (
             <MenuItem
