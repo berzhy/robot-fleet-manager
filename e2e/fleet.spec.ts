@@ -610,7 +610,7 @@ test("search debounce closes an unmounted action menu and the new view keeps pol
   page,
   request,
 }) => {
-  const [robot] = await seedFleet(request, 1);
+  const [robot, searched] = await seedFleet(request, 2);
   await page.clock.install();
   await page.goto("/robots");
   const row = page.getByTestId(`robot-row-${robot.id}`);
@@ -623,13 +623,18 @@ test("search debounce closes an unmounted action menu and the new view keeps pol
       requests++;
     }
   });
-  await page.getByRole("textbox", { name: "Search robots" }).fill(robot.name);
+  await page
+    .getByRole("textbox", { name: "Search robots" })
+    .fill(searched.name);
   await row.getByTestId("robot-actions").click();
   await expect(page.getByRole("menu")).toBeVisible();
   await page.clock.runFor(1000);
   await page.clock.resume();
-  await expect(page.getByTestId("fleet-chip-search")).toContainText(robot.name);
-  await expect(row).toBeVisible();
+  await expect(page.getByTestId("fleet-chip-search")).toContainText(
+    searched.name,
+  );
+  await expect(page.getByTestId(`robot-row-${searched.id}`)).toBeVisible();
+  await expect(row).toHaveCount(0);
   await expect(page.getByRole("menu")).toHaveCount(0);
   const previous = requests;
   expect(previous).toBeGreaterThan(0);

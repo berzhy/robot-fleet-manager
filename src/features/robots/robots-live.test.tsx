@@ -241,10 +241,8 @@ test("a stale in-flight poll cannot overwrite an explicit refresh", async () => 
     stale(page(99));
     await Promise.resolve();
   });
-  expect(result.current.status).toBe("success");
-  expect(result.current.snapshot?.items).toMatchObject([
-    { batteryPercent: 40 },
-  ]);
+  expect(result.current.isLoading).toBe(false);
+  expect(result.current.data?.items).toMatchObject([{ batteryPercent: 40 }]);
   expect(result.current.refreshFailed).toBe(false);
 });
 
@@ -473,8 +471,8 @@ test("fleet and detail retain snapshots after a request timeout and recover on t
   expect(fetcher).toHaveBeenCalledTimes(3);
   expect(result.current.fleet.refreshFailed).toBe(true);
   expect(result.current.detail.refreshFailed).toBe(true);
-  expect(result.current.fleet.status).toBe("success");
-  expect(result.current.fleet.snapshot?.items).toMatchObject([
+  expect(result.current.fleet.isLoading).toBe(false);
+  expect(result.current.fleet.data?.items).toMatchObject([
     { batteryPercent: 45 },
   ]);
   expect(result.current.detail.robot.batteryPercent).toBe(45);
@@ -775,8 +773,8 @@ test("page correction after a hidden fleet shrinks immediately verifies the dest
   await tick();
 
   expect(result.current.page).toBe(0);
-  expect(result.current.status).toBe("success");
-  expect(result.current.snapshot?.items).toMatchObject([{ id: robot.id }]);
+  expect(result.current.isLoading).toBe(false);
+  expect(result.current.data?.items).toMatchObject([{ id: robot.id }]);
   expect(result.current.refreshFailed).toBe(false);
   expect(
     new URL(fetcher.mock.lastCall![0], "http://localhost").searchParams.get(
@@ -877,7 +875,7 @@ test("a write that settles during the first read for new filters refetches inste
     reads[0].resolve(page(50));
     await vi.advanceTimersByTimeAsync(0);
   });
-  expect(result.current.list.status).toBe("success");
+  expect(result.current.list.isLoading).toBe(false);
 
   await act(async () => {
     result.current.create.mutate([input]);
@@ -904,7 +902,7 @@ test("a write that settles during the first read for new filters refetches inste
     freshOfflineRead.resolve(page(20));
     await vi.advanceTimersByTimeAsync(0);
   });
-  expect(result.current.list.snapshot?.items).toMatchObject([
+  expect(result.current.list.data?.items).toMatchObject([
     { batteryPercent: 20 },
   ]);
   expect(result.current.create.isPending).toBe(false);

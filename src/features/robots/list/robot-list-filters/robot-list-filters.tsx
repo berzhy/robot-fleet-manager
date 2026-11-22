@@ -16,7 +16,7 @@ export default function RobotListFilters({
 }: {
   searchFieldRef: RefObject<SearchFieldHandle | null>;
 }) {
-  const available = useRobotList().snapshot?.filterOptions;
+  const available = useRobotList().data?.filterOptions;
 
   return (
     <Stack spacing={3}>

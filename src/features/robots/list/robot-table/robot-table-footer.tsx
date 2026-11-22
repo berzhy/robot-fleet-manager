@@ -45,11 +45,11 @@ export function formatResultCount(
 
 export default function RobotTableFooter() {
   const { filters, pageSize } = useRobotListView();
-  const { status, snapshot, page } = useRobotList();
+  const { data, isLoading, page } = useRobotList();
   const { isWritePending } = useRobotWriteLock();
 
-  // The previous snapshot keeps the pager mounted while the next page loads.
-  const total = snapshot?.total ?? 0;
+  // The previous view's total keeps the pager mounted while the next loads.
+  const total = data?.total ?? 0;
 
   return (
     <Box
@@ -106,8 +106,8 @@ export default function RobotTableFooter() {
         color="textSecondary"
         sx={{ ml: "auto", pr: 2, fontVariantNumeric: "tabular-nums" }}
       >
-        {status === "success" && snapshot ? (
-          formatResultCount(total, snapshot.summary.all, filters)
+        {data && !isLoading ? (
+          formatResultCount(total, data.summary.all, filters)
         ) : (
           <Skeleton width={180} aria-hidden="true" />
         )}

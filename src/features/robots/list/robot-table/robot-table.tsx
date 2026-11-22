@@ -46,6 +46,8 @@ const tableMinWidthPx = columns.reduce(
 );
 
 const rowHeightPx = 56;
+// Dim enough to show the rows are being replaced, clear enough to read and use.
+const outdatedRowsOpacity = 0.6;
 
 export default function RobotTable({
   toolbar,
@@ -61,7 +63,8 @@ export default function RobotTable({
   onDelete: (robot: Robot, trigger: HTMLButtonElement) => void;
 }) {
   const { filters, pageSize } = useRobotListView();
-  const { status, snapshot, refresh, refreshFailed } = useRobotList();
+  const { data, isLoading, loadFailed, refreshFailed, refresh } =
+    useRobotList();
 
   // Focus events from the portalled menu follow the React tree to its row.
   const focusedRowElement = useRef<HTMLTableRowElement | null>(null);
@@ -80,9 +83,8 @@ export default function RobotTable({
     }
   });
 
-  const isLoading = status === "loading";
-  const result = status === "success" ? snapshot : undefined;
   const { search } = filters;
+  const isOutdated = isLoading && data !== undefined;
 
   return (
     <Paper
@@ -174,20 +176,24 @@ export default function RobotTable({
               ))}
             </TableRow>
           </TableHead>
-          <TableBody>
-            {isLoading && (
+          <TableBody
+            // The previous view's rows stay, dimmed, while the next loads. Their
+            // actions still work: each one names its robot by id.
+            sx={{ opacity: isOutdated ? outdatedRowsOpacity : 1 }}
+          >
+            {isLoading && !data?.items.length && (
               <RobotTableSkeleton
                 columnCount={columns.length}
                 rowCount={pageSize}
                 rowHeight={rowHeightPx}
               />
             )}
-            {result?.items.map((robot) => (
+            {data?.items.map((robot) => (
               <RobotTableRow
                 key={robot.id}
                 robot={robot}
                 search={search}
-                evaluatedAt={result.evaluatedAt}
+                evaluatedAt={data.evaluatedAt}
                 unverified={refreshFailed}
                 onFocusCapture={(event) => {
                   focusedRowElement.current = event.currentTarget;
@@ -198,13 +204,14 @@ export default function RobotTable({
             ))}
           </TableBody>
         </Table>
-        {result?.total === 0 &&
-          (result.fleetTotal > 0 ? (
+        {data?.total === 0 &&
+          !isLoading &&
+          (data.fleetTotal > 0 ? (
             <RobotTableNoResultsState onCleared={onFocusSearch} />
           ) : (
             <RobotTableEmptyState onAdd={onAdd} adding={adding} />
           ))}
-        {status === "error" && <RobotTableErrorState onRetry={refresh} />}
+        {loadFailed && <RobotTableErrorState onRetry={refresh} />}
       </TableContainer>
       <RobotTableFooter />
     </Paper>

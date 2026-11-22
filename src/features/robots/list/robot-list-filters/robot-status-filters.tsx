@@ -53,15 +53,14 @@ const darkAlertIconOpacity = 0.42;
 
 export default function RobotStatusFilters() {
   const { filters } = useRobotListView();
-  const { status, snapshot } = useRobotList();
-  const summary = snapshot?.summary;
-  const isUpdating = status === "loading";
+  const { data, isLoading, loadFailed } = useRobotList();
+  const summary = data?.summary;
 
   return (
     <Box
       role="group"
       aria-label="Robot status filters"
-      aria-busy={isUpdating}
+      aria-busy={isLoading}
       sx={{
         display: "grid",
         gridTemplateColumns: { xs: "repeat(2, 1fr)", md: "repeat(4, 1fr)" },
@@ -136,7 +135,7 @@ export default function RobotStatusFilters() {
                   >
                     {summary ? (
                       summary[view]
-                    ) : status === "error" ? (
+                    ) : loadFailed ? (
                       "–"
                     ) : (
                       <Skeleton width={40} />

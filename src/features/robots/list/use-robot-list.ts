@@ -12,8 +12,6 @@ import { robotListOptions } from "../api/robot-queries";
 
 import useRobotListView, { setRobotListPage } from "./use-robot-list-view";
 
-type RobotListStatus = "loading" | "error" | "success";
-
 // No local state or effects, so any part of the list can call it; React Query
 // shares one request between them. A component that mounts later, such as one
 // in a popover, refetches on mount, so it should get the data as props instead.
@@ -22,43 +20,38 @@ export default function useRobotList() {
   const view = useRobotListView();
 
   const options = robotListOptions(view);
-  // While the next view loads, the previous result keeps the tile counts,
-  // filter options and pager in place. Its rows are not shown (status stays
-  // "loading"), because they belong to the previous view: a click on one
-  // would act on a robot the new view may not include.
+  // While the next view loads, the previous view's result stays on screen, so
+  // the counts, filter options, pager and rows stay in place.
   const query = useQuery({ ...options, placeholderData: keepPreviousData });
 
-  const snapshot = query.data;
+  const { data } = query;
   const page = Math.min(
     view.page,
-    lastRobotPage(snapshot?.total ?? 0, view.pageSize),
+    lastRobotPage(data?.total ?? 0, view.pageSize),
   );
   const isOutOfRange = Boolean(
-    snapshot &&
+    data &&
     !query.isPlaceholderData &&
-    view.page > lastRobotPage(snapshot.total, view.pageSize),
+    view.page > lastRobotPage(data.total, view.pageSize),
   );
-
-  const status: RobotListStatus =
-    isOutOfRange || query.isPlaceholderData
-      ? "loading"
-      : snapshot
-        ? "success"
-        : query.isError
-          ? "error"
-          : "loading";
 
   function refresh() {
     void client.invalidateQueries({ queryKey: options.queryKey, exact: true });
   }
 
   return {
-    status,
-    snapshot,
+    data,
+    /**
+     * This view's own result is not on screen yet: on the first load, while
+     * the previous view's result stands in, and on a page past the end until
+     * the URL is corrected.
+     */
+    isLoading: query.isPending || query.isPlaceholderData || isOutOfRange,
+    loadFailed: query.isLoadingError,
+    refreshFailed: query.isRefetchError,
     page,
     isOutOfRange,
     refresh,
-    refreshFailed: query.isRefetchError,
   };
 }
 
@@ -80,7 +73,7 @@ export function useRobotListPageCorrection({
 // Screen readers hear the count after a filter change, not after every poll.
 export function useRobotListAnnouncement(
   filters: RobotFilters,
-  { status, snapshot }: Pick<RobotList, "status" | "snapshot">,
+  { data, isLoading }: Pick<RobotList, "data" | "isLoading">,
 ) {
   const filtersKey = robotFilterSearchParams(filters).toString();
 
@@ -93,11 +86,11 @@ export function useRobotListAnnouncement(
   if (announced.filtersKey !== filtersKey) {
     // Clear at once, so the same count is announced again.
     setAnnounced({ filtersKey, text: "", isWaiting: true });
-  } else if (announced.isWaiting && status === "success" && snapshot) {
-    const robots = snapshot.total === 1 ? "robot" : "robots";
+  } else if (announced.isWaiting && data && !isLoading) {
+    const robots = data.total === 1 ? "robot" : "robots";
     setAnnounced({
       filtersKey,
-      text: `${snapshot.total} ${robots} found.`,
+      text: `${data.total} ${robots} found.`,
       isWaiting: false,
     });
   }

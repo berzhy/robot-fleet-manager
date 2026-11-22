@@ -45,47 +45,60 @@ function renderTable(snapshot: RobotPage, query = "") {
 }
 
 test.each(robotPageSizes)(
-  "loading the next view renders %i decorative rows and keeps the pager",
-  async (pageSize) => {
+  "the first load renders %i decorative rows",
+  (pageSize) => {
     window.history.replaceState(null, "", `/robots?pageSize=${pageSize}`);
-    let finishLoading!: (response: Response) => void;
     vi.stubGlobal(
       "fetch",
-      vi.fn((url: string) =>
-        url.includes("view=needs-attention")
-          ? new Promise<Response>((resolve) => {
-              finishLoading = resolve;
-            })
-          : Promise.resolve(Response.json({ ...robotPage([robot]), pageSize })),
-      ),
+      vi.fn(() => new Promise<Response>(() => {})),
     );
     render(<RobotTable {...tableHandlers} />);
 
     const table = screen.getByRole("table", { name: "Robot fleet" });
-    const footerCount = screen.getByTestId("fleet-result-count");
-    expect(
-      await within(table).findByRole("link", { name: robot.name }),
-    ).toBeVisible();
-
-    act(() => setRobotListFilters({ view: "needs-attention" }));
-
     expect(table.querySelectorAll("tbody > tr")).toHaveLength(pageSize);
     expect(within(table).getAllByRole("row")).toHaveLength(1);
-    expect(footerCount).not.toHaveTextContent("Newest first");
-    expect(screen.getByTestId("fleet-page-summary")).toHaveTextContent("of 1");
-
-    await act(async () => {
-      finishLoading(Response.json({ ...robotPage([robot]), pageSize }));
-      await Promise.resolve();
-    });
-
-    expect(
-      await within(table).findByRole("link", { name: robot.name }),
-    ).toBeVisible();
-    expect(table.querySelectorAll("tbody > tr")).toHaveLength(1);
-    expect(footerCount).toHaveTextContent("1 of 1 matching robot");
   },
 );
+
+test("the previous rows and the pager stay while the next view loads", async () => {
+  let finishLoading!: (response: Response) => void;
+  const nextRobot = testRobot({ id: "next", name: "Next robot" });
+  vi.stubGlobal(
+    "fetch",
+    vi.fn((url: string) =>
+      url.includes("view=needs-attention")
+        ? new Promise<Response>((resolve) => {
+            finishLoading = resolve;
+          })
+        : Promise.resolve(Response.json(robotPage([robot]))),
+    ),
+  );
+  window.history.replaceState(null, "", "/robots");
+  render(<RobotTable {...tableHandlers} />);
+
+  const table = screen.getByRole("table", { name: "Robot fleet" });
+  const footerCount = screen.getByTestId("fleet-result-count");
+  expect(
+    await within(table).findByRole("link", { name: robot.name }),
+  ).toBeVisible();
+
+  act(() => setRobotListFilters({ view: "needs-attention" }));
+
+  expect(within(table).getByRole("link", { name: robot.name })).toBeVisible();
+  expect(footerCount).not.toHaveTextContent("Newest first");
+  expect(screen.getByTestId("fleet-page-summary")).toHaveTextContent("of 1");
+
+  await act(async () => {
+    finishLoading(Response.json(robotPage([nextRobot])));
+    await Promise.resolve();
+  });
+
+  expect(
+    await within(table).findByRole("link", { name: nextRobot.name }),
+  ).toBeVisible();
+  expect(within(table).queryByRole("link", { name: robot.name })).toBeNull();
+  expect(footerCount).toHaveTextContent("1 of 1 matching robot");
+});
 
 test("table renders the supplied server page without slicing or sorting", async () => {
   const robotNeedingAttention = {

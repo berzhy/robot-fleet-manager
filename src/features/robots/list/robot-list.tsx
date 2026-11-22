@@ -35,7 +35,7 @@ export default function RobotList() {
   const { filters } = useRobotListView();
   useRememberRobotListView();
   const list = useRobotList();
-  const { status, refreshFailed } = list;
+  const { isLoading, refreshFailed } = list;
   const announcement = useRobotListAnnouncement(filters, list);
   useRobotListPageCorrection(list);
 
@@ -44,7 +44,7 @@ export default function RobotList() {
     focusFallback: focusSearch,
   });
   const { addRobots, adding, addButtonRef } = useAddRobots({
-    blocked: status === "loading" || dialog !== null,
+    blocked: isLoading || dialog !== null,
   });
 
   return (
@@ -66,9 +66,7 @@ export default function RobotList() {
           onDeleteAll={(trigger) => requestDelete({ kind: "all" }, trigger)}
           buttonRef={addButtonRef}
           loading={adding}
-          disabled={
-            isWritePending || status === "loading" || Boolean(dialog?.open)
-          }
+          disabled={isWritePending || isLoading || Boolean(dialog?.open)}
           onAdd={addRobots}
         />
       </Stack>
@@ -79,9 +77,9 @@ export default function RobotList() {
         aria-atomic="true"
         sx={visuallyHidden}
       >
-        {status === "loading" ? "Loading robots" : announcement}
+        {isLoading ? "Loading robots" : announcement}
       </Box>
-      {refreshFailed && status === "success" && (
+      {refreshFailed && (
         <Alert data-testid="fleet-refresh-warning" severity="warning">
           Live updates interrupted. Showing last-known data and connection
           states.
