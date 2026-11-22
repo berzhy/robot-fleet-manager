@@ -2,6 +2,7 @@ import Stack from "@mui/material/Stack";
 import type { RefObject } from "react";
 
 import useRobotList from "../use-robot-list";
+import useRobotListView, { setRobotListFilters } from "../use-robot-list-view";
 
 import AppliedFilterChips from "./applied-filter-chips";
 import { toolbarFilterFields } from "./filter-fields";
@@ -16,6 +17,7 @@ export default function RobotListFilters({
 }: {
   searchFieldRef: RefObject<SearchFieldHandle | null>;
 }) {
+  const { filters } = useRobotListView();
   const available = useRobotList().data?.filterOptions;
 
   return (
@@ -47,7 +49,9 @@ export default function RobotListFilters({
             <FilterSelect
               key={field.key}
               field={field}
+              value={filters[field.key]}
               available={available}
+              onChange={(value) => setRobotListFilters({ [field.key]: value })}
               sx={toolbarFieldSx}
             />
           ))}
@@ -55,7 +59,7 @@ export default function RobotListFilters({
         </Stack>
       </Stack>
       <AppliedFilterChips
-        onClearSearch={() => searchFieldRef.current?.reset()}
+        onDiscardSearchDraft={() => searchFieldRef.current?.discardDraft()}
       />
     </Stack>
   );

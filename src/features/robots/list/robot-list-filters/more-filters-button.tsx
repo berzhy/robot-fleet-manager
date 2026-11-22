@@ -10,7 +10,7 @@ import { useId, useState } from "react";
 
 import type { FilterOptions } from "@/modules/robots/robot-filters";
 
-import useRobotListView from "../use-robot-list-view";
+import useRobotListView, { setRobotListFilters } from "../use-robot-list-view";
 
 import { moreFilterFields, moreFiltersButtonId } from "./filter-fields";
 import FilterSelect from "./filter-select";
@@ -87,7 +87,13 @@ export default function MoreFiltersButton({
             </IconButton>
           </Stack>
           {moreFilterFields.map((field) => (
-            <FilterSelect key={field.key} field={field} available={available} />
+            <FilterSelect
+              key={field.key}
+              field={field}
+              value={filters[field.key]}
+              available={available}
+              onChange={(value) => setRobotListFilters({ [field.key]: value })}
+            />
           ))}
         </Stack>
       </Popover>

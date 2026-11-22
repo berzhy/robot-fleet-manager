@@ -24,7 +24,7 @@ const searchDebounceMs = 300;
 export type SearchFieldHandle = {
   focus: () => void;
   /** Drops typed text, including text the debounce has not applied yet. */
-  reset: () => void;
+  discardDraft: () => void;
 };
 
 export default function RobotSearchField({
@@ -35,8 +35,8 @@ export default function RobotSearchField({
   const { filters } = useRobotListView();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // The box holds what the user types; the URL holds the applied search.
-  const [search, setSearch] = useState(filters.search ?? "");
+  // The draft is what the user types; the URL holds the applied search.
+  const [draft, setDraft] = useState(filters.search ?? "");
   const [urlSearch, setUrlSearch] = useState(filters.search);
   const [ownSearch, setOwnSearch] = useState(filters.search);
 
@@ -47,7 +47,7 @@ export default function RobotSearchField({
     setUrlSearch(filters.search);
     if (filters.search !== ownSearch) {
       setOwnSearch(filters.search);
-      setSearch(filters.search ?? "");
+      setDraft(filters.search ?? "");
     }
   }
 
@@ -55,7 +55,7 @@ export default function RobotSearchField({
   // applied on return; the box then reads the URL again.
   useLayoutEffect(
     () => () => {
-      setSearch("");
+      setDraft("");
       setUrlSearch(undefined);
       setOwnSearch(undefined);
     },
@@ -66,8 +66,8 @@ export default function RobotSearchField({
 
   useImperativeHandle(ref, () => ({
     focus: () => inputRef.current?.focus(),
-    reset: () => {
-      setSearch("");
+    discardDraft: () => {
+      setDraft("");
       setOwnSearch(undefined);
     },
   }));
@@ -83,7 +83,7 @@ export default function RobotSearchField({
     if (composing) {
       return;
     }
-    const timer = setTimeout(() => applySearch(search), searchDebounceMs);
+    const timer = setTimeout(() => applySearch(draft), searchDebounceMs);
 
     // Writing the URL cancels a navigation already under way, so a click on a
     // link (the user is leaving) drops the pending search.
@@ -100,7 +100,7 @@ export default function RobotSearchField({
         capture: true,
       });
     };
-  }, [search, composing]);
+  }, [draft, composing]);
 
   function writeSearch(value: string | undefined) {
     setOwnSearch(value);
@@ -109,7 +109,7 @@ export default function RobotSearchField({
 
   function clearSearch() {
     inputRef.current?.focus();
-    setSearch("");
+    setDraft("");
     if (ownSearch !== undefined) {
       writeSearch(undefined);
     }
@@ -123,13 +123,13 @@ export default function RobotSearchField({
       placeholder="Name, manufacturer, location…"
       size="small"
       variant="standard"
-      value={search}
+      value={draft}
       helperText={
-        search.trim().length === 1 ? "Enter at least 2 characters" : undefined
+        draft.trim().length === 1 ? "Enter at least 2 characters" : undefined
       }
       onChange={(event) => {
         const value = event.target.value;
-        setSearch(value);
+        setDraft(value);
         if (!value) {
           clearSearch();
         }
@@ -150,9 +150,9 @@ export default function RobotSearchField({
               <IconButton
                 size="small"
                 aria-label="Clear search"
-                disabled={!search}
+                disabled={!draft}
                 onClick={clearSearch}
-                sx={{ opacity: search ? 1 : 0 }}
+                sx={{ opacity: draft ? 1 : 0 }}
               >
                 <CloseIcon fontSize="inherit" />
               </IconButton>

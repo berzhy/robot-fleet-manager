@@ -5,8 +5,6 @@ import { useState } from "react";
 
 import type { FilterOptions } from "@/modules/robots/robot-filters";
 
-import useRobotListView, { setRobotListFilters } from "../use-robot-list-view";
-
 import {
   filterFieldId,
   formatFilterValue,
@@ -15,25 +13,27 @@ import {
 
 export default function FilterSelect({
   field,
+  value,
   available,
+  onChange,
   sx,
 }: {
   field: FilterField;
+  value: string | undefined;
   /** From the parent: a list query subscribed here would refetch on mount. */
   available: FilterOptions | undefined;
+  /** `undefined` when the user picks the field's "all" option. */
+  onChange: (value: string | undefined) => void;
   sx?: SxProps<Theme>;
 }) {
-  const { filters } = useRobotListView();
-
   // Keep a focused option mounted even if the next poll removes it.
   const [openOptions, setOpenOptions] = useState<readonly string[]>();
 
-  const selected = filters[field.key];
   const displayedOptions =
     openOptions ?? (available ? field.options(available) : []);
-  // A value from the URL stays selectable even if the fleet no longer has it.
+  // The current value stays selectable even if the fleet no longer has it.
   const options = [
-    ...new Set([...displayedOptions, ...(selected ? [selected] : [])]),
+    ...new Set([...displayedOptions, ...(value ? [value] : [])]),
   ];
 
   return (
@@ -44,7 +44,7 @@ export default function FilterSelect({
       disabled={!available && !openOptions}
       id={filterFieldId(field.key)}
       label={field.label}
-      value={selected ?? ""}
+      value={value ?? ""}
       sx={sx}
       slotProps={{
         inputLabel: { shrink: true },
@@ -54,9 +54,7 @@ export default function FilterSelect({
           onClose: () => setOpenOptions(undefined),
         },
       }}
-      onChange={(event) => {
-        setRobotListFilters({ [field.key]: event.target.value || undefined });
-      }}
+      onChange={(event) => onChange(event.target.value || undefined)}
     >
       <MenuItem value="">{field.allLabel}</MenuItem>
       {options.map((value) => (
