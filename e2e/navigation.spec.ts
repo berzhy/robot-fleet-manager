@@ -13,6 +13,7 @@ test("desktop sections support navigation, history, direct loads and themes", as
     exact: true,
   });
 
+  await expect(page).toHaveTitle("Robots · Fleet Orchestrator");
   await expect(robotsLink).toHaveAttribute("href", "/robots");
   await expect(robotsLink).toHaveAttribute("aria-current", "page");
   await expect(
@@ -27,6 +28,7 @@ test("desktop sections support navigation, history, direct loads and themes", as
     await expect(
       page.getByRole("heading", { level: 1, name: section }),
     ).toBeVisible();
+    await expect(page).toHaveTitle(`${section} · Fleet Orchestrator`);
     await expect(
       navigation.getByRole("link", { name: section, exact: true }),
     ).toHaveAttribute("aria-current", "page");

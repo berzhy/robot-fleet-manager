@@ -55,6 +55,7 @@ test("detail context and controls follow reported telemetry", async ({
 
   await report("working", 0);
   await page.goto(`/robots/${selected.id}`);
+  await expect(page).toHaveTitle(`${selected.name} · Fleet Orchestrator`);
   await expect(
     page.getByRole("heading", { level: 1, name: selected.name }),
   ).toBeVisible();
@@ -164,6 +165,7 @@ test("a missing robot links back to the fleet list", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Robot not found" }),
   ).toBeVisible();
+  await expect(page).toHaveTitle("Robot not found · Fleet Orchestrator");
 
   await page.getByRole("link", { name: "Back to robots" }).click();
   await expect(page).toHaveURL("/robots");

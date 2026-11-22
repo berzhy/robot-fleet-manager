@@ -20,7 +20,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Fleet Orchestrator",
+  // Each page names itself first: tabs and history tell pages apart, and Next
+  // announces a client navigation to screen readers only when the title changes.
+  title: { template: "%s · Fleet Orchestrator", default: "Fleet Orchestrator" },
   description: "Robot fleet management dashboard",
 };
 

@@ -1,5 +1,6 @@
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import Typography from "@mui/material/Typography";
+import type { Metadata } from "next";
 import { io } from "next/cache";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -8,13 +9,18 @@ import { robotKeys } from "@/features/robots/api/robot-queries";
 import RobotDetails from "@/features/robots/details/robot-details";
 import { createQueryClient } from "@/query/query-client";
 import { getDatabase } from "@/server/db/runtime-database";
-import { getRobotContext } from "@/server/robots/robots";
+import { getRobot, getRobotContext } from "@/server/robots/robots";
 
-export default function RobotPage({
+export async function generateMetadata({
   params,
-}: {
-  params: Promise<{ robotId: string }>;
-}) {
+}: PageProps<"/robots/[robotId]">): Promise<Metadata> {
+  const { robotId } = await params;
+  await io();
+  const robot = getRobot(getDatabase(), robotId);
+  return { title: robot?.name ?? "Robot not found" };
+}
+
+export default function RobotPage({ params }: PageProps<"/robots/[robotId]">) {
   return (
     <Suspense
       fallback={<Typography role="status">Loading robot details</Typography>}
