@@ -4,12 +4,15 @@ import { testRobot } from "@/test/robots";
 
 import { onlineReportMaxAgeMs } from "../telemetry/freshness";
 
-import { lowBatteryPercent, type Robot } from "./robot";
+import { lowBatteryPercent, type Robot, type RobotActivity } from "./robot";
 import {
   actionUnavailable,
+  commandUnavailable,
+  mainActivityAction,
   robotActions,
   type RobotAction,
 } from "./robot-actions";
+import { robotReading } from "./robot-reading";
 
 const now = Date.parse("2026-11-14T12:00:00.000Z");
 
@@ -71,4 +74,33 @@ test.each([
   for (const action of robotActions) {
     expect(actionUnavailable(robot, action, now)).toBe("Robot isn't connected");
   }
+});
+
+test.each<[RobotActivity, RobotAction]>([
+  ["working", "stop"],
+  ["returning", "stop"],
+  ["needs-attention", "retry"],
+  ["idle", "start"],
+  ["charging", "start"],
+  ["unknown", "start"],
+])("the main action for a robot that is %s is %s", (activity, action) => {
+  expect(mainActivityAction(testRobot({ activity }))).toBe(action);
+});
+
+test("a screen waits for live updates first, then for a queued command", () => {
+  const robot = connectedRobot({
+    activity: "idle",
+    queuedControlTarget: "work",
+  });
+
+  expect(commandUnavailable(robotReading(robot, now, true), "start")).toBe(
+    "Waiting for live updates",
+  );
+  expect(commandUnavailable(robotReading(robot, now, false), "start")).toBe(
+    "Waiting for the robot…",
+  );
+  // Another command can always replace the queued one.
+  expect(
+    commandUnavailable(robotReading(robot, now, false), "return-to-base"),
+  ).toBeNull();
 });

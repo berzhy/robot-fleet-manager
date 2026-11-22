@@ -12,6 +12,7 @@ import { visuallyHidden } from "@mui/utils";
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 
 import type { Robot } from "@/modules/robots/robot";
+import { robotReading } from "@/modules/robots/robot-reading";
 
 import useRobotList from "../use-robot-list";
 import useRobotListView from "../use-robot-list-view";
@@ -191,10 +192,8 @@ export default function RobotTable({
             {data?.items.map((robot) => (
               <RobotTableRow
                 key={robot.id}
-                robot={robot}
+                reading={robotReading(robot, data.evaluatedAt, refreshFailed)}
                 search={search}
-                evaluatedAt={data.evaluatedAt}
-                unverified={refreshFailed}
                 onFocusCapture={(event) => {
                   focusedRowElement.current = event.currentTarget;
                 }}

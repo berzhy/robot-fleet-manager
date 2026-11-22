@@ -8,6 +8,7 @@ import {
 import type { ComponentProps } from "react";
 import { expect, test, vi, afterEach, onTestFinished } from "vitest";
 
+import { robotReading } from "@/modules/robots/robot-reading";
 import { render } from "@/test/render";
 import { testRobot } from "@/test/robots";
 import type { Robot, RobotContext } from "@/modules/robots/robot";
@@ -185,14 +186,16 @@ function renderControls(
   const now = Date.now();
   render(
     <ActivityControls
-      robot={{
-        ...robot,
-        batteryPercent: 80,
-        lastReceivedAt: new Date(now).toISOString(),
-        ...overrides,
-      }}
-      evaluatedAt={now}
-      unverified={false}
+      reading={robotReading(
+        {
+          ...robot,
+          batteryPercent: 80,
+          lastReceivedAt: new Date(now).toISOString(),
+          ...overrides,
+        },
+        now,
+        false,
+      )}
       pending={false}
       onAction={vi.fn()}
       {...props}

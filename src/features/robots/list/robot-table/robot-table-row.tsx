@@ -16,11 +16,14 @@ import {
 } from "@/modules/robots/robot-labels";
 import { robotProblemDetails } from "@/modules/robots/robot-problems";
 import type { Robot } from "@/modules/robots/robot";
-import { connectionStatus, isStale } from "@/modules/telemetry/freshness";
+import type { RobotReading } from "@/modules/robots/robot-reading";
 
 import { ConnectionIndicator } from "../../connection-status/connection-status";
 import TimeAgo from "../../time-ago/time-ago";
-import { batteryTone, formatBattery } from "../../utils/robot-formatters";
+import {
+  batteryLevelColors,
+  formatBattery,
+} from "../../utils/robot-formatters";
 
 import RobotTableRowMenu from "./robot-table-row-menu";
 import SearchHighlight from "./search-highlight";
@@ -29,26 +32,21 @@ import SearchHighlight from "./search-highlight";
 const aboveRowLink = { position: "relative", zIndex: 1 } as const;
 
 export default function RobotTableRow({
+  reading,
   search,
-  evaluatedAt,
-  unverified,
   onFocusCapture,
-  robot,
   rowHeight,
   onDelete,
 }: {
+  reading: RobotReading;
   search?: string;
-  evaluatedAt: number;
-  unverified: boolean;
   onFocusCapture: FocusEventHandler<HTMLTableRowElement>;
-  robot: Robot;
   rowHeight: number;
   onDelete: (robot: Robot, trigger: HTMLButtonElement) => void;
 }) {
-  const connection = connectionStatus(robot.lastReceivedAt, evaluatedAt);
+  const { robot, evaluatedAt, connection, isStale, unverified, batteryLevel } =
+    reading;
   const connectionLabel = formatConnection(connection);
-  const stale = isStale(connection);
-  const battery = batteryTone(robot);
 
   return (
     <TableRow
@@ -135,7 +133,7 @@ export default function RobotTableRow({
           {/* A failed refresh is announced above the table, not on every row. */}
           <SearchHighlight text={connectionLabel} search={search} />
         </Typography>
-        {stale && robot.lastReceivedAt && (
+        {isStale && robot.lastReceivedAt && (
           <Typography
             data-testid="robot-last-report"
             variant="body2"
@@ -151,8 +149,11 @@ export default function RobotTableRow({
       </TableCell>
       <TableCell data-testid="robot-activity">
         {/* Without fresh reports the activity is what the robot last said. */}
-        <Typography variant="body2" color={stale ? "textSecondary" : undefined}>
-          {stale && "Last: "}
+        <Typography
+          variant="body2"
+          color={isStale ? "textSecondary" : undefined}
+        >
+          {isStale && "Last: "}
           <SearchHighlight
             text={formatActivity(robot.activity)}
             search={search}
@@ -169,7 +170,7 @@ export default function RobotTableRow({
       </TableCell>
       <TableCell
         data-testid="robot-battery"
-        sx={{ color: battery && `${battery}.main` }}
+        sx={{ color: batteryLevel && batteryLevelColors[batteryLevel] }}
       >
         <SearchHighlight
           text={formatBattery(robot.batteryPercent)}
@@ -196,12 +197,7 @@ export default function RobotTableRow({
         </Typography>
       </TableCell>
       <TableCell align="right" sx={{ position: "relative" }}>
-        <RobotTableRowMenu
-          robot={robot}
-          evaluatedAt={evaluatedAt}
-          unverified={unverified}
-          onDelete={onDelete}
-        />
+        <RobotTableRowMenu reading={reading} onDelete={onDelete} />
       </TableCell>
     </TableRow>
   );

@@ -4,8 +4,8 @@ import type { SxProps, Theme } from "@mui/material/styles";
 import Typography from "@mui/material/Typography";
 import type { ReactNode } from "react";
 
-import type { Robot, SiteRobot } from "@/modules/robots/robot";
-import { connectionStatus, isStale } from "@/modules/telemetry/freshness";
+import type { SiteRobot } from "@/modules/robots/robot";
+import type { RobotReading } from "@/modules/robots/robot-reading";
 
 import {
   facilityAreas,
@@ -31,23 +31,18 @@ const onNarrowPlan = `@container (max-width: ${narrowPlanWidthPx - 1}px)`;
 
 /** Where the robot is at its site, among the site's other robots. */
 export default function LocationMap({
-  robot,
+  reading,
   peers,
-  evaluatedAt,
-  unverified,
 }: {
-  robot: Robot;
+  reading: RobotReading;
   peers: SiteRobot[];
-  evaluatedAt: number;
-  unverified: boolean;
 }) {
+  const { robot } = reading;
   const layout = getFacilityLayout(robot.site);
   const robotArea = planArea(robot.area);
   // The robot may have moved since the report that placed it.
   const isLastKnown =
-    unverified ||
-    isStale(connectionStatus(robot.lastReceivedAt, evaluatedAt)) ||
-    robot.problemCode === "position-lost";
+    reading.isLastKnown || robot.problemCode === "position-lost";
 
   const otherCountIn = (area: FacilityArea | undefined) =>
     peers.filter((peer) => planArea(peer.area) === area).length;

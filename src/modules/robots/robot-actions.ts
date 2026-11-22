@@ -1,5 +1,7 @@
-import { lowBatteryPercent, type ControlTarget, type Robot } from "./robot";
 import { connectionStatus } from "../telemetry/freshness";
+
+import { lowBatteryPercent, type ControlTarget, type Robot } from "./robot";
+import type { RobotReading } from "./robot-reading";
 
 export const robotActions = [
   "start",
@@ -24,6 +26,52 @@ export const actionControlTargets: Record<RobotAction, ControlTarget> = {
   stop: "stop",
   "return-to-base": "base",
 };
+
+/** The obvious next thing for the robot's state: Start, Stop or Retry. */
+export function mainActivityAction(robot: Robot): RobotAction {
+  switch (robot.activity) {
+    case "working":
+    case "returning":
+      return "stop";
+    // Whether there is a problem to retry is Retry's own reason to give.
+    case "needs-attention":
+      return "retry";
+    case "idle":
+    case "charging":
+    case "unknown":
+      return "start";
+  }
+}
+
+/**
+ * Why a screen cannot offer an action now. Data that may be out of date
+ * blocks every action before the robot's own state is considered. A queued
+ * action blocks only itself, so another command can always replace it.
+ */
+export function commandUnavailable(reading: RobotReading, action: RobotAction) {
+  if (reading.unverified) {
+    return "Waiting for live updates";
+  }
+  if (isActionQueued(reading, action)) {
+    return "Waiting for the robot…";
+  }
+  return actionUnavailable(reading.robot, action, reading.evaluatedAt);
+}
+
+/**
+ * Whether this action was sent and a connected robot has yet to apply it, so
+ * the reported activity is from before it. A disconnected robot may never
+ * apply it, so its connection is the reason to show instead.
+ */
+export function isActionQueued(
+  { robot, connection }: RobotReading,
+  action: RobotAction,
+) {
+  return (
+    robot.queuedControlTarget === actionControlTargets[action] &&
+    connection === "online"
+  );
+}
 
 /**
  * Why an action cannot be requested now, in the operator's words, or `null`.

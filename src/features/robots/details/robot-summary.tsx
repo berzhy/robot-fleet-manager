@@ -15,19 +15,19 @@ import delivery from "@/assets/robots/delivery.webp";
 import inspection from "@/assets/robots/inspection.webp";
 import security from "@/assets/robots/security.webp";
 import type { Robot } from "@/modules/robots/robot";
+import type { RobotReading } from "@/modules/robots/robot-reading";
 import {
   formatActivity,
   formatIntegrationType,
   formatRobotType,
 } from "@/modules/robots/robot-labels";
 import { robotProblemDetails } from "@/modules/robots/robot-problems";
-import { connectionStatus, isStale } from "@/modules/telemetry/freshness";
 import { useNotifications } from "@/shared/notifications/notification-provider";
 import { monospaceFontFamily } from "@/theme/theme";
 
 import ConnectionStatus from "../connection-status/connection-status";
 import TimeAgo from "../time-ago/time-ago";
-import { batteryTone, formatBattery } from "../utils/robot-formatters";
+import { batteryLevelColors, formatBattery } from "../utils/robot-formatters";
 
 import BatteryIcon from "./battery-icon";
 
@@ -45,19 +45,16 @@ const valueWidthPx = 160;
  * the information.
  */
 export default function RobotSummary({
-  robot,
-  evaluatedAt,
-  unverified,
+  reading,
   missing,
   actions,
 }: {
-  robot: Robot;
-  evaluatedAt: number;
-  unverified: boolean;
+  reading: RobotReading;
   missing: boolean;
   actions: ReactNode;
 }) {
   const { breakpoints } = useTheme();
+  const { robot } = reading;
 
   return (
     <Paper
@@ -122,14 +119,10 @@ export default function RobotSummary({
           <>
             {/* The divider ends where the values do. */}
             <Box sx={{ width: "fit-content", maxWidth: 1 }}>
-              <LiveValues
-                robot={robot}
-                evaluatedAt={evaluatedAt}
-                unverified={unverified}
-              />
+              <LiveValues reading={reading} />
               <Divider sx={{ mt: 3 }} />
             </Box>
-            <Facts robot={robot} evaluatedAt={evaluatedAt} />
+            <Facts robot={robot} evaluatedAt={reading.evaluatedAt} />
           </>
         )}
       </Box>
@@ -143,23 +136,20 @@ export default function RobotSummary({
 }
 
 /** Telemetry, labelled as last reported once it may be out of date. */
-function LiveValues({
-  robot,
-  evaluatedAt,
-  unverified,
-}: {
-  robot: Robot;
-  evaluatedAt: number;
-  unverified: boolean;
-}) {
-  const connection = connectionStatus(robot.lastReceivedAt, evaluatedAt);
-  const stale = isStale(connection);
-  const lastKnown = stale || unverified;
-  const battery = batteryTone(robot);
+function LiveValues({ reading }: { reading: RobotReading }) {
+  const {
+    robot,
+    evaluatedAt,
+    connection,
+    isStale,
+    unverified,
+    isLastKnown,
+    batteryLevel,
+  } = reading;
   const problem = robot.problemCode && robotProblemDetails[robot.problemCode];
 
   function label(name: string) {
-    return lastKnown ? `Last reported ${name.toLowerCase()}` : name;
+    return isLastKnown ? `Last reported ${name.toLowerCase()}` : name;
   }
 
   return (
@@ -183,7 +173,7 @@ function LiveValues({
           >
             <ConnectionStatus status={connection} unverified={unverified} />
           </Typography>
-          {(stale || !robot.lastReceivedAt) && (
+          {(isStale || !robot.lastReceivedAt) && (
             <Typography
               component="dd"
               variant="body2"
@@ -227,7 +217,7 @@ function LiveValues({
               display: "flex",
               alignItems: "center",
               gap: 0.5,
-              color: battery && `${battery}.main`,
+              color: batteryLevel && batteryLevelColors[batteryLevel],
             }}
           >
             {formatBattery(robot.batteryPercent)}
@@ -244,7 +234,7 @@ function LiveValues({
           // As wide as the values above, however long its text.
           sx={{ mt: 3, contain: "inline-size" }}
         >
-          {lastKnown && "Last reported problem: "}
+          {isLastKnown && "Last reported problem: "}
           {problem.label}. {problem.guidance}
         </Alert>
       )}

@@ -5,15 +5,17 @@ import Tooltip from "@mui/material/Tooltip";
 import { visuallyHidden } from "@mui/utils";
 import { useId } from "react";
 
-import type { Robot } from "@/modules/robots/robot";
-import { actionLabels, type RobotAction } from "@/modules/robots/robot-actions";
-
-import { actionIcons } from "../robot-action-icons";
 import {
+  actionLabels,
   commandUnavailable,
   isActionQueued,
-  otherChangePendingReason,
-} from "../use-robot-command";
+  mainActivityAction,
+  type RobotAction,
+} from "@/modules/robots/robot-actions";
+import type { RobotReading } from "@/modules/robots/robot-reading";
+
+import { actionIcons } from "../robot-action-icons";
+import { otherChangePendingReason } from "../use-robot-command";
 
 const tileSizePx = 120;
 const tileIconSizePx = 32;
@@ -23,23 +25,19 @@ const tileIconSizePx = 32;
  * (Start, Stop or Retry), and Return to base.
  */
 export default function ActivityControls({
-  robot,
-  evaluatedAt,
-  unverified,
+  reading,
   pending,
   pendingAction,
   onAction,
 }: {
-  robot: Robot;
-  evaluatedAt: number;
-  unverified: boolean;
+  reading: RobotReading;
   pending: boolean;
   pendingAction?: RobotAction;
   onAction: (action: RobotAction) => void;
 }) {
-  const activity = activityAction(robot);
-  const isActivityQueued = isActionQueued(robot, activity, evaluatedAt);
-  const isReturnQueued = isActionQueued(robot, "return-to-base", evaluatedAt);
+  const activity = mainActivityAction(reading.robot);
+  const isActivityQueued = isActionQueued(reading, activity);
+  const isReturnQueued = isActionQueued(reading, "return-to-base");
 
   function reason(action: RobotAction) {
     if (pendingAction) {
@@ -48,7 +46,7 @@ export default function ActivityControls({
     if (pending) {
       return otherChangePendingReason;
     }
-    return commandUnavailable(robot, action, evaluatedAt, unverified);
+    return commandUnavailable(reading, action);
   }
 
   return (
@@ -81,21 +79,6 @@ export default function ActivityControls({
       />
     </Box>
   );
-}
-
-function activityAction(robot: Robot): RobotAction {
-  switch (robot.activity) {
-    case "working":
-    case "returning":
-      return "stop";
-    // Whether there is a problem to retry is Retry's own reason to give.
-    case "needs-attention":
-      return "retry";
-    case "idle":
-    case "charging":
-    case "unknown":
-      return "start";
-  }
 }
 
 /** A square tile, the icon above its label; an unavailable one says why on hover or focus. */

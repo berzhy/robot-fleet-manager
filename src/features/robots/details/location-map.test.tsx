@@ -1,6 +1,7 @@
 import { screen } from "@testing-library/react";
 import { expect, test } from "vitest";
 
+import { robotReading } from "@/modules/robots/robot-reading";
 import { render } from "@/test/render";
 import { testRobot } from "@/test/robots";
 
@@ -18,10 +19,12 @@ test("each area counts the other robots in it and separates unknown areas", () =
   }));
   render(
     <LocationMap
-      robot={{ ...robot, area: "Lobby", lastReceivedAt: freshReport }}
+      reading={robotReading(
+        { ...robot, area: "Lobby", lastReceivedAt: freshReport },
+        evaluatedAt,
+        false,
+      )}
       peers={[...peers, { ...peers[0], id: "unknown", area: "Unmapped" }]}
-      evaluatedAt={evaluatedAt}
-      unverified={false}
     />,
   );
 
@@ -38,10 +41,8 @@ test("each area counts the other robots in it and separates unknown areas", () =
 test("a robot outside the plan is listed as in an unknown area", () => {
   render(
     <LocationMap
-      robot={robot}
+      reading={robotReading(robot, evaluatedAt, false)}
       peers={[]}
-      evaluatedAt={evaluatedAt}
-      unverified={false}
     />,
   );
 
@@ -64,10 +65,12 @@ test.each([
   (_state, changes, unverified) => {
     render(
       <LocationMap
-        robot={{ ...robot, area: "Base", ...changes }}
+        reading={robotReading(
+          { ...robot, area: "Base", ...changes },
+          evaluatedAt,
+          unverified,
+        )}
         peers={[]}
-        evaluatedAt={evaluatedAt}
-        unverified={unverified}
       />,
     );
 
@@ -84,10 +87,8 @@ test("each site with a drawing gets its own, and other sites a generic one", () 
   function planFor(site: string) {
     const { container, unmount } = render(
       <LocationMap
-        robot={{ ...robot, site }}
+        reading={robotReading({ ...robot, site }, evaluatedAt, false)}
         peers={[]}
-        evaluatedAt={evaluatedAt}
-        unverified={false}
       />,
     );
     const plan = container.querySelector("svg")?.innerHTML;
@@ -108,10 +109,8 @@ test.each([
 ])("%s describes its facility", (site, details) => {
   render(
     <LocationMap
-      robot={{ ...robot, site }}
+      reading={robotReading({ ...robot, site }, evaluatedAt, false)}
       peers={[]}
-      evaluatedAt={evaluatedAt}
-      unverified={false}
     />,
   );
 
@@ -121,10 +120,12 @@ test.each([
 test("a site with the generic drawing does not borrow another site's details", () => {
   render(
     <LocationMap
-      robot={{ ...robot, site: "Detail demo" }}
+      reading={robotReading(
+        { ...robot, site: "Detail demo" },
+        evaluatedAt,
+        false,
+      )}
       peers={[]}
-      evaluatedAt={evaluatedAt}
-      unverified={false}
     />,
   );
 

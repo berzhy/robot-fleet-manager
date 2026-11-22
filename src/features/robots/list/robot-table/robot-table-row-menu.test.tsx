@@ -1,6 +1,7 @@
 import { fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 
+import { robotReading } from "@/modules/robots/robot-reading";
 import { render } from "@/test/render";
 
 import { workingRobot } from "@/test/robots";
@@ -18,11 +19,14 @@ test("disabled actions show their reason and cannot execute", async () => {
 
   render(
     <RobotTableRowMenu
-      robot={{
-        ...workingRobot,
-        lastReceivedAt: new Date(evaluatedAt).toISOString(),
-      }}
-      evaluatedAt={evaluatedAt}
+      reading={robotReading(
+        {
+          ...workingRobot,
+          lastReceivedAt: new Date(evaluatedAt).toISOString(),
+        },
+        evaluatedAt,
+        false,
+      )}
       onDelete={vi.fn()}
     />,
   );
@@ -47,12 +51,14 @@ test("unverified data blocks every action with one reason", async () => {
   const evaluatedAt = Date.now();
   render(
     <RobotTableRowMenu
-      robot={{
-        ...workingRobot,
-        lastReceivedAt: new Date(evaluatedAt).toISOString(),
-      }}
-      evaluatedAt={evaluatedAt}
-      unverified
+      reading={robotReading(
+        {
+          ...workingRobot,
+          lastReceivedAt: new Date(evaluatedAt).toISOString(),
+        },
+        evaluatedAt,
+        true,
+      )}
       onDelete={vi.fn()}
     />,
   );

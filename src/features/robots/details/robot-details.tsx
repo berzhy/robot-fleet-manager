@@ -7,6 +7,7 @@ import Stack from "@mui/material/Stack";
 import NextLink from "next/link";
 
 import type { RobotContext } from "@/modules/robots/robot";
+import { robotReading } from "@/modules/robots/robot-reading";
 
 import {
   usePendingRobotAction,
@@ -30,6 +31,7 @@ export default function RobotDetails({
   const pendingAction = usePendingRobotAction(initialContext.robot.id);
   const { robot, siteRobots, missing, refreshFailed, evaluatedAt } =
     useLiveRobot(initialContext);
+  const reading = robotReading(robot, evaluatedAt, refreshFailed);
 
   return (
     <Stack
@@ -57,29 +59,18 @@ export default function RobotDetails({
         </Alert>
       )}
       <RobotSummary
-        robot={robot}
-        evaluatedAt={evaluatedAt}
-        unverified={refreshFailed}
+        reading={reading}
         missing={missing}
         actions={
           <ActivityControls
-            robot={robot}
-            evaluatedAt={evaluatedAt}
-            unverified={refreshFailed}
+            reading={reading}
             pending={isWritePending}
             pendingAction={pendingAction}
             onAction={(action) => requestAction(robot, action)}
           />
         }
       />
-      {!missing && (
-        <RobotDetailsTabs
-          robot={robot}
-          peers={siteRobots}
-          evaluatedAt={evaluatedAt}
-          unverified={refreshFailed}
-        />
-      )}
+      {!missing && <RobotDetailsTabs reading={reading} peers={siteRobots} />}
     </Stack>
   );
 }

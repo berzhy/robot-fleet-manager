@@ -7,27 +7,28 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import { useId, useState } from "react";
 
-import { actionLabels, robotActions } from "@/modules/robots/robot-actions";
+import {
+  actionLabels,
+  commandUnavailable,
+  robotActions,
+} from "@/modules/robots/robot-actions";
 import type { Robot } from "@/modules/robots/robot";
+import type { RobotReading } from "@/modules/robots/robot-reading";
 
 import { useRobotWriteLock } from "../../api/robot-mutations";
 import { actionIcons } from "../../robot-action-icons";
 import useRobotCommand, {
-  commandUnavailable,
   otherChangePendingReason,
 } from "../../use-robot-command";
 
 export default function RobotTableRowMenu({
-  robot,
-  evaluatedAt,
-  unverified = false,
+  reading,
   onDelete,
 }: {
-  robot: Robot;
-  evaluatedAt: number;
-  unverified?: boolean;
+  reading: RobotReading;
   onDelete: (robot: Robot, trigger: HTMLButtonElement) => void;
 }) {
+  const { robot } = reading;
   const requestAction = useRobotCommand();
   const { isWritePending } = useRobotWriteLock();
   const [anchor, setAnchor] = useState<HTMLButtonElement | null>(null);
@@ -62,7 +63,7 @@ export default function RobotTableRowMenu({
         {robotActions.map((action) => {
           const reason = isWritePending
             ? otherChangePendingReason
-            : commandUnavailable(robot, action, evaluatedAt, unverified);
+            : commandUnavailable(reading, action);
           const Icon = actionIcons[action];
           return (
             <MenuItem
