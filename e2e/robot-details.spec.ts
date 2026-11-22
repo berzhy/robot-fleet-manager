@@ -173,3 +173,33 @@ test("a missing robot links back to the fleet list", async ({ page }) => {
     page.getByRole("heading", { level: 1, name: "Robots", exact: true }),
   ).toBeVisible();
 });
+
+// Next keeps a page you leave mounted but hidden, and a fleet write drops the
+// robot's cached details, so Back must show the robot without that cache.
+test("going Back to a robot after adding another shows its details", async ({
+  page,
+  request,
+}) => {
+  const response = await request.post("/api/robots", {
+    data: {
+      name: "Back robot",
+      site: "Munich",
+      manufacturer: "Demo manufacturer",
+      type: "inspection",
+      integrationType: "ros2",
+    },
+  });
+  expect(response.status()).toBe(201);
+  const robot = (await response.json()) as Robot;
+
+  await page.goto(`/robots/${robot.id}`);
+  await expect(page.getByTestId("robot-details")).toBeVisible();
+  await page.getByRole("link", { name: "Back to robots" }).click();
+  await page.getByTestId("fleet-add-robot").click();
+  await expect(page.getByTestId("fleet-notification")).toContainText("added");
+  await page.goBack();
+
+  await expect(
+    page.getByRole("heading", { level: 1, name: robot.name }),
+  ).toBeVisible();
+});

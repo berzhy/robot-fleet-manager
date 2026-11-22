@@ -1,13 +1,10 @@
-import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import Typography from "@mui/material/Typography";
 import type { Metadata } from "next";
 import { io } from "next/cache";
 import { notFound } from "next/navigation";
 import { cache, Suspense } from "react";
 
-import { robotKeys } from "@/features/robots/api/robot-queries";
 import RobotDetails from "@/features/robots/details/robot-details";
-import { createQueryClient } from "@/query/query-client";
 import { getDatabase } from "@/server/db/runtime-database";
 import { getRobotContext } from "@/server/robots/robots";
 
@@ -46,12 +43,5 @@ async function RobotContent({
     notFound();
   }
 
-  const client = createQueryClient();
-  client.setQueryData(robotKeys.context(robotId), snapshot);
-
-  return (
-    <HydrationBoundary state={dehydrate(client)}>
-      <RobotDetails robotId={robotId} />
-    </HydrationBoundary>
-  );
+  return <RobotDetails initialContext={snapshot} />;
 }

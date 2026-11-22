@@ -1,19 +1,25 @@
 import { useQuery } from "@tanstack/react-query";
 
+import type { RobotContext } from "@/modules/robots/robot";
+
 import { isRobotNotFound } from "../api/robot-api";
 import { robotContextOptions } from "../api/robot-queries";
 
-export default function useLiveRobot(robotId: string) {
+/**
+ * The robot as the server rendered it, then as polling reports it. The server's
+ * context is the starting data rather than a one-off cache entry: Next keeps a
+ * page you leave mounted but hidden, and the cache can drop the robot meanwhile,
+ * so going Back refills it from here.
+ */
+export default function useLiveRobot(initialContext: RobotContext) {
   const query = useQuery({
-    ...robotContextOptions(robotId),
+    ...robotContextOptions(initialContext.robot.id),
+    initialData: initialContext,
+    // Its age, so an old render refreshes as soon as it is shown again.
+    initialDataUpdatedAt: initialContext.evaluatedAt,
     // A deleted robot stays deleted: no more polls or refetches on focus.
     enabled: (contextQuery) => !isRobotNotFound(contextQuery.state.error),
   });
-
-  // The page prefetches the context on the server, so the cache already holds it.
-  if (!query.data) {
-    throw new Error(`Robot ${robotId} rendered without a prefetched context.`);
-  }
 
   // A failed refetch keeps the last data, so a deleted robot still shows its name.
   const missing = isRobotNotFound(query.error);

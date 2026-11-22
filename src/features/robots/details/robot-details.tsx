@@ -6,6 +6,8 @@ import Link from "@mui/material/Link";
 import Stack from "@mui/material/Stack";
 import NextLink from "next/link";
 
+import type { RobotContext } from "@/modules/robots/robot";
+
 import {
   usePendingRobotAction,
   useRobotWriteLock,
@@ -18,12 +20,16 @@ import RobotDetailsTabs from "./robot-details-tabs";
 import RobotSummary from "./robot-summary";
 import useLiveRobot from "./use-live-robot";
 
-export default function RobotDetails({ robotId }: { robotId: string }) {
+export default function RobotDetails({
+  initialContext,
+}: {
+  initialContext: RobotContext;
+}) {
   const requestAction = useRobotCommand();
   const { isWritePending } = useRobotWriteLock();
-  const pendingAction = usePendingRobotAction(robotId);
+  const pendingAction = usePendingRobotAction(initialContext.robot.id);
   const { robot, siteRobots, missing, refreshFailed, evaluatedAt } =
-    useLiveRobot(robotId);
+    useLiveRobot(initialContext);
 
   return (
     <Stack

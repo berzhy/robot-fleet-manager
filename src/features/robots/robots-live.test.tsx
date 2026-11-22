@@ -8,7 +8,6 @@ import type { CreateRobotInput } from "@/modules/robots/robot-validation";
 import { useCreateRobots, useSendRobotAction } from "./api/robot-mutations";
 import {
   robotContextPollIntervalMs,
-  robotKeys,
   robotListPollIntervalMs,
 } from "./api/robot-queries";
 
@@ -92,9 +91,7 @@ function robotNotFound() {
 }
 
 function renderDetails(context: RobotContext) {
-  return render(<RobotDetails robotId={context.robot.id} />, {
-    queryData: [[robotKeys.context(context.robot.id), context]],
-  });
+  return render(<RobotDetails initialContext={context} />);
 }
 
 test("quiet polling preserves DOM and focus, retains failed data, and recovers", async () => {
@@ -289,7 +286,7 @@ test("detail refreshes while Logs is selected and stops when its robot is delete
   renderDetails({
     robot: { ...robot, batteryPercent: 45 },
     siteRobots: [],
-    evaluatedAt: 0,
+    evaluatedAt: Date.now(),
   });
   await tick();
 
@@ -369,7 +366,7 @@ test("a confirmed detail deletion clears an earlier refresh warning", async () =
       .mockResolvedValueOnce(new Response(null, { status: 500 }))
       .mockResolvedValueOnce(robotNotFound()),
   );
-  renderDetails({ robot: robot, siteRobots: [], evaluatedAt: 0 });
+  renderDetails({ robot: robot, siteRobots: [], evaluatedAt: Date.now() });
   await tick(robotContextPollIntervalMs);
 
   expect(screen.getByTestId("robot-refresh-warning")).toHaveTextContent(
@@ -464,10 +461,10 @@ test("fleet and detail retain snapshots after a request timeout and recover on t
     siteRobots: [],
     evaluatedAt: Date.now(),
   };
-  const { result } = renderHook(
-    () => ({ fleet: useRobotList(), detail: useLiveRobot(robot.id) }),
-    { queryData: [[robotKeys.context(robot.id), context]] },
-  );
+  const { result } = renderHook(() => ({
+    fleet: useRobotList(),
+    detail: useLiveRobot(context),
+  }));
   await tick();
 
   // The details came with the page, so their first request is the first poll.
@@ -511,17 +508,11 @@ test("unmount cancels outstanding fleet and detail requests without restarting p
       }),
   );
   vi.stubGlobal("fetch", fetcher);
-  const { unmount } = renderHook(
-    () => ({ fleet: useRobotList(), detail: useLiveRobot(robot.id) }),
-    {
-      queryData: [
-        [
-          robotKeys.context(robot.id),
-          { robot, siteRobots: [], evaluatedAt: Date.now() },
-        ],
-      ],
-    },
-  );
+  const context = { robot, siteRobots: [], evaluatedAt: Date.now() };
+  const { unmount } = renderHook(() => ({
+    fleet: useRobotList(),
+    detail: useLiveRobot(context),
+  }));
   expect(signals).toHaveLength(1);
 
   // The details came with the page, so their first request is the first poll.
@@ -833,20 +824,11 @@ test("a command cancels the poll in flight and stays pending until fresh data la
   const { fetcher, reads, acceptWrite } = deferredFetch();
   vi.stubGlobal("fetch", fetcher);
 
-  const { result } = renderHook(
-    () => ({
-      detail: useLiveRobot(robot.id),
-      command: useSendRobotAction(),
-    }),
-    {
-      queryData: [
-        [
-          robotKeys.context(robot.id),
-          { robot, siteRobots: [], evaluatedAt: Date.now() },
-        ],
-      ],
-    },
-  );
+  const context = { robot, siteRobots: [], evaluatedAt: Date.now() };
+  const { result } = renderHook(() => ({
+    detail: useLiveRobot(context),
+    command: useSendRobotAction(),
+  }));
   await tick(robotContextPollIntervalMs);
   expect(reads).toHaveLength(1);
 

@@ -12,7 +12,6 @@ import { render } from "@/query/test-utils";
 import type { Robot, RobotContext } from "@/modules/robots/robot";
 import { actionLabels } from "@/modules/robots/robot-actions";
 
-import { robotKeys } from "../api/robot-queries";
 import { formatRobotTimestamp } from "../utils/robot-formatters";
 
 import ActivityControls from "./activity-controls";
@@ -36,13 +35,11 @@ const robot: Robot = {
 };
 
 function renderDetails(context: RobotContext) {
-  return render(<RobotDetails robotId={context.robot.id} />, {
-    queryData: [[robotKeys.context(context.robot.id), context]],
-  });
+  return render(<RobotDetails initialContext={context} />);
 }
 
 test("details show the robot, missing values, and the way back", async () => {
-  renderDetails({ robot: robot, siteRobots: [], evaluatedAt: 0 });
+  renderDetails({ robot: robot, siteRobots: [], evaluatedAt: Date.now() });
 
   const details = within(screen.getByTestId("robot-details"));
   expect(screen.getAllByRole("heading", { hidden: true })).toEqual([
@@ -177,7 +174,7 @@ test("copying the ID puts it on the clipboard and says so", async () => {
   onTestFinished(() => {
     Reflect.deleteProperty(navigator, "clipboard");
   });
-  renderDetails({ robot: robot, siteRobots: [], evaluatedAt: 0 });
+  renderDetails({ robot: robot, siteRobots: [], evaluatedAt: Date.now() });
 
   await act(async () => {
     fireEvent.click(screen.getByRole("button", { name: "Copy robot ID" }));
