@@ -2,6 +2,8 @@ import { z } from "zod";
 import { robotProblemCodes } from "../robots/robot-problems";
 import { robotActivities } from "../robots/robot";
 
+export const maxReportsPerBatch = 100;
+
 export const telemetryBatchSchema = z
   .strictObject({
     reports: z
@@ -25,7 +27,7 @@ export const telemetryBatchSchema = z
           ),
       )
       .min(1)
-      .max(100),
+      .max(maxReportsPerBatch),
   })
   .refine(
     ({ reports }) =>

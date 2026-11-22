@@ -1,5 +1,6 @@
 import { setTimeout as delay } from "node:timers/promises";
 import type { RegistryRobot } from "@/modules/robots/robot";
+import { maxReportsPerBatch } from "@/modules/telemetry/telemetry";
 import {
   advanceRobot,
   applyControl,
@@ -63,13 +64,15 @@ export async function runSimulator(origin: string, signal: AbortSignal) {
     for (
       let start = 0;
       start < reports.length && !signal.aborted;
-      start += 100
+      start += maxReportsPerBatch
     ) {
       try {
         await request("/api/telemetry/batch", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ reports: reports.slice(start, start + 100) }),
+          body: JSON.stringify({
+            reports: reports.slice(start, start + maxReportsPerBatch),
+          }),
         });
       } catch {
         failed = true;

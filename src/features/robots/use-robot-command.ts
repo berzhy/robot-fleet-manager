@@ -53,6 +53,13 @@ export default function useRobotCommand() {
   const { isWritePendingNow } = useRobotWriteLock();
   const notifications = useNotifications();
 
+  function showUnavailable(reason: string) {
+    notifications.show({
+      severity: "error",
+      message: `${reason}. Check the latest report before trying again.`,
+    });
+  }
+
   return function requestAction(robot: Robot, action: RobotAction) {
     if (isWritePendingNow()) {
       return;
@@ -90,11 +97,4 @@ export default function useRobotCommand() {
       },
     );
   };
-
-  function showUnavailable(reason: string) {
-    notifications.show({
-      severity: "error",
-      message: `${reason}. Check the latest report before trying again.`,
-    });
-  }
 }

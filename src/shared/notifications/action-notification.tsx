@@ -2,6 +2,9 @@ import Alert from "@mui/material/Alert";
 import Snackbar from "@mui/material/Snackbar";
 import Typography from "@mui/material/Typography";
 
+// Errors stay until dismissed, so they are not missed.
+const successHideDelayMs = 6_000;
+
 export default function ActionNotification({
   severity,
   message,
@@ -16,7 +19,7 @@ export default function ActionNotification({
       key={message}
       open
       anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      autoHideDuration={severity === "success" ? 6000 : null}
+      autoHideDuration={severity === "success" ? successHideDelayMs : null}
       onClose={(_event, reason) => {
         if (reason !== "clickaway") {
           onClose();

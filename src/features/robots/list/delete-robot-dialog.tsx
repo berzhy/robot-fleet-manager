@@ -7,8 +7,11 @@ import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import { useId, useRef } from "react";
 
+export type DeleteTarget =
+  { kind: "robot"; id: string; name: string } | { kind: "all" };
+
 export default function DeleteRobotDialog({
-  robotName,
+  target,
   open,
   pending,
   error,
@@ -17,7 +20,7 @@ export default function DeleteRobotDialog({
   onConfirm,
   onExited,
 }: {
-  robotName?: string;
+  target: DeleteTarget;
   open: boolean;
   pending: boolean;
   error?: string;
@@ -28,7 +31,19 @@ export default function DeleteRobotDialog({
 }) {
   const id = useId();
   const cancelRef = useRef<HTMLButtonElement>(null);
-  const deletingOne = robotName !== undefined;
+  const text =
+    target.kind === "robot"
+      ? {
+          title: "Delete robot?",
+          description: `Delete “${target.name}”? This cannot be undone.`,
+          confirm: "Delete",
+        }
+      : {
+          title: "Delete all robots?",
+          description:
+            "Delete all robots in the fleet, including those hidden by filters? This cannot be undone.",
+          confirm: "Delete all robots",
+        };
 
   return (
     <Dialog
@@ -48,17 +63,13 @@ export default function DeleteRobotDialog({
         transition: { onExited, onEntered: () => cancelRef.current?.focus() },
       }}
     >
-      <DialogTitle id={`${id}-title`}>
-        {deletingOne ? "Delete robot?" : "Delete all robots?"}
-      </DialogTitle>
+      <DialogTitle id={`${id}-title`}>{text.title}</DialogTitle>
       <DialogContent>
         <DialogContentText
           data-testid="delete-robot-description"
           id={`${id}-description`}
         >
-          {deletingOne
-            ? `Delete “${robotName}”? This cannot be undone.`
-            : "Delete all robots in the fleet, including those hidden by filters? This cannot be undone."}
+          {text.description}
         </DialogContentText>
         {error && (
           <Alert
@@ -92,7 +103,7 @@ export default function DeleteRobotDialog({
           loading={pending}
           onClick={onConfirm}
         >
-          {deletingOne ? "Delete" : "Delete all robots"}
+          {text.confirm}
         </Button>
       </DialogActions>
     </Dialog>

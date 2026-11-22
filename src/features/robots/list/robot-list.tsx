@@ -44,7 +44,7 @@ export default function RobotList() {
     focusFallback: focusSearch,
   });
   const { addRobots, adding, addButtonRef } = useAddRobots({
-    blocked: dialog !== null,
+    blocked: status === "loading" || dialog !== null,
   });
 
   return (

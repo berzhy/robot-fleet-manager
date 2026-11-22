@@ -3,6 +3,9 @@ import { drizzle } from "drizzle-orm/better-sqlite3";
 import { mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
+// How long a query waits while another connection holds the write lock.
+const busyTimeoutMs = 5_000;
+
 export function databasePath() {
   // The database belongs to runtime disk, not the deployment bundle.
   return resolve(
@@ -15,7 +18,7 @@ export function openDatabase(path: string) {
   if (path !== ":memory:") {
     mkdirSync(dirname(path), { recursive: true });
   }
-  const client = new Database(path, { timeout: 5000 });
+  const client = new Database(path, { timeout: busyTimeoutMs });
 
   try {
     client.pragma("journal_mode = WAL");

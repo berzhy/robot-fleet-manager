@@ -6,14 +6,17 @@ import { isRequestTimeout } from "../api/robot-api";
 import { useCreateRobots, useRobotWriteLock } from "../api/robot-mutations";
 
 import { generateRobotInput } from "./generate-robot-input";
-import useRobotList from "./use-robot-list";
 
 /** Adds generated robots, reports the outcome, and returns focus once the list settles. */
-export default function useAddRobots({ blocked }: { blocked: boolean }) {
+export default function useAddRobots({
+  blocked,
+}: {
+  /** The list is loading or a dialog is open. */
+  blocked: boolean;
+}) {
   const createRobots = useCreateRobots();
   const notifications = useNotifications();
   const { isWritePending, isWritePendingNow } = useRobotWriteLock();
-  const { status } = useRobotList();
 
   const addButtonRef = useRef<HTMLButtonElement>(null);
   const focusTargetRef = useRef<HTMLButtonElement | null>(null);
@@ -22,17 +25,17 @@ export default function useAddRobots({ blocked }: { blocked: boolean }) {
   // drops focus; return it once they are enabled again.
   useEffect(() => {
     const target = focusTargetRef.current;
-    if (!target || isWritePending || blocked || status === "loading") {
+    if (!target || isWritePending || blocked) {
       return;
     }
 
     // A list refresh can remove the recorded trigger before focus returns.
     focusTargetRef.current = null;
     (target.isConnected ? target : addButtonRef.current)?.focus();
-  }, [isWritePending, blocked, status]);
+  }, [isWritePending, blocked]);
 
   function addRobots(trigger: HTMLButtonElement, count: 1 | 10 | 100 = 1) {
-    if (isWritePendingNow() || blocked || status === "loading") {
+    if (isWritePendingNow() || blocked) {
       return;
     }
 

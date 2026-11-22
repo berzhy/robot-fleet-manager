@@ -45,7 +45,7 @@ const tableMinWidthPx = columns.reduce(
   0,
 );
 
-const rowHeight = 56;
+const rowHeightPx = 56;
 
 export default function RobotTable({
   toolbar,
@@ -179,7 +179,7 @@ export default function RobotTable({
               <RobotTableSkeleton
                 columnCount={columns.length}
                 rowCount={pageSize}
-                rowHeight={rowHeight}
+                rowHeight={rowHeightPx}
               />
             )}
             {result?.items.map((robot) => (
@@ -193,7 +193,7 @@ export default function RobotTable({
                   focusedRowElement.current = event.currentTarget;
                 }}
                 onDelete={onDelete}
-                rowHeight={rowHeight}
+                rowHeight={rowHeightPx}
               />
             ))}
           </TableBody>

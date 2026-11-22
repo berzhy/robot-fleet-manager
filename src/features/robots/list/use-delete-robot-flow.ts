@@ -10,9 +10,7 @@ import {
 } from "../api/robot-mutations";
 
 import type DeleteRobotDialog from "./delete-robot-dialog";
-
-type DeleteTarget =
-  { kind: "robot"; id: string; name: string } | { kind: "all" };
+import type { DeleteTarget } from "./delete-robot-dialog";
 
 /**
  * Confirm, delete, report. The dialog owns its error so it stays next to the
@@ -116,10 +114,7 @@ export default function useDeleteRobotFlow({
 
   const dialog: ComponentProps<typeof DeleteRobotDialog> | null = confirmation
     ? {
-        robotName:
-          confirmation.target.kind === "robot"
-            ? confirmation.target.name
-            : undefined,
+        target: confirmation.target,
         open: confirmation.open,
         pending: deleteRobot.isPending || deleteAllRobots.isPending,
         error: error ?? undefined,
