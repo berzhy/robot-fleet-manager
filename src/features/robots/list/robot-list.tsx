@@ -8,8 +8,6 @@ import { visuallyHidden } from "@mui/utils";
 import Typography from "@mui/material/Typography";
 import { useRef } from "react";
 
-import { useRobotWriteLock } from "../api/robot-mutations";
-
 import AddRobotSplitButton from "./add-robot-split-button";
 import DeleteRobotDialog from "./delete-robot-dialog";
 import RobotListFilters from "./robot-list-filters/robot-list-filters";
@@ -39,11 +37,10 @@ export default function RobotList() {
   const announcement = useRobotListAnnouncement(filters, list);
   useRobotListPageCorrection(list);
 
-  const { isWritePending } = useRobotWriteLock();
-  const { requestDelete, dialog } = useDeleteRobotFlow({
+  const { requestDelete, dialog, isDeleteLocked } = useDeleteRobotFlow({
     focusFallback: focusSearch,
   });
-  const { addRobots, adding, addButtonRef } = useAddRobots({
+  const { addRobots, adding, isAddLocked, addButtonRef } = useAddRobots({
     blocked: isLoading || dialog !== null,
   });
 
@@ -66,7 +63,8 @@ export default function RobotList() {
           onDeleteAll={(trigger) => requestDelete({ kind: "all" }, trigger)}
           buttonRef={addButtonRef}
           loading={adding}
-          disabled={isWritePending || isLoading || Boolean(dialog?.open)}
+          disabled={isAddLocked || isLoading || Boolean(dialog?.open)}
+          deleteAllDisabled={isDeleteLocked}
           onAdd={addRobots}
         />
       </Stack>

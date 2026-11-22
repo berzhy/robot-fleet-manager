@@ -151,7 +151,7 @@ test.each(["HTTP", "network"])(
   },
 );
 
-test("creation locks pagination and deletion, then refreshes the current later page", async () => {
+test("creation holds up deletion but not paging, then refreshes the current later page", async () => {
   let complete!: (response: Response) => void;
   const fetcher = vi
     .fn()
@@ -184,7 +184,7 @@ test("creation locks pagination and deletion, then refreshes the current later p
     fireEvent.click(screen.getByTestId("fleet-add-robot"));
     await Promise.resolve();
   });
-  expect(screen.getByTestId("fleet-previous-page")).toBeDisabled();
+  expect(screen.getByTestId("fleet-previous-page")).toBeEnabled();
   const actions = within(screen.getByTestId("robot-row-new")).getByTestId(
     "robot-actions",
   );

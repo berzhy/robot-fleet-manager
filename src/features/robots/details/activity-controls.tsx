@@ -15,7 +15,6 @@ import {
 import type { RobotReading } from "@/modules/robots/robot-reading";
 
 import { actionIcons } from "../robot-action-icons";
-import { otherChangePendingReason } from "../use-robot-command";
 
 const tileSizePx = 120;
 const tileIconSizePx = 32;
@@ -26,12 +25,13 @@ const tileIconSizePx = 32;
  */
 export default function ActivityControls({
   reading,
-  pending,
+  waitReason,
   pendingAction,
   onAction,
 }: {
   reading: RobotReading;
-  pending: boolean;
+  /** Why the robot cannot take a command yet, such as one being sent. */
+  waitReason: string | null;
   pendingAction?: RobotAction;
   onAction: (action: RobotAction) => void;
 }) {
@@ -40,20 +40,14 @@ export default function ActivityControls({
   const isReturnQueued = isActionQueued(reading, "return-to-base");
 
   function reason(action: RobotAction) {
-    if (pendingAction) {
-      return "Sending command…";
-    }
-    if (pending) {
-      return otherChangePendingReason;
-    }
-    return commandUnavailable(reading, action);
+    return waitReason ?? commandUnavailable(reading, action);
   }
 
   return (
     <Box
       role="group"
       aria-label="Activity controls"
-      aria-busy={pending || isActivityQueued || isReturnQueued}
+      aria-busy={waitReason !== null || isActivityQueued || isReturnQueued}
       sx={{
         display: "grid",
         gridAutoFlow: { xs: "column", lg: "row" },

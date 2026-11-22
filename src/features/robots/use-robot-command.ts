@@ -7,16 +7,26 @@ import {
 import { useNotifications } from "@/shared/notifications/notification-provider";
 
 import { ApiError, isRequestTimeout } from "./api/robot-api";
-import { useRobotWriteLock, useSendRobotAction } from "./api/robot-mutations";
+import { useRobotWriteLocks, useSendRobotAction } from "./api/robot-mutations";
 
-/** The write lock covers every robot change, not only this robot's. */
+/** A delete and every other write wait for each other. */
 export const otherChangePendingReason = "Another change is in progress";
 
-/** Sends a robot action from any screen and reports the outcome as a notification. */
-export default function useRobotCommand() {
-  const sendAction = useSendRobotAction();
-  const { isWritePendingNow } = useRobotWriteLock();
+/**
+ * Sends this robot's actions from any screen and reports each outcome as a
+ * notification. `waitReason` says why the robot cannot take a command yet.
+ */
+export default function useRobotCommand(robot: Robot) {
+  const sendAction = useSendRobotAction(robot.id);
+  const locks = useRobotWriteLocks();
   const notifications = useNotifications();
+
+  function currentWaitReason() {
+    if (locks.isCommandPending(robot.id)) {
+      return "Sending command…";
+    }
+    return locks.isDeletePending() ? otherChangePendingReason : null;
+  }
 
   function showUnavailable(reason: string) {
     notifications.show({
@@ -25,8 +35,8 @@ export default function useRobotCommand() {
     });
   }
 
-  return function requestAction(robot: Robot, action: RobotAction) {
-    if (isWritePendingNow()) {
+  function requestAction(action: RobotAction) {
+    if (currentWaitReason()) {
       return;
     }
 
@@ -41,7 +51,7 @@ export default function useRobotCommand() {
 
     // Unlike per-call mutate callbacks, the promise settles even after the screen
     // unmounts, so a command sent from details is still reported after navigating away.
-    sendAction.mutateAsync({ id: robot.id, action }).then(
+    sendAction.mutateAsync(action).then(
       () =>
         notifications.show({
           severity: "success",
@@ -61,5 +71,7 @@ export default function useRobotCommand() {
         });
       },
     );
-  };
+  }
+
+  return { requestAction, waitReason: currentWaitReason() };
 }

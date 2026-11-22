@@ -15,7 +15,7 @@ import {
 import type { Robot } from "@/modules/robots/robot";
 import type { RobotReading } from "@/modules/robots/robot-reading";
 
-import { useRobotWriteLock } from "../../api/robot-mutations";
+import { useRobotWriteLocks } from "../../api/robot-mutations";
 import { actionIcons } from "../../robot-action-icons";
 import useRobotCommand, {
   otherChangePendingReason,
@@ -29,8 +29,9 @@ export default function RobotTableRowMenu({
   onDelete: (robot: Robot, trigger: HTMLButtonElement) => void;
 }) {
   const { robot } = reading;
-  const requestAction = useRobotCommand();
-  const { isWritePending } = useRobotWriteLock();
+  const { requestAction, waitReason } = useRobotCommand(robot);
+  const locks = useRobotWriteLocks();
+  const isDeleteLocked = locks.isDeleteLocked();
   const [anchor, setAnchor] = useState<HTMLButtonElement | null>(null);
   const id = useId();
   const buttonId = `${id}-button`;
@@ -61,9 +62,7 @@ export default function RobotTableRowMenu({
         onClose={() => setAnchor(null)}
       >
         {robotActions.map((action) => {
-          const reason = isWritePending
-            ? otherChangePendingReason
-            : commandUnavailable(reading, action);
+          const reason = waitReason ?? commandUnavailable(reading, action);
           const Icon = actionIcons[action];
           return (
             <MenuItem
@@ -73,7 +72,7 @@ export default function RobotTableRowMenu({
                 if (reason) {
                   return;
                 }
-                requestAction(robot, action);
+                requestAction(action);
                 setAnchor(null);
               }}
             >
@@ -88,9 +87,9 @@ export default function RobotTableRowMenu({
         })}
         <MenuItem
           data-testid="robot-delete"
-          disabled={isWritePending}
+          disabled={isDeleteLocked}
           onClick={() => {
-            if (anchor && !isWritePending) {
+            if (anchor && !isDeleteLocked) {
               onDelete(robot, anchor);
             }
             setAnchor(null);
@@ -101,7 +100,7 @@ export default function RobotTableRowMenu({
           </ListItemIcon>
           <ListItemText
             primary="Delete"
-            secondary={isWritePending ? otherChangePendingReason : undefined}
+            secondary={isDeleteLocked ? otherChangePendingReason : undefined}
           />
         </MenuItem>
       </Menu>

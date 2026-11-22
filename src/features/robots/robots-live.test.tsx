@@ -819,13 +819,13 @@ test("a command cancels the poll in flight and stays pending until fresh data la
   const context = { robot, siteRobots: [], evaluatedAt: Date.now() };
   const { result } = renderHook(() => ({
     detail: useLiveRobot(context),
-    command: useSendRobotAction(),
+    command: useSendRobotAction(robot.id),
   }));
   await tick(robotContextPollIntervalMs);
   expect(reads).toHaveLength(1);
 
   await act(async () => {
-    result.current.command.mutate({ id: robot.id, action: "stop" });
+    result.current.command.mutate("stop");
     await vi.advanceTimersByTimeAsync(0);
   });
   await act(async () => {

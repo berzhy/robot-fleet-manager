@@ -9,10 +9,7 @@ import NextLink from "next/link";
 import type { RobotContext } from "@/modules/robots/robot";
 import { robotReading } from "@/modules/robots/robot-reading";
 
-import {
-  usePendingRobotAction,
-  useRobotWriteLock,
-} from "../api/robot-mutations";
+import { usePendingRobotAction } from "../api/robot-mutations";
 import { robotListHref } from "../list/use-robot-list-view";
 import useRobotCommand from "../use-robot-command";
 
@@ -26,11 +23,10 @@ export default function RobotDetails({
 }: {
   initialContext: RobotContext;
 }) {
-  const requestAction = useRobotCommand();
-  const { isWritePending } = useRobotWriteLock();
-  const pendingAction = usePendingRobotAction(initialContext.robot.id);
   const { robot, siteRobots, missing, refreshFailed, evaluatedAt } =
     useLiveRobot(initialContext);
+  const { requestAction, waitReason } = useRobotCommand(robot);
+  const pendingAction = usePendingRobotAction(robot.id);
   const reading = robotReading(robot, evaluatedAt, refreshFailed);
 
   return (
@@ -64,9 +60,9 @@ export default function RobotDetails({
         actions={
           <ActivityControls
             reading={reading}
-            pending={isWritePending}
+            waitReason={waitReason}
             pendingAction={pendingAction}
-            onAction={(action) => requestAction(robot, action)}
+            onAction={requestAction}
           />
         }
       />

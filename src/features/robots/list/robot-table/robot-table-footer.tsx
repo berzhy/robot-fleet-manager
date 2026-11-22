@@ -8,7 +8,6 @@ import type { HTMLAttributes } from "react";
 import { robotPageSizes } from "@/modules/robots/robot";
 import type { RobotFilters } from "@/modules/robots/robot-filters";
 
-import { useRobotWriteLock } from "../../api/robot-mutations";
 import useRobotList from "../use-robot-list";
 import useRobotListView, {
   setRobotListPage,
@@ -46,7 +45,6 @@ export function formatResultCount(
 export default function RobotTableFooter() {
   const { filters, pageSize } = useRobotListView();
   const { data, isLoading, page } = useRobotList();
-  const { isWritePending } = useRobotWriteLock();
 
   // The previous view's total keeps the pager mounted while the next loads.
   const total = data?.total ?? 0;
@@ -72,9 +70,6 @@ export default function RobotTableFooter() {
           onRowsPerPageChange={(event) =>
             setRobotListPageSize(Number(event.target.value))
           }
-          // Stays enabled while a page loads: the previous page stays on screen,
-          // and disabling the pressed button would drop keyboard focus.
-          disabled={isWritePending}
           slotProps={{
             actions: {
               previousButton: {

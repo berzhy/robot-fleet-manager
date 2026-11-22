@@ -3,7 +3,11 @@ import { afterEach, expect, test, vi } from "vitest";
 
 import { renderHook } from "@/test/render";
 
-import { usePendingRobotAction, useSendRobotAction } from "./robot-mutations";
+import {
+  usePendingRobotAction,
+  useRobotWriteLocks,
+  useSendRobotAction,
+} from "./robot-mutations";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -16,19 +20,25 @@ test("a pending command belongs to its own robot only", async () => {
     vi.fn(() => new Promise<Response>(() => {})),
   );
   const { result } = renderHook(() => ({
-    sendAction: useSendRobotAction(),
+    sendToOther: useSendRobotAction("other-robot"),
+    sendToThis: useSendRobotAction("this-robot"),
     pendingAction: usePendingRobotAction("this-robot"),
+    locks: useRobotWriteLocks(),
   }));
 
   await act(async () => {
-    result.current.sendAction.mutate({ id: "other-robot", action: "stop" });
+    result.current.sendToOther.mutate("stop");
     await Promise.resolve();
   });
   expect(result.current.pendingAction).toBeUndefined();
+  expect(result.current.locks.isCommandPending("this-robot")).toBe(false);
+  expect(result.current.locks.isAddLocked()).toBe(false);
+  expect(result.current.locks.isDeleteLocked()).toBe(true);
 
   await act(async () => {
-    result.current.sendAction.mutate({ id: "this-robot", action: "retry" });
+    result.current.sendToThis.mutate("retry");
     await Promise.resolve();
   });
   expect(result.current.pendingAction).toBe("retry");
+  expect(result.current.locks.isCommandPending("this-robot")).toBe(true);
 });

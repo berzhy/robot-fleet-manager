@@ -14,12 +14,15 @@ export default function AddRobotSplitButton({
   buttonRef,
   loading,
   disabled,
+  deleteAllDisabled,
   onAdd,
   onDeleteAll,
 }: {
   buttonRef: Ref<HTMLButtonElement>;
   loading: boolean;
   disabled: boolean;
+  /** Delete all waits for every other write, including commands. */
+  deleteAllDisabled: boolean;
   onDeleteAll: (trigger: HTMLButtonElement) => void;
   onAdd: (trigger: HTMLButtonElement, count: 1 | 10 | 100) => void;
 }) {
@@ -76,6 +79,7 @@ export default function AddRobotSplitButton({
         ))}
         <Divider component="li" />
         <MenuItem
+          disabled={deleteAllDisabled}
           onClick={() => {
             if (anchor) {
               onDeleteAll(anchor);

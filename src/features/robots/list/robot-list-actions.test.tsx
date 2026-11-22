@@ -11,9 +11,9 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-async function openMenu() {
+async function openMenu(robotName = "Atlas") {
   const trigger = await screen.findByRole("button", {
-    name: "Actions for Atlas",
+    name: `Actions for ${robotName}`,
   });
   vi.spyOn(trigger, "getBoundingClientRect").mockReturnValue(
     new DOMRect(0, 0, 40, 40),
@@ -70,8 +70,9 @@ test.each([202, 409, 500])(
   },
 );
 
-test("pending action prevents overlapping mutations without replacing the table", async () => {
+test("a command holds up only its own robot, without replacing the table", async () => {
   let finish!: (response: Response) => void;
+  const reportedNow = new Date().toISOString();
   const fetcher = vi.fn((url: string, init?: RequestInit) => {
     if (init?.method === "POST") {
       return new Promise<Response>((resolve) => {
@@ -80,11 +81,19 @@ test("pending action prevents overlapping mutations without replacing the table"
     }
     return Promise.resolve(
       Response.json({
-        items: [{ ...workingRobot, lastReceivedAt: new Date().toISOString() }],
-        total: 1,
+        items: [
+          { ...workingRobot, lastReceivedAt: reportedNow },
+          {
+            ...workingRobot,
+            id: "other",
+            name: "Bolt",
+            lastReceivedAt: reportedNow,
+          },
+        ],
+        total: 2,
         page: 0,
         pageSize: 20,
-        ...pageMetadata(1),
+        ...pageMetadata(2),
       }),
     );
   });
@@ -100,21 +109,29 @@ test("pending action prevents overlapping mutations without replacing the table"
   fireEvent.click(
     within(menu).getByRole("menuitem", { name: "Stop activity" }),
   );
-
-  await waitFor(() =>
-    expect(screen.getByTestId("fleet-add-robot")).toBeDisabled(),
-  );
   // Keyboard users keep their place in the row while the command is sent.
   await waitFor(() => expect(trigger).toHaveFocus());
 
   const pendingMenu = await openMenu();
-  for (const name of [/Start activity/, /Delete/]) {
-    const item = within(pendingMenu).getByRole("menuitem", { name });
+  expect(
+    within(pendingMenu).getByRole("menuitem", { name: /Start activity/ }),
+  ).toHaveTextContent("Sending command…");
+  // A delete waits for every write, so it would not hold up this one alone.
+  expect(
+    within(pendingMenu).getByRole("menuitem", { name: /Delete/ }),
+  ).toHaveTextContent("Another change is in progress");
+  for (const item of within(pendingMenu).getAllByRole("menuitem")) {
     expect(item).toHaveAttribute("aria-disabled", "true");
-    expect(item).toHaveTextContent("Another change is in progress");
   }
   fireEvent.keyDown(pendingMenu, { key: "Escape" });
   expect(screen.getByTestId("robot-row-control")).toBe(row);
+
+  const otherMenu = await openMenu("Bolt");
+  expect(
+    within(otherMenu).getByRole("menuitem", { name: "Stop activity" }),
+  ).not.toHaveAttribute("aria-disabled");
+  fireEvent.keyDown(otherMenu, { key: "Escape" });
+  expect(screen.getByTestId("fleet-add-robot")).toBeEnabled();
   expect(
     fetcher.mock.calls.filter(([, init]) => init?.method === "POST"),
   ).toHaveLength(1);

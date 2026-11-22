@@ -6,7 +6,7 @@ import { isRequestTimeout } from "../api/robot-api";
 import {
   useDeleteAllRobots,
   useDeleteRobot,
-  useRobotWriteLock,
+  useRobotWriteLocks,
 } from "../api/robot-mutations";
 
 import type DeleteRobotDialog from "./delete-robot-dialog";
@@ -25,7 +25,7 @@ export default function useDeleteRobotFlow({
   const deleteRobot = useDeleteRobot();
   const deleteAllRobots = useDeleteAllRobots();
   const notifications = useNotifications();
-  const { isWritePendingNow } = useRobotWriteLock();
+  const locks = useRobotWriteLocks();
 
   // Kept after close until the exit transition ends, so focus returns afterwards.
   const [confirmation, setConfirmation] = useState<{
@@ -36,7 +36,7 @@ export default function useDeleteRobotFlow({
   const [error, setError] = useState<string | null>(null);
 
   function requestDelete(target: DeleteTarget, trigger: HTMLButtonElement) {
-    if (isWritePendingNow() || confirmation) {
+    if (locks.isDeleteLocked() || confirmation) {
       return;
     }
 
@@ -46,7 +46,7 @@ export default function useDeleteRobotFlow({
   }
 
   function cancel() {
-    if (!confirmation?.open || isWritePendingNow()) {
+    if (!confirmation?.open || locks.isDeletePending()) {
       return;
     }
 
@@ -55,7 +55,7 @@ export default function useDeleteRobotFlow({
   }
 
   function confirm() {
-    if (!confirmation?.open || isWritePendingNow()) {
+    if (!confirmation?.open || locks.isDeleteLocked()) {
       return;
     }
 
@@ -125,5 +125,5 @@ export default function useDeleteRobotFlow({
       }
     : null;
 
-  return { requestDelete, dialog };
+  return { requestDelete, dialog, isDeleteLocked: locks.isDeleteLocked() };
 }

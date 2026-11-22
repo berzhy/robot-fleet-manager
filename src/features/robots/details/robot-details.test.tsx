@@ -196,7 +196,7 @@ function renderControls(
         now,
         false,
       )}
-      pending={false}
+      waitReason={null}
       onAction={vi.fn()}
       {...props}
     />,
@@ -308,7 +308,10 @@ test.each([
 ] as const)(
   "a pending %s spins on its own slot, even after a poll swaps the label",
   (pendingAction, spinning) => {
-    renderControls({ activity: "working" }, { pending: true, pendingAction });
+    renderControls(
+      { activity: "working" },
+      { waitReason: "Sending command…", pendingAction },
+    );
 
     const spinners = screen.getAllByRole("progressbar", { hidden: true });
     expect(spinners).toHaveLength(1);

@@ -17,15 +17,16 @@ import {
 import { robotKeys } from "./robot-queries";
 
 const robotMutationKey = [...robotKeys.all, "mutation"] as const;
+const createMutationKey = [...robotMutationKey, "create"] as const;
+// One prefix for both deletes, so a check can wait for either.
+const deleteMutationKey = [...robotMutationKey, "delete"] as const;
 const commandMutationKey = [...robotMutationKey, "command"] as const;
-
-type RobotCommand = { id: string; action: RobotAction };
 
 export function useCreateRobots() {
   const client = useQueryClient();
 
   return useMutation({
-    mutationKey: [...robotMutationKey, "create"],
+    mutationKey: createMutationKey,
     mutationFn: createRobots,
     onSettled: () => invalidateRobots(client),
   });
@@ -35,7 +36,7 @@ export function useDeleteRobot() {
   const client = useQueryClient();
 
   return useMutation({
-    mutationKey: [...robotMutationKey, "delete"],
+    mutationKey: [...deleteMutationKey, "robot"],
     mutationFn: deleteRobot,
     onSettled: () => invalidateRobots(client),
   });
@@ -45,47 +46,61 @@ export function useDeleteAllRobots() {
   const client = useQueryClient();
 
   return useMutation({
-    mutationKey: [...robotMutationKey, "delete-all"],
+    mutationKey: [...deleteMutationKey, "all"],
     mutationFn: deleteAllRobots,
     onSettled: () => invalidateRobots(client),
   });
 }
 
-export function useSendRobotAction() {
+export function useSendRobotAction(robotId: string) {
   const client = useQueryClient();
 
   return useMutation({
-    mutationKey: commandMutationKey,
-    mutationFn: ({ id, action }: RobotCommand) => sendRobotAction(id, action),
+    mutationKey: robotCommandKey(robotId),
+    mutationFn: (action: RobotAction) => sendRobotAction(robotId, action),
     onSettled: () => invalidateRobots(client),
   });
 }
 
 /** The action being sent to this robot, until the refresh after it settles. */
 export function usePendingRobotAction(robotId: string) {
-  const pendingCommands = useMutationState({
-    filters: { mutationKey: commandMutationKey, status: "pending" },
+  const [pendingAction] = useMutationState({
+    filters: { mutationKey: robotCommandKey(robotId), status: "pending" },
     // Only useSendRobotAction writes under this key.
-    select: (mutation) => mutation.state.variables as RobotCommand,
+    select: (mutation) => mutation.state.variables as RobotAction,
   });
 
-  return pendingCommands.find((command) => command.id === robotId)?.action;
+  return pendingAction;
 }
 
 /**
- * One robot write at a time, across screens. `isWritePending` drives rendering;
- * `isWritePendingNow()` reads the cache synchronously, so a click handler sees a
- * write started a moment ago, before React re-renders.
+ * Which writes wait for which. A robot takes one command at a time. A delete,
+ * made behind a modal dialog, waits for every other write and holds them all
+ * up. One add runs at a time, beside commands to any robot.
+ *
+ * Each check reads the mutation cache, so a click handler sees a write started
+ * a moment ago, before React re-renders; the subscription keeps the same
+ * checks current during render.
  */
-export function useRobotWriteLock() {
+export function useRobotWriteLocks() {
   const client = useQueryClient();
-  const isWritePending = useIsMutating({ mutationKey: robotMutationKey }) > 0;
+  useIsMutating({ mutationKey: robotMutationKey });
 
-  function isWritePendingNow() {
-    return client.isMutating({ mutationKey: robotMutationKey }) > 0;
+  function isPending(mutationKey: readonly string[]) {
+    return client.isMutating({ mutationKey }) > 0;
   }
 
-  return { isWritePending, isWritePendingNow };
+  return {
+    isCommandPending: (robotId: string) => isPending(robotCommandKey(robotId)),
+    isDeletePending: () => isPending(deleteMutationKey),
+    isAddLocked: () =>
+      isPending(createMutationKey) || isPending(deleteMutationKey),
+    isDeleteLocked: () => isPending(robotMutationKey),
+  };
+}
+
+function robotCommandKey(robotId: string) {
+  return [...commandMutationKey, robotId];
 }
 
 // Returned from onSettled, so each mutation stays pending until fresh data arrives.
