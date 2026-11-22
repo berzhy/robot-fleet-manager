@@ -47,7 +47,7 @@ test("disabled actions show their reason and cannot execute", async () => {
   expect(fetcher).not.toHaveBeenCalled();
 });
 
-test("unverified data blocks every action with one reason", async () => {
+test("a failed refresh does not block actions; the server checks them", async () => {
   const evaluatedAt = Date.now();
   render(
     <RobotTableRowMenu
@@ -70,7 +70,7 @@ test("unverified data blocks every action with one reason", async () => {
   fireEvent.click(trigger);
 
   const stop = within(await screen.findByRole("menu")).getByRole("menuitem", {
-    name: "Stop activity Waiting for live updates",
+    name: "Stop activity",
   });
-  expect(stop).toHaveAttribute("aria-disabled", "true");
+  expect(stop).not.toHaveAttribute("aria-disabled");
 });

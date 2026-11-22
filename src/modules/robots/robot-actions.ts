@@ -44,14 +44,10 @@ export function mainActivityAction(robot: Robot): RobotAction {
 }
 
 /**
- * Why a screen cannot offer an action now. Data that may be out of date
- * blocks every action before the robot's own state is considered. A queued
- * action blocks only itself, so another command can always replace it.
+ * Why a screen cannot offer an action now. A queued action blocks only
+ * itself, so another command can always replace it.
  */
 export function commandUnavailable(reading: RobotReading, action: RobotAction) {
-  if (reading.unverified) {
-    return "Waiting for live updates";
-  }
   if (isActionQueued(reading, action)) {
     return "Waiting for the robot…";
   }

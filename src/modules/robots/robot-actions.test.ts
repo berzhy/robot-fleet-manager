@@ -87,15 +87,12 @@ test.each<[RobotActivity, RobotAction]>([
   expect(mainActivityAction(testRobot({ activity }))).toBe(action);
 });
 
-test("a screen waits for live updates first, then for a queued command", () => {
+test("a queued command blocks only itself", () => {
   const robot = connectedRobot({
     activity: "idle",
     queuedControlTarget: "work",
   });
 
-  expect(commandUnavailable(robotReading(robot, now, true), "start")).toBe(
-    "Waiting for live updates",
-  );
   expect(commandUnavailable(robotReading(robot, now, false), "start")).toBe(
     "Waiting for the robot…",
   );
