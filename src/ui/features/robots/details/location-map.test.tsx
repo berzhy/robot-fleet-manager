@@ -1,0 +1,146 @@
+import { screen } from "@testing-library/react";
+import { expect, test } from "vitest";
+
+import { render } from "@/ui/test-render";
+import { testRobot } from "@/ui/features/robots/test-robots";
+
+import { robotReading } from "../robot-reading";
+import LocationMap from "./location-map";
+
+const robot = testRobot({ activity: "charging" });
+
+const evaluatedAt = Date.parse(robot.createdAt);
+const freshReport = new Date(evaluatedAt).toISOString();
+
+test("each area counts the other robots in it and separates unknown areas", () => {
+  render(
+    <LocationMap
+      reading={robotReading(
+        testRobot(
+          { ...robot, area: "Lobby", lastReceivedAt: freshReport },
+          evaluatedAt,
+        ),
+        evaluatedAt,
+        false,
+      )}
+      peerCounts={[
+        { area: "Lobby", count: 17 },
+        { area: "Unmapped", count: 1 },
+      ]}
+    />,
+  );
+
+  expect(screen.getByRole("heading", { name: "Munich" })).toBeInTheDocument();
+  expect(screen.getByText("17 other robots")).toBeInTheDocument();
+  expect(screen.getByRole("img", { name: "This robot" })).toBeInTheDocument();
+  expect(
+    screen.getByText("Lobby: this robot, 17 other robots"),
+  ).toBeInTheDocument();
+  expect(screen.getByText("Area unknown: 1 other robot")).toBeInTheDocument();
+  expect(screen.getByText("This robot")).toBeInTheDocument();
+});
+
+test("a robot outside the plan is listed as in an unknown area", () => {
+  render(
+    <LocationMap
+      reading={robotReading(robot, evaluatedAt, false)}
+      peerCounts={[]}
+    />,
+  );
+
+  expect(screen.getByText("Area unknown: this robot")).toBeInTheDocument();
+  expect(
+    screen.queryByRole("img", { name: /This robot/ }),
+  ).not.toBeInTheDocument();
+});
+
+test.each([
+  ["stale", { lastReceivedAt: "2026-11-14T11:00:00.000Z" }, false],
+  ["unverified", { lastReceivedAt: freshReport }, true],
+  [
+    "position lost",
+    { lastReceivedAt: freshReport, problemCode: "position-lost" as const },
+    false,
+  ],
+])(
+  "a %s robot is shown at its last reported area",
+  (_state, changes, unverified) => {
+    render(
+      <LocationMap
+        reading={robotReading(
+          testRobot({ ...robot, area: "Base", ...changes }, evaluatedAt),
+          evaluatedAt,
+          unverified,
+        )}
+        peerCounts={[]}
+      />,
+    );
+
+    expect(
+      screen.getByRole("img", { name: "This robot, last reported here" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("This robot, last reported area"),
+    ).toBeInTheDocument();
+  },
+);
+
+test("each site with a drawing gets its own, and other sites a generic one", () => {
+  function planFor(site: string) {
+    const { container, unmount } = render(
+      <LocationMap
+        reading={robotReading(
+          testRobot({ ...robot, site }, evaluatedAt),
+          evaluatedAt,
+          false,
+        )}
+        peerCounts={[]}
+      />,
+    );
+    const plan = container.querySelector("svg")?.innerHTML;
+    unmount();
+    return plan;
+  }
+
+  const plans = ["Munich", "Berlin", "Hamburg"].map(planFor);
+
+  expect(new Set(plans).size).toBe(3);
+  expect(planFor("Detail demo")).toBe(plans[0]);
+});
+
+test.each([
+  ["Munich", "Offices & warehouse · ~3,600 m²"],
+  ["Berlin", "Office & service campus · ~3,200 m²"],
+  ["Hamburg", "Distribution center · ~4,800 m²"],
+])("%s describes its facility", (site, details) => {
+  render(
+    <LocationMap
+      reading={robotReading(
+        testRobot({ ...robot, site }, evaluatedAt),
+        evaluatedAt,
+        false,
+      )}
+      peerCounts={[]}
+    />,
+  );
+
+  expect(screen.getByText(details)).toBeInTheDocument();
+});
+
+test("a site with the generic drawing does not borrow another site's details", () => {
+  render(
+    <LocationMap
+      reading={robotReading(
+        testRobot({ ...robot, site: "Detail demo" }, evaluatedAt),
+        evaluatedAt,
+        false,
+      )}
+      peerCounts={[]}
+    />,
+  );
+
+  expect(
+    screen.getByRole("heading", { name: "Detail demo" }),
+  ).toBeInTheDocument();
+  expect(screen.queryByText(/m²/)).not.toBeInTheDocument();
+});

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import NotFoundContent from "@/shared/not-found/not-found-content";
+import NotFoundContent from "@/ui/status-pages/not-found-content";
 
 export const metadata: Metadata = { title: "Page not found" };
 

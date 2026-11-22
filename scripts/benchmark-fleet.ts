@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { generateRobotInput } from "../src/features/robots/list/generate-robot-input";
+import { generateRobotInput } from "../src/ui/features/robots/list/generate-robot-input";
 import { robotActivities, robotPageSize } from "../src/common/constants";
 import { createSchema } from "../src/server/db/create-schema";
 import { openDatabase } from "../src/server/db/database";

@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { robotProblemCodes } from "@/common/constants";
-import { openTestDatabase, removeTestDatabase } from "@/test/database";
-import { testRobotInput } from "@/test/robots";
+import {
+  openTestDatabase,
+  removeTestDatabase,
+} from "@/server/db/test-database";
+import { testRobotInput } from "@/server/robots/test-robot-input";
 
 import type { FleetDatabase } from "../db/database";
 import { latestTelemetry } from "../db/schema";

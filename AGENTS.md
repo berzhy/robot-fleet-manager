@@ -2,23 +2,23 @@ Pay extra attention to architecture, structure, code cleanlines and code quality
 
 ## Where styles go
 
-- **Theme (`src/theme/theme.ts`)**: palette, typography and shape tokens, and looks shared across components (focus ring, accessible text colours). Each entry carries a one-line comment saying why it exists.
+- **Theme (`src/ui/theme/theme.ts`)**: palette, typography and shape tokens, and looks shared across components (focus ring, accessible text colours). Each entry carries a one-line comment saying why it exists.
 - **Component props first**: dedicated MUI props (`spacing`, `align`, `variant`, `color`) and native props (SVG `opacity`) before `sx`.
 - **Component `sx`**: layout, and looks that belong to that one component. Use palette keys (`"text.secondary"`), never colour literals.
-- **Shared `sx` constant**: a recipe repeated across files (`src/theme/illustration.ts`). Promote to the theme only when it becomes an app-wide rule.
-- **Theme values in code**: `theme.vars.palette` (CSS variables are always on; tests render with the app theme through `@/test/render`).
+- **Shared `sx` constant**: a recipe repeated across files (`src/ui/theme/illustration.ts`). Promote to the theme only when it becomes an app-wide rule.
+- **Theme values in code**: `theme.vars.palette` (CSS variables are always on; tests render with the app theme through `@/ui/test-render`).
 
 ## Where code goes
 
 - **`src/app`**: Next routes only (pages and `api/**` handlers), wiring features to the server.
 - **`src/common`**: the contract shared by server, UI and simulator, one file per kind: `constants.ts` (enum lists, thresholds), `types.ts`, `schemas.ts` (zod, with the types inferred from it) and `labels.ts`. No fleet rules.
 - **`src/server`**: data access and fleet rules; it sends each robot with its connection, battery level, blocked actions and queued actions.
-- **`src/features`**: UI by feature; **`src/shared`**: UI used by more than one feature or the app shell.
+- **`src/ui`**: everything the browser runs. `features/` holds the product areas (robots, skills, integrations); app-wide UI gets a folder named for what it is: `layout/`, `theme/`, `query/`, `notifications/`, `status-pages/`, `assets/`.
 - **`src/simulator`**: the robot simulator, which reaches the app only over HTTP.
 
 ## Where tests go
 
-- **Unit tests** sit next to the code they test: `<unit>.test.ts(x)`, or `<unit>-<behaviour>.test.tsx` when one unit needs several suites (`robot-list-deletion.test.tsx`). Shared test support lives in `src/test/` (render with providers, robot fixtures, test database).
+- **Unit tests** sit next to the code they test: `<unit>.test.ts(x)`, or `<unit>-<behaviour>.test.tsx` when one unit needs several suites (`robot-list-deletion.test.tsx`). Test support sits with the side it sets up, named `test-*`: `src/ui/test-render.tsx` (render with providers), `src/ui/features/robots/test-robots.ts` (robots as the API sends them), `src/server/db/test-database.ts`, `src/server/robots/test-robot-input.ts`.
 - **End-to-end tests** live in `e2e/`, with shared fixtures and helpers in `e2e/fixtures.ts`.
 
 ## Code quality bar

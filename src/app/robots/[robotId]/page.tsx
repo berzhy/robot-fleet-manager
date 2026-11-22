@@ -4,7 +4,7 @@ import { io } from "next/cache";
 import { notFound } from "next/navigation";
 import { cache, Suspense } from "react";
 
-import RobotDetails from "@/features/robots/details/robot-details";
+import RobotDetails from "@/ui/features/robots/details/robot-details";
 import { getDatabase } from "@/server/db/runtime-database";
 import { getRobotContext } from "@/server/robots/robots";
 

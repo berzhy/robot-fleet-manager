@@ -1,7 +1,7 @@
 import { screen } from "@testing-library/react";
 import { expect, test } from "vitest";
 
-import { render } from "@/test/render";
+import { render } from "@/ui/test-render";
 
 import PageNotFound from "./not-found";
 

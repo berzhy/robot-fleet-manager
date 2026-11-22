@@ -2,7 +2,7 @@ import Typography from "@mui/material/Typography";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import RobotList from "@/features/robots/list/robot-list";
+import RobotList from "@/ui/features/robots/list/robot-list";
 
 export const metadata: Metadata = { title: "Robots" };
 
