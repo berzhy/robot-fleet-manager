@@ -18,7 +18,6 @@ import {
   createRobot,
   deleteRobot,
   deleteAllRobots,
-  getRobot,
   getRobotContext,
   listRobots,
   robotRegistry,
@@ -123,15 +122,6 @@ export function robotHandlers(database: () => FleetDatabase) {
           201,
         ),
       );
-    },
-
-    get(id: string) {
-      return safely(() => {
-        const robot = getRobot(database(), id);
-        return robot
-          ? jsonResponse(robot)
-          : errorResponse(404, "NOT_FOUND", "Robot not found.");
-      });
     },
 
     context(id: string) {

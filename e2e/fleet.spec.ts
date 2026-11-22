@@ -486,7 +486,9 @@ test("delete confirmation keeps the selected robot after it leaves the filtered 
   await expect(
     page.getByRole("textbox", { name: "Search robots" }),
   ).toBeFocused();
-  await expect(await request.get(`/api/robots/${otherRobot.id}`)).toBeOK();
+  await expect(
+    await request.get(`/api/robots/${otherRobot.id}/context`),
+  ).toBeOK();
 });
 
 test("deleting the last filtered page corrects pagination and retains filters", async ({

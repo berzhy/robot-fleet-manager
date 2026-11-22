@@ -162,7 +162,7 @@ test("deletion cascades only the selected robot's telemetry", () => {
   ).toEqual([second.id]);
 });
 
-test("HTTP contracts create/read/list/delete and reject invalid requests", async () => {
+test("HTTP contracts create/list/delete and reject invalid requests", async () => {
   const api = robotHandlers(() => db);
   const post = (value: unknown) =>
     api.create(
@@ -205,7 +205,7 @@ test("HTTP contracts create/read/list/delete and reject invalid requests", async
 
   expect(response.status).toBe(201);
   const robot = (await response.json()) as Robot;
-  expect(await api.get(robot.id).json()).toEqual(robot);
+  expect(getRobot(db, robot.id)).toEqual(robot);
   expect(
     await api.list(new Request("http://local/api/robots")).json(),
   ).toMatchObject({ items: [robot], pageSize: 10 });
@@ -221,7 +221,7 @@ test("HTTP contracts create/read/list/delete and reject invalid requests", async
 
   expect(api.remove(robot.id).status).toBe(204);
   expect(api.remove(robot.id).status).toBe(404);
-  expect(api.get(robot.id).status).toBe(404);
+  expect(getRobot(db, robot.id)).toBeUndefined();
 });
 
 test("database failures return generic errors without leaking details", async () => {
