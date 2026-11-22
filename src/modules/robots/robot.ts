@@ -43,7 +43,6 @@ export type Robot = {
   activity: RobotActivity;
   problemCode: RobotProblemCode | null;
   batteryPercent: number | null;
-  lastTelemetryAt: string | null;
   lastReceivedAt: string | null;
   /** The latest command's target until the robot reports applying it, else `null`. */
   queuedControlTarget: ControlTarget | null;
@@ -70,7 +69,8 @@ export type RobotPage = {
   pageSize: number;
 };
 
-export type SiteRobot = Pick<Robot, "id" | "name" | "area" | "lastReceivedAt">;
+/** Another robot at the same site; the map only counts robots per area. */
+export type SiteRobot = Pick<Robot, "id" | "area">;
 export type RobotContext = {
   robot: Robot;
   siteRobots: SiteRobot[];

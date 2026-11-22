@@ -126,7 +126,6 @@ test("creates robots in one batch POST and requires a 201 response", async () =>
     activity: "unknown",
     area: null,
     batteryPercent: null,
-    lastTelemetryAt: null,
     queuedControlTarget: null,
     lastReceivedAt: null,
   };

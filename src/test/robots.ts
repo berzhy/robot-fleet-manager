@@ -24,7 +24,6 @@ export function testRobot(overrides: Partial<Robot> = {}): Robot {
     activity: "unknown",
     problemCode: null,
     batteryPercent: null,
-    lastTelemetryAt: null,
     lastReceivedAt: null,
     queuedControlTarget: null,
     ...overrides,
@@ -53,5 +52,4 @@ export const workingRobot = testRobot({
   activity: "working",
   batteryPercent: 50,
   lastReceivedAt: new Date().toISOString(),
-  lastTelemetryAt: new Date().toISOString(),
 });

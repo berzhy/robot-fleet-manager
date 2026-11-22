@@ -3,19 +3,18 @@ import "server-only";
 import { robotPageSize } from "@/modules/robots/robot";
 import { robotFiltersSchema } from "@/modules/robots/robot-filters";
 import {
-  createRobotSchema,
   createRobotBatchSchema,
   robotActionRequestSchema,
   robotPageSchema,
   robotPageSizeSchema,
 } from "@/modules/robots/robot-validation";
 
+import { readJsonBody } from "../http/requests";
 import { errorResponse, jsonResponse } from "../http/responses";
 import type { FleetDatabase } from "../db/database";
 import { requestRobotAction } from "./robot-actions";
 import {
   createRobots,
-  createRobot,
   deleteRobot,
   deleteAllRobots,
   getRobotContext,
@@ -77,37 +76,10 @@ export function robotHandlers(database: () => FleetDatabase) {
       );
     },
 
-    async create(request: Request) {
-      let body: unknown;
-      try {
-        body = await request.json();
-      } catch {
-        return errorResponse(400, "INVALID_INPUT", "Invalid JSON body.");
-      }
-
-      const input = createRobotSchema.safeParse(body);
-      if (!input.success) {
-        return errorResponse(
-          400,
-          "INVALID_INPUT",
-          "Provide name, manufacturer and site (1–100 characters each), and valid robot and integration types.",
-        );
-      }
-
-      return safely(() =>
-        jsonResponse(createRobot(database(), input.data), 201),
-      );
-    },
-
     async createBatch(request: Request) {
-      let body: unknown;
-      try {
-        body = await request.json();
-      } catch {
-        return errorResponse(400, "INVALID_INPUT", "Invalid JSON body.");
-      }
-
-      const input = createRobotBatchSchema.safeParse(body);
+      const input = createRobotBatchSchema.safeParse(
+        await readJsonBody(request),
+      );
       if (!input.success) {
         return errorResponse(
           400,
@@ -141,14 +113,9 @@ export function robotHandlers(database: () => FleetDatabase) {
     },
 
     async requestAction(id: string, request: Request) {
-      let body: unknown;
-      try {
-        body = await request.json();
-      } catch {
-        return errorResponse(400, "INVALID_INPUT", "Invalid JSON body.");
-      }
-
-      const input = robotActionRequestSchema.safeParse(body);
+      const input = robotActionRequestSchema.safeParse(
+        await readJsonBody(request),
+      );
       if (!input.success) {
         return errorResponse(400, "INVALID_INPUT", "Invalid robot action.");
       }

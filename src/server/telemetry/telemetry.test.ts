@@ -77,7 +77,6 @@ test("ingestion persists latest telemetry and receipt times in list, registry an
   const robot = getRobot(db, id)!;
   expect(robot).toMatchObject({
     batteryPercent: 50,
-    lastTelemetryAt: observedAt,
     queuedControlTarget: null,
   });
   expect(Date.parse(robot.lastReceivedAt!)).toBeGreaterThan(

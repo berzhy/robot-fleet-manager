@@ -34,14 +34,13 @@ afterEach(() => {
 });
 
 test("created metadata persists after reopening with unknown telemetry", () => {
-  const robot = createRobot(db, { ...testRobotInput, name: "  New robot  " });
+  const robot = createRobot(db, testRobotInput);
 
   expect(robot).toMatchObject({
     ...testRobotInput,
     activity: "unknown",
     area: null,
     batteryPercent: null,
-    lastTelemetryAt: null,
     queuedControlTarget: null,
     lastReceivedAt: null,
   });
@@ -56,8 +55,6 @@ test("created metadata persists after reopening with unknown telemetry", () => {
   expect(snapshot?.robot).toEqual(robot);
   expect(typeof snapshot?.evaluatedAt).toBe("number");
   expect(getRobotContext(db, "missing")).toBeUndefined();
-
-  expect(() => createRobot(db, { ...testRobotInput, name: " " })).toThrow();
 });
 
 test("pagination orders newest first with descending id tie-breaking", () => {
@@ -118,7 +115,6 @@ test("deletion cascades only the selected robot's telemetry", () => {
     activity: "working",
     batteryPercent: 42,
     area: "Lobby",
-    lastTelemetryAt: observedAt,
     queuedControlTarget: null,
   });
 
@@ -212,9 +208,7 @@ test("detail context includes only same-site peers and returns 404 for a missing
   const context = getRobotContext(db, selected.id)!;
 
   expect(context.robot.id).toBe(selected.id);
-  expect(context.siteRobots).toEqual([
-    { id: peer.id, name: "Peer", area: null, lastReceivedAt: null },
-  ]);
+  expect(context.siteRobots).toEqual([{ id: peer.id, area: null }]);
 
   const response = robotHandlers(() => db).context(selected.id);
 

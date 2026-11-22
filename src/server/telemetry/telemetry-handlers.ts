@@ -1,6 +1,7 @@
 import "server-only";
 import { telemetryBatchSchema } from "@/modules/telemetry/telemetry";
 import type { FleetDatabase } from "../db/database";
+import { readJsonBody } from "../http/requests";
 import { errorResponse, jsonResponse } from "../http/responses";
 import { ingestTelemetry } from "./telemetry";
 
@@ -9,14 +10,9 @@ const maxClockSkewMs = 5_000;
 export function telemetryHandlers(database: () => FleetDatabase) {
   return {
     async ingest(request: Request) {
-      let body: unknown;
-      try {
-        body = await request.json();
-      } catch {
-        return invalid();
-      }
-
-      const parsed = telemetryBatchSchema.safeParse(body);
+      const parsed = telemetryBatchSchema.safeParse(
+        await readJsonBody(request),
+      );
       const now = Date.now();
       if (
         !parsed.success ||

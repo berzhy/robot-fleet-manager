@@ -14,9 +14,7 @@ const freshReport = new Date(evaluatedAt).toISOString();
 test("each area counts the other robots in it and separates unknown areas", () => {
   const peers = Array.from({ length: 17 }, (_, index) => ({
     id: `peer-${index}`,
-    name: `Peer ${index}`,
     area: "Lobby",
-    lastReceivedAt: null,
   }));
   render(
     <LocationMap

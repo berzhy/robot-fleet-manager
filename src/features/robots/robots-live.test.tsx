@@ -31,7 +31,6 @@ const robot = testRobot({
   activity: "working",
   area: "Lobby",
   batteryPercent: 50,
-  lastTelemetryAt: "2026-01-01T00:00:00.000Z",
   lastReceivedAt: "2026-01-01T00:00:00.000Z",
 });
 

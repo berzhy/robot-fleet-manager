@@ -22,10 +22,10 @@ afterEach(() => {
 test("HTTP contracts create/list/delete and reject invalid requests", async () => {
   const api = robotHandlers(() => db);
   const post = (value: unknown) =>
-    api.create(
-      new Request("http://local/api/robots", {
+    api.createBatch(
+      new Request("http://local/api/robots/batch", {
         method: "POST",
-        body: JSON.stringify(value),
+        body: JSON.stringify({ robots: [value] }),
       }),
     );
   const missingType = {
@@ -54,16 +54,25 @@ test("HTTP contracts create/list/delete and reject invalid requests", async () =
   ).toBe(400);
   expect(
     (
-      await api.create(
-        new Request("http://local/api/robots", { method: "POST", body: "{" }),
+      await api.createBatch(
+        new Request("http://local/api/robots/batch", {
+          method: "POST",
+          body: "{",
+        }),
       )
     ).status,
   ).toBe(400);
 
-  const response = await post(testRobotInput);
+  const response = await post({
+    ...testRobotInput,
+    name: `  ${testRobotInput.name}  `,
+  });
 
   expect(response.status).toBe(201);
-  const robot = (await response.json()) as Robot;
+  const {
+    items: [robot],
+  } = (await response.json()) as { items: Robot[] };
+  expect(robot.name).toBe(testRobotInput.name);
   expect(getRobot(db, robot.id)).toEqual(robot);
   expect(
     await api.list(new Request("http://local/api/robots")).json(),

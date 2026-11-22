@@ -15,7 +15,6 @@ const robot: RegistryRobot = {
   integrationType: "vendor-api" as const,
   site: "Site",
   createdAt: "2026-01-01T00:00:00.000Z",
-  lastTelemetryAt: null,
   queuedControlTarget: null,
   lastReceivedAt: null,
   area: null,

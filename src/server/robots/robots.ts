@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, count, desc, eq, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, ne, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 
 import type { RobotFilters } from "@/modules/robots/robot-filters";
@@ -12,10 +12,7 @@ import {
   type Robot,
   type RobotPage,
 } from "@/modules/robots/robot";
-import {
-  createRobotBatchSchema,
-  type CreateRobotInput,
-} from "@/modules/robots/robot-validation";
+import type { CreateRobotInput } from "@/modules/robots/robot-validation";
 
 import {
   onlineReportMaxAgeMs,
@@ -41,7 +38,6 @@ const selection = {
   >`coalesce(${latestTelemetry.activity}, 'unknown')`,
   batteryPercent: latestTelemetry.batteryPercent,
   lastReceivedAt: latestTelemetry.receivedAt,
-  lastTelemetryAt: latestTelemetry.observedAt,
   queuedControlTarget: sql<
     Robot["queuedControlTarget"]
   >`case when ${robots.controlRevision} > coalesce(${latestTelemetry.appliedControlRevision}, 0) then ${robots.controlTarget} end`,
@@ -164,31 +160,29 @@ export function createRobot(db: FleetDatabase, input: CreateRobotInput): Robot {
   return createRobots(db, [input])[0];
 }
 
+/** Registers robots whose input the HTTP boundary has already validated. */
 export function createRobots(
   db: FleetDatabase,
-  input: CreateRobotInput[],
+  inputs: CreateRobotInput[],
 ): Robot[] {
-  const { robots: inputs } = createRobotBatchSchema.parse({ robots: input });
-  const rows = inputs.map((data) => ({
-    ...data,
+  const rows = inputs.map((input) => ({
+    ...input,
     id: randomUUID(),
     createdAt: new Date().toISOString(),
   }));
 
-  return db.transaction((tx) => {
-    tx.insert(robots).values(rows).run();
+  // One INSERT, so the batch is stored whole or not at all.
+  db.insert(robots).values(rows).run();
 
-    return rows.map((row): Robot => ({
-      ...row,
-      activity: "unknown",
-      problemCode: null,
-      area: null,
-      batteryPercent: null,
-      lastTelemetryAt: null,
-      lastReceivedAt: null,
-      queuedControlTarget: null,
-    }));
-  });
+  return rows.map((row) => ({
+    ...row,
+    activity: "unknown",
+    problemCode: null,
+    area: null,
+    batteryPercent: null,
+    lastReceivedAt: null,
+    queuedControlTarget: null,
+  }));
 }
 
 export function deleteAllRobots(db: FleetDatabase) {
@@ -215,18 +209,12 @@ export function getRobotContext(db: FleetDatabase, id: string) {
     }
 
     const siteRobots = tx
-      .select({
-        id: robots.id,
-        name: robots.name,
-        area: latestTelemetry.area,
-        lastReceivedAt: latestTelemetry.receivedAt,
-      })
+      .select({ id: robots.id, area: latestTelemetry.area })
       .from(robots)
       .leftJoin(latestTelemetry, eq(robots.id, latestTelemetry.robotId))
-      .where(eq(robots.site, robot.site))
+      .where(and(eq(robots.site, robot.site), ne(robots.id, id)))
       .orderBy(robots.id)
-      .all()
-      .filter((peer) => peer.id !== id);
+      .all();
 
     return { robot, siteRobots, evaluatedAt: Date.now() };
   });

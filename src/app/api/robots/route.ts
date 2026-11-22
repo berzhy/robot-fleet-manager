@@ -10,10 +10,6 @@ export async function GET(request: Request) {
   return handlers.list(request);
 }
 
-export async function POST(request: Request) {
-  return handlers.create(request);
-}
-
 export function DELETE() {
   return handlers.removeAll();
 }

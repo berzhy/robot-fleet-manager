@@ -49,9 +49,8 @@ export default function LocationMap({
     isStale(connectionStatus(robot.lastReceivedAt, evaluatedAt)) ||
     robot.problemCode === "position-lost";
 
-  const others = peers.filter((peer) => peer.id !== robot.id);
   const otherCountIn = (area: FacilityArea | undefined) =>
-    others.filter((peer) => planArea(peer.area) === area).length;
+    peers.filter((peer) => planArea(peer.area) === area).length;
   const areas = facilityAreas.map((area) => ({
     ...area,
     anchor: layout.labelAnchors[area.name],
