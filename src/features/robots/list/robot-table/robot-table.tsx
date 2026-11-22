@@ -47,8 +47,6 @@ const tableMinWidthPx = columns.reduce(
 );
 
 const rowHeightPx = 56;
-// Dim enough to show the rows are being replaced, clear enough to read and use.
-const outdatedRowsOpacity = 0.6;
 
 export default function RobotTable({
   toolbar,
@@ -85,7 +83,6 @@ export default function RobotTable({
   });
 
   const { search } = filters;
-  const isOutdated = isLoading && data !== undefined;
 
   return (
     <Paper
@@ -177,11 +174,7 @@ export default function RobotTable({
               ))}
             </TableRow>
           </TableHead>
-          <TableBody
-            // The previous view's rows stay, dimmed, while the next loads. Their
-            // actions still work: each one names its robot by id.
-            sx={{ opacity: isOutdated ? outdatedRowsOpacity : 1 }}
-          >
+          <TableBody>
             {isLoading && !data?.items.length && (
               <RobotTableSkeleton
                 columnCount={columns.length}

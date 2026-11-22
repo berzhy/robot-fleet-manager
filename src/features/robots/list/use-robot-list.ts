@@ -41,12 +41,8 @@ export default function useRobotList() {
 
   return {
     data,
-    /**
-     * This view's own result is not on screen yet: on the first load, while
-     * the previous view's result stands in, and on a page past the end until
-     * the URL is corrected.
-     */
-    isLoading: query.isPending || query.isPlaceholderData || isOutOfRange,
+    /** This view's own result has not arrived yet: the previous view's may stand in. */
+    isLoading: query.isPending || query.isPlaceholderData,
     loadFailed: query.isLoadingError,
     refreshFailed: query.isRefetchError,
     page,
