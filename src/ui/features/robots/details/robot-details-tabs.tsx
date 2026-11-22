@@ -8,7 +8,7 @@ import type { PeerCount } from "@/common/types";
 
 import type { RobotReading } from "../robot-reading";
 
-import LocationMap from "./location-map";
+import LocationMap from "./location-map/location-map";
 import RobotLogs from "./robot-logs";
 
 type DetailsTab = "location" | "logs";

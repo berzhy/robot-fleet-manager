@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 
 import type { PeerCount } from "@/common/types";
 
-import type { RobotReading } from "../robot-reading";
+import type { RobotReading } from "../../robot-reading";
 
 import {
   facilityAreas,

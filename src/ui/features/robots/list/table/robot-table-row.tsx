@@ -18,12 +18,9 @@ import {
 import type { Robot } from "@/common/types";
 
 import type { RobotReading } from "../../robot-reading";
-import { ConnectionIndicator } from "../../connection-status/connection-status";
-import TimeAgo from "../../time-ago/time-ago";
-import {
-  batteryLevelColors,
-  formatBattery,
-} from "../../utils/robot-formatters";
+import { ConnectionIndicator } from "../../connection-status";
+import TimeAgo from "../../time-ago";
+import { batteryLevelColors, formatBattery } from "../../battery";
 
 import RobotTableRowMenu from "./robot-table-row-menu";
 import SearchHighlight from "./search-highlight";

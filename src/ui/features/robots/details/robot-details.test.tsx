@@ -14,7 +14,7 @@ import type { Robot, RobotContext } from "@/common/types";
 
 import { actionLabels } from "../robot-action-display";
 import { robotReading } from "../robot-reading";
-import { formatRobotTimestamp } from "../utils/robot-formatters";
+import { formatRobotTimestamp } from "../time-ago";
 
 import ActivityControls from "./activity-controls";
 import RobotDetails from "./robot-details";

@@ -1,14 +1,35 @@
-import type { BatteryLevel } from "@/common/types";
+import Box from "@mui/material/Box";
+import type { SxProps, Theme } from "@mui/material/styles";
+import Tooltip from "@mui/material/Tooltip";
 
-export function formatBattery(value: number | null) {
-  return value === null ? "Unknown" : `${Math.round(value)}%`;
+/** A relative time, with the exact one on hover, or on focus when focusable. */
+export default function TimeAgo({
+  timestamp,
+  now,
+  tabIndex,
+  sx,
+  "data-testid": testId,
+}: {
+  timestamp: string;
+  now: number;
+  tabIndex?: number;
+  sx?: SxProps<Theme>;
+  "data-testid"?: string;
+}) {
+  return (
+    <Tooltip title={formatRobotTimestamp(timestamp)} describeChild>
+      <Box
+        component="time"
+        data-testid={testId}
+        dateTime={timestamp}
+        tabIndex={tabIndex}
+        sx={sx}
+      >
+        {formatTimeAgo(timestamp, now)}
+      </Box>
+    </Tooltip>
+  );
 }
-
-/** As the fleet views read: Low battery warns, Needs attention is an error. */
-export const batteryLevelColors: Partial<Record<BatteryLevel, string>> = {
-  low: "warning.main",
-  critical: "error.main",
-};
 
 // One fixed locale and zone, so the server render and the browser agree and
 // every time reads as at the fleet's German sites: English words, European

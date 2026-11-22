@@ -18,7 +18,7 @@ import {
 import type { RobotFilters } from "@/common/schemas";
 
 import useRobotList from "../use-robot-list";
-import useRobotListView, { setRobotListFilters } from "../use-robot-list-view";
+import useRobotListParams, { setRobotListFilters } from "../robot-list-url";
 
 import { fleetViewId, fleetViewLabels } from "./filter-fields";
 
@@ -53,7 +53,7 @@ const alertIconOpacity = 0.28;
 const darkAlertIconOpacity = 0.42;
 
 export default function RobotStatusFilters() {
-  const { filters } = useRobotListView();
+  const { filters } = useRobotListParams();
   const { data, isLoading, loadFailed } = useRobotList();
   const summary = data?.summary;
 

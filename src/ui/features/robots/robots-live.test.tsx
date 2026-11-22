@@ -16,7 +16,7 @@ import RobotList from "./list/robot-list";
 import useRobotList, {
   useRobotListPageCorrection,
 } from "./list/use-robot-list";
-import { setRobotListPage } from "./list/use-robot-list-view";
+import { setRobotListPage } from "./list/robot-list-url";
 import { pageMetadata, testRobot } from "@/ui/features/robots/test-robots";
 
 const reportedAt = "2026-01-01T00:00:00.000Z";

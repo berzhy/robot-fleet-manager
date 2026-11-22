@@ -13,8 +13,10 @@ import {
   type Ref,
 } from "react";
 
-import { appliedSearch } from "../robot-list-params";
-import useRobotListView, { setRobotListFilters } from "../use-robot-list-view";
+import useRobotListParams, {
+  appliedSearch,
+  setRobotListFilters,
+} from "../robot-list-url";
 
 import { searchFieldId } from "./filter-fields";
 
@@ -31,7 +33,7 @@ export default function RobotSearchField({
 }: {
   ref: Ref<SearchFieldHandle>;
 }) {
-  const { filters } = useRobotListView();
+  const { filters } = useRobotListParams();
   const inputRef = useRef<HTMLInputElement>(null);
 
   // The draft is what the user types; the URL holds the applied search.

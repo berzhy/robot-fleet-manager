@@ -58,3 +58,14 @@ export default function useRobotCommand(robot: Robot) {
     waitReason: sendAction.isPending ? "Sending command…" : null,
   };
 }
+
+/**
+ * Why a screen cannot offer an action now. A queued action blocks only
+ * itself, so another command can always replace it.
+ */
+export function commandUnavailable(robot: Robot, action: RobotAction) {
+  if (robot.queuedActions.includes(action)) {
+    return "Waiting for the robot…";
+  }
+  return robot.blockedActions[action] ?? null;
+}

@@ -4,10 +4,10 @@ import Stack from "@mui/material/Stack";
 
 import type { RobotFilters } from "@/common/schemas";
 
-import useRobotListView, {
+import useRobotListParams, {
   clearRobotListFilters,
   setRobotListFilters,
-} from "../use-robot-list-view";
+} from "../robot-list-url";
 
 import { filterControlId, getFilterChips } from "./filter-fields";
 
@@ -21,7 +21,7 @@ export default function AppliedFilterChips({
    */
   onDiscardSearchDraft: () => void;
 }) {
-  const { filters } = useRobotListView();
+  const { filters } = useRobotListParams();
   const chips = getFilterChips(filters);
 
   if (chips.length === 0) {

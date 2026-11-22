@@ -10,7 +10,7 @@ import { useId, useState } from "react";
 
 import type { FilterOptions } from "@/common/types";
 
-import useRobotListView, { setRobotListFilters } from "../use-robot-list-view";
+import useRobotListParams, { setRobotListFilters } from "../robot-list-url";
 
 import { moreFilterFields, moreFiltersButtonId } from "./filter-fields";
 import FilterSelect from "./filter-select";
@@ -20,7 +20,7 @@ export default function MoreFiltersButton({
 }: {
   available: FilterOptions | undefined;
 }) {
-  const { filters } = useRobotListView();
+  const { filters } = useRobotListParams();
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const popoverId = useId();
   const titleId = `${popoverId}-title`;

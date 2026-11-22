@@ -1,20 +1,8 @@
 import { expect, test } from "vitest";
 
-import type { RobotAction, RobotActivity } from "@/common/types";
 import { testRobot } from "@/ui/features/robots/test-robots";
 
-import { commandUnavailable, mainActivityAction } from "./robot-commands";
-
-test.each<[RobotActivity | null, RobotAction]>([
-  ["working", "stop"],
-  ["returning", "stop"],
-  ["needs-attention", "retry"],
-  ["idle", "start"],
-  ["charging", "start"],
-  [null, "start"],
-])("the main action for a robot that is %s is %s", (activity, action) => {
-  expect(mainActivityAction(testRobot({ activity }))).toBe(action);
-});
+import { commandUnavailable } from "./use-robot-command";
 
 test("a queued command blocks only itself", () => {
   const robot = testRobot({

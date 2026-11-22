@@ -10,23 +10,23 @@ import useRobotList, {
   useRobotListAnnouncement,
   useRobotListPageCorrection,
 } from "./use-robot-list";
-import useRobotListView, {
+import useRobotListParams, {
   clearRobotListFilters,
   setRobotListFilters,
   setRobotListPage,
   setRobotListPageSize,
-} from "./use-robot-list-view";
+} from "./robot-list-url";
 
 // The list hooks as RobotList composes them.
 function useListUnderTest() {
-  const view = useRobotListView();
+  const params = useRobotListParams();
   const list = useRobotList();
   useRobotListPageCorrection(list);
 
   return {
-    ...view,
+    ...params,
     ...list,
-    announcement: useRobotListAnnouncement(view.filters, list),
+    announcement: useRobotListAnnouncement(params.filters, list),
   };
 }
 

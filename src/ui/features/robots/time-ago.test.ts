@@ -1,16 +1,6 @@
 import { expect, test } from "vitest";
 
-import {
-  formatBattery,
-  formatRobotTimestamp,
-  formatTimeAgo,
-} from "./robot-formatters";
-
-test("battery formatting distinguishes missing data from zero and rounds percentages", () => {
-  expect(formatBattery(null)).toBe("Unknown");
-  expect(formatBattery(0)).toBe("0%");
-  expect(formatBattery(82.6)).toBe("83%");
-});
+import { formatRobotTimestamp, formatTimeAgo } from "./time-ago";
 
 test("timestamps use a consistent Berlin date and time across server and browser locales", () => {
   expect(formatRobotTimestamp("2026-11-14T12:34:56.000Z")).toBe(

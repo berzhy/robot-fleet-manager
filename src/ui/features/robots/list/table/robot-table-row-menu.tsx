@@ -11,9 +11,8 @@ import { robotActions } from "@/common/constants";
 import type { Robot } from "@/common/types";
 
 import { actionIcons, actionLabels } from "../../robot-action-display";
-import { commandUnavailable } from "../../robot-commands";
 import type { RobotReading } from "../../robot-reading";
-import useRobotCommand from "../../use-robot-command";
+import useRobotCommand, { commandUnavailable } from "../../use-robot-command";
 
 export default function RobotTableRowMenu({
   reading,

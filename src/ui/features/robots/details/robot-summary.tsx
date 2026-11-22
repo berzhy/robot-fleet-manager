@@ -24,10 +24,10 @@ import type { Robot, RobotProblemCode } from "@/common/types";
 import { useNotifications } from "@/ui/notifications/notification-provider";
 import { monospaceFontFamily } from "@/ui/theme/theme";
 
-import ConnectionStatus from "../connection-status/connection-status";
+import ConnectionStatus from "../connection-status";
 import type { RobotReading } from "../robot-reading";
-import TimeAgo from "../time-ago/time-ago";
-import { batteryLevelColors, formatBattery } from "../utils/robot-formatters";
+import TimeAgo from "../time-ago";
+import { batteryLevelColors, formatBattery } from "../battery";
 
 import BatteryIcon from "./battery-icon";
 

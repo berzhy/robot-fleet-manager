@@ -1,9 +1,8 @@
 import { expect, test } from "vitest";
 
-import {
-  parseRobotListParams,
-  robotFilterSearchParams,
-} from "./robot-list-params";
+import { robotFilterSearchParams } from "../api/robot-list-params";
+
+import { parseRobotListParams, robotListSearchParams } from "./robot-list-url";
 
 function parse(query: string) {
   return parseRobotListParams(new URLSearchParams(query));
@@ -70,11 +69,19 @@ test("search is trimmed", () => {
   expect(parse("search=%20%20Atlas%20").filters.search).toBe("Atlas");
 });
 
-test("the all view and empty filters are left out of the query", () => {
+test("the first page at the default size adds nothing to the URL", () => {
   expect(
-    robotFilterSearchParams({ view: "all", site: undefined }).toString(),
+    robotListSearchParams({
+      page: 0,
+      pageSize: 10,
+      filters: { view: "all" },
+    }).toString(),
   ).toBe("");
   expect(
-    robotFilterSearchParams({ view: "low-battery", search: "a&b" }).toString(),
-  ).toBe("search=a%26b&view=low-battery");
+    robotListSearchParams({
+      page: 2,
+      pageSize: 20,
+      filters: { view: "offline" },
+    }).toString(),
+  ).toBe("view=offline&pageSize=20&page=2");
 });

@@ -5,11 +5,11 @@ import Tooltip from "@mui/material/Tooltip";
 import { visuallyHidden } from "@mui/utils";
 import { useId } from "react";
 
-import type { RobotAction } from "@/common/types";
+import type { Robot, RobotAction } from "@/common/types";
 
 import { actionIcons, actionLabels } from "../robot-action-display";
-import { commandUnavailable, mainActivityAction } from "../robot-commands";
 import type { RobotReading } from "../robot-reading";
+import { commandUnavailable } from "../use-robot-command";
 
 const tileSizePx = 120;
 const tileIconSizePx = 32;
@@ -69,6 +69,22 @@ export default function ActivityControls({
       />
     </Box>
   );
+}
+
+/** The obvious next thing for the robot's state: Start, Stop or Retry. */
+function mainActivityAction(robot: Robot): RobotAction {
+  switch (robot.activity) {
+    case "working":
+    case "returning":
+      return "stop";
+    // Whether there is a problem to retry is Retry's own reason to give.
+    case "needs-attention":
+      return "retry";
+    case "idle":
+    case "charging":
+    case null:
+      return "start";
+  }
 }
 
 /** A square tile, the icon above its label; an unavailable one says why on hover or focus. */

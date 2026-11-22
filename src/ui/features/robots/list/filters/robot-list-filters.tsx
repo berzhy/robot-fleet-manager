@@ -2,7 +2,7 @@ import Stack from "@mui/material/Stack";
 import type { RefObject } from "react";
 
 import useRobotList from "../use-robot-list";
-import useRobotListView, { setRobotListFilters } from "../use-robot-list-view";
+import useRobotListParams, { setRobotListFilters } from "../robot-list-url";
 
 import AppliedFilterChips from "./applied-filter-chips";
 import { toolbarFilterFields } from "./filter-fields";
@@ -17,7 +17,7 @@ export default function RobotListFilters({
 }: {
   searchFieldRef: RefObject<SearchFieldHandle | null>;
 }) {
-  const { filters } = useRobotListView();
+  const { filters } = useRobotListParams();
   const available = useRobotList().data?.filterOptions;
 
   return (

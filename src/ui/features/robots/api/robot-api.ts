@@ -11,7 +11,7 @@ import type {
 import {
   robotFilterSearchParams,
   type RobotListParams,
-} from "../list/robot-list-params";
+} from "./robot-list-params";
 
 const requestTimeoutMs = 5_000;
 

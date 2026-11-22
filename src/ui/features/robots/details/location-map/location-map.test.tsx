@@ -4,7 +4,7 @@ import { expect, test } from "vitest";
 import { render } from "@/ui/test-render";
 import { testRobot } from "@/ui/features/robots/test-robots";
 
-import { robotReading } from "../robot-reading";
+import { robotReading } from "../../robot-reading";
 import LocationMap from "./location-map";
 
 const robot = testRobot({ activity: "charging" });

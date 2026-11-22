@@ -7,33 +7,32 @@ import { useEffect, useState } from "react";
 
 import type { RobotFilters } from "@/common/schemas";
 
-import { robotFilterSearchParams } from "./robot-list-params";
-
+import { robotFilterSearchParams } from "../api/robot-list-params";
 import { robotListOptions } from "../api/robot-queries";
 
-import useRobotListView, { setRobotListPage } from "./use-robot-list-view";
+import useRobotListParams, { setRobotListPage } from "./robot-list-url";
 
 // No local state or effects, so any part of the list can call it; React Query
 // shares one request between them. A component that mounts later, such as one
 // in a popover, refetches on mount, so it should get the data as props instead.
 export default function useRobotList() {
   const client = useQueryClient();
-  const view = useRobotListView();
+  const params = useRobotListParams();
 
-  const options = robotListOptions(view);
+  const options = robotListOptions(params);
   // While the next view loads, the previous view's result stays on screen, so
   // the counts, filter options, pager and rows stay in place.
   const query = useQuery({ ...options, placeholderData: keepPreviousData });
 
   const { data } = query;
   const page = Math.min(
-    view.page,
-    lastRobotPage(data?.total ?? 0, view.pageSize),
+    params.page,
+    lastRobotPage(data?.total ?? 0, params.pageSize),
   );
   const isOutOfRange = Boolean(
     data &&
     !query.isPlaceholderData &&
-    view.page > lastRobotPage(data.total, view.pageSize),
+    params.page > lastRobotPage(data.total, params.pageSize),
   );
 
   function refresh() {

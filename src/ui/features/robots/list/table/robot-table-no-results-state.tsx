@@ -2,17 +2,17 @@ import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 
-import useRobotListView, {
+import useRobotListParams, {
   clearRobotListFilters,
   setRobotListFilters,
-} from "../use-robot-list-view";
+} from "../robot-list-url";
 
 export default function RobotTableNoResultsState({
   onCleared,
 }: {
   onCleared: () => void;
 }) {
-  const { search, view, ...fields } = useRobotListView().filters;
+  const { search, view, ...fields } = useRobotListParams().filters;
   // With other filters applied, the search alone may not be what empties the list.
   const otherFilters =
     view !== "all" ||

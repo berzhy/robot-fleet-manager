@@ -7,7 +7,7 @@ import type { Robot, RobotPage } from "@/common/types";
 import { render } from "@/ui/test-render";
 
 import { pageMetadata, testRobot } from "@/ui/features/robots/test-robots";
-import { setRobotListFilters } from "../use-robot-list-view";
+import { setRobotListFilters } from "../robot-list-url";
 import RobotTable from "./robot-table";
 
 const robot = testRobot({ activity: "charging" });

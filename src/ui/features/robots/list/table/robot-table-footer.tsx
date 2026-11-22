@@ -9,10 +9,10 @@ import { robotPageSizes } from "@/common/constants";
 import type { RobotFilters } from "@/common/schemas";
 
 import useRobotList from "../use-robot-list";
-import useRobotListView, {
+import useRobotListParams, {
   setRobotListPage,
   setRobotListPageSize,
-} from "../use-robot-list-view";
+} from "../robot-list-url";
 
 // MUI's pager toolbar height, kept while the pager is hidden (loading or no
 // robots) so the footer does not jump.
@@ -43,7 +43,7 @@ export function formatResultCount(
 }
 
 export default function RobotTableFooter() {
-  const { filters, pageSize } = useRobotListView();
+  const { filters, pageSize } = useRobotListParams();
   const { data, isLoading, page } = useRobotList();
 
   // The previous view's total keeps the pager mounted while the next loads.

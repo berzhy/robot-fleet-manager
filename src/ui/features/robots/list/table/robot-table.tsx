@@ -16,7 +16,7 @@ import type { Robot } from "@/common/types";
 import { robotReading } from "../../robot-reading";
 
 import useRobotList from "../use-robot-list";
-import useRobotListView from "../use-robot-list-view";
+import useRobotListParams from "../robot-list-url";
 
 import RobotTableEmptyState from "./robot-table-empty-state";
 import RobotTableErrorState from "./robot-table-error-state";
@@ -62,7 +62,7 @@ export default function RobotTable({
   adding: boolean;
   onDelete: (robot: Robot, trigger: HTMLButtonElement) => void;
 }) {
-  const { filters, pageSize } = useRobotListView();
+  const { filters, pageSize } = useRobotListParams();
   const { data, isLoading, loadFailed, refreshFailed, refresh } =
     useRobotList();
 
