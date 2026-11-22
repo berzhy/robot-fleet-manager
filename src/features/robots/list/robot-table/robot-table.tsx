@@ -92,14 +92,12 @@ export default function RobotTable({
       sx={{
         display: "flex",
         flexDirection: "column",
-        flex: 1,
+        // Fits its rows, or shrinks to the screen and scrolls them.
         minHeight: 0,
         overflow: "hidden",
       }}
     >
-      {toolbar && (
-        <Box sx={{ flexShrink: 0, px: 2, pt: 2, pb: 2.5 }}>{toolbar}</Box>
-      )}
+      {toolbar && <Box sx={{ flexShrink: 0, p: 2 }}>{toolbar}</Box>}
       <TableContainer
         onBlurCapture={(event) => {
           if (
@@ -113,7 +111,6 @@ export default function RobotTable({
         sx={{
           display: "flex",
           flexDirection: "column",
-          flex: 1,
           minHeight: 0,
           overflowX: "auto",
           overflowY: isLoading ? "hidden" : "auto",

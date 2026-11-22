@@ -94,7 +94,10 @@ export default function AppShell({ children }: { children: ReactNode }) {
             flex: 1,
             minHeight: 0,
             overflow: "auto",
-            p: { xs: 2, sm: 3 },
+            // Less above and below than at the sides, so a 10-row page fits
+            // without scrolling on a laptop screen.
+            px: { xs: 2, sm: 3 },
+            py: 2,
           }}
         >
           {children}
