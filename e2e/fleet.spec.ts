@@ -171,11 +171,8 @@ test("keyboard explanations and Stop/Retry requests follow reported activity", a
 
   await row.getByTestId("robot-actions").focus();
   await page.keyboard.press("Enter");
-  await page.keyboard.press("ArrowDown");
-  await page.keyboard.press("ArrowUp");
-  await expect(page.getByRole("tooltip")).toHaveText("Already working");
   await expect(
-    page.getByRole("menuitem", { name: "Start activity" }),
+    page.getByRole("menuitem", { name: "Start activity Already working" }),
   ).toHaveAttribute("aria-disabled", "true");
 
   await page.getByRole("menuitem", { name: "Stop activity" }).click();

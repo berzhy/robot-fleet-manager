@@ -11,7 +11,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-test("disabled actions explain their reason on keyboard focus and cannot execute", async () => {
+test("disabled actions show their reason and cannot execute", async () => {
   const fetcher = vi.fn();
   vi.stubGlobal("fetch", fetcher);
   const evaluatedAt = Date.now();
@@ -34,13 +34,10 @@ test("disabled actions explain their reason on keyboard focus and cannot execute
   fireEvent.click(trigger);
 
   const menu = await screen.findByRole("menu");
-  const start = within(menu).getByRole("menuitem", { name: "Start activity" });
+  const start = within(menu).getByRole("menuitem", {
+    name: "Start activity Already working",
+  });
   expect(start).toHaveAttribute("aria-disabled", "true");
-
-  fireEvent.focus(start);
-  expect(await screen.findByRole("tooltip")).toHaveTextContent(
-    "Already working",
-  );
 
   fireEvent.click(start);
   expect(fetcher).not.toHaveBeenCalled();
@@ -67,11 +64,7 @@ test("unverified data blocks every action with one reason", async () => {
   fireEvent.click(trigger);
 
   const stop = within(await screen.findByRole("menu")).getByRole("menuitem", {
-    name: "Stop activity",
+    name: "Stop activity Waiting for live updates",
   });
   expect(stop).toHaveAttribute("aria-disabled", "true");
-  fireEvent.focus(stop);
-  expect(await screen.findByRole("tooltip")).toHaveTextContent(
-    "Waiting for live updates",
-  );
 });

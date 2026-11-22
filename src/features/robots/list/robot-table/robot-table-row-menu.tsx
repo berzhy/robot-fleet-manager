@@ -7,7 +7,6 @@ import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
-import Tooltip from "@mui/material/Tooltip";
 import { useId, useState } from "react";
 
 import { actionLabels, robotActions } from "@/modules/robots/robot-actions";
@@ -67,28 +66,24 @@ export default function RobotTableRowMenu({
           );
           const Icon = actionIcons[action];
           return (
-            <Tooltip
+            <MenuItem
               key={action}
-              title={reason ?? ""}
-              placement="left"
-              describeChild
+              disabled={Boolean(reason)}
+              onClick={() => {
+                if (reason) {
+                  return;
+                }
+                requestAction(robot, action);
+                setAnchor(null);
+              }}
             >
-              <MenuItem
-                disabled={Boolean(reason)}
-                onClick={() => {
-                  if (reason) {
-                    return;
-                  }
-                  requestAction(robot, action);
-                  setAnchor(null);
-                }}
-              >
-                <ListItemIcon>
-                  <Icon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText>{actionLabels[action]}</ListItemText>
-              </MenuItem>
-            </Tooltip>
+              <ListItemIcon>
+                <Icon fontSize="small" />
+              </ListItemIcon>
+              {/* The reason shows as text: MUI turns off pointer events on
+                  disabled items, so a tooltip would never show on hover. */}
+              <ListItemText primary={actionLabels[action]} secondary={reason} />
+            </MenuItem>
           );
         })}
         <MenuItem
