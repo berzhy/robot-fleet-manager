@@ -34,11 +34,7 @@ export function telemetryHandlers(database: () => FleetDatabase) {
         );
       } catch (reason) {
         console.error("Telemetry API failed", reason);
-        return errorResponse(
-          500,
-          "INTERNAL_ERROR",
-          "Unable to ingest telemetry.",
-        );
+        return errorResponse(500, "Unable to ingest telemetry.");
       }
     },
   };
@@ -47,7 +43,6 @@ export function telemetryHandlers(database: () => FleetDatabase) {
 function invalid() {
   return errorResponse(
     400,
-    "INVALID_INPUT",
     `Provide 1–100 valid telemetry reports with unique robot IDs and timestamps no more than ${maxClockSkewMs / 1000} seconds ahead.`,
   );
 }

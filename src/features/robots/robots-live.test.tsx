@@ -75,7 +75,7 @@ function liveFetcher() {
 
 function robotNotFound() {
   return Response.json(
-    { error: { code: "NOT_FOUND", message: "Robot not found." } },
+    { error: { message: "Robot not found." } },
     { status: 404 },
   );
 }

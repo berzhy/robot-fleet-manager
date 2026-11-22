@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-import { apiErrorCodes, type ApiErrorCode } from "@/common/api/api-errors";
 import type { RobotAction } from "@/common/robots/robot-actions";
 import {
   robotFilterSearchParams,
@@ -16,11 +15,10 @@ function requestSignal(signal?: AbortSignal) {
   return signal ? AbortSignal.any([signal, timeout]) : timeout;
 }
 
-/** A failed API response, with the server's error code and message when it sent them. */
+/** A failed API response, with the server's message when it sent one. */
 export class ApiError extends Error {
   constructor(
     readonly status: number,
-    readonly code: ApiErrorCode | undefined,
     message: string,
   ) {
     super(message);
@@ -28,14 +26,10 @@ export class ApiError extends Error {
   }
 }
 
-// Our routes answer { error: { code, message } }, but a missing route or a proxy
-// can answer with anything, so the body is checked rather than trusted.
+// Our routes answer { error: { message } }, but a failure before them can
+// answer with anything, so the body is checked rather than trusted.
 const errorBodySchema = z.object({
-  error: z.object({
-    // A code this app does not know still keeps the message.
-    code: z.enum(apiErrorCodes).optional().catch(undefined),
-    message: z.string().optional(),
-  }),
+  error: z.object({ message: z.string().optional() }),
 });
 
 async function apiError(response: Response, fallbackMessage: string) {
@@ -48,16 +42,17 @@ async function apiError(response: Response, fallbackMessage: string) {
   });
   const { error } = errorBodySchema.safeParse(body).data ?? {};
 
-  return new ApiError(
-    response.status,
-    error?.code,
-    error?.message ?? fallbackMessage,
-  );
+  return new ApiError(response.status, error?.message ?? fallbackMessage);
 }
 
-/** The server reports that the robot does not exist (any more). */
+/** The robot does not exist (any more). */
 export function isRobotNotFound(error: unknown) {
-  return error instanceof ApiError && error.code === "NOT_FOUND";
+  return error instanceof ApiError && error.status === 404;
+}
+
+/** The robot's latest report rules the action out. */
+export function isActionUnavailable(error: unknown) {
+  return error instanceof ApiError && error.status === 409;
 }
 
 /** A timeout aborts the request in the browser, so there is no response to read. */
@@ -99,7 +94,6 @@ export async function deleteRobot(id: string) {
   }
 
   const error = await apiError(response, "Unable to delete robot.");
-  // Checked by code, not status: a 404 from a missing route is a failure, not a removal.
   if (isRobotNotFound(error)) {
     return "already-removed";
   }

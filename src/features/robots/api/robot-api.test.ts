@@ -57,12 +57,12 @@ test("deletes an encoded robot id and distinguishes an already removed robot fro
     .fn()
     .mockResolvedValueOnce(new Response(null, { status: 204 }))
     .mockResolvedValueOnce(
-      Response.json({ error: { code: "NOT_FOUND" } }, { status: 404 }),
+      Response.json(
+        { error: { message: "Robot not found." } },
+        { status: 404 },
+      ),
     )
-    .mockResolvedValueOnce(
-      Response.json({ error: { code: "UNEXPECTED" } }, { status: 404 }),
-    )
-    .mockResolvedValueOnce(new Response(null, { status: 404 }));
+    .mockResolvedValueOnce(new Response(null, { status: 500 }));
   vi.stubGlobal("fetch", fetcher);
 
   await expect(dataDeleteRobot("robot/id")).resolves.toBe("deleted");
@@ -72,27 +72,19 @@ test("deletes an encoded robot id and distinguishes an already removed robot fro
   });
 
   await expect(dataDeleteRobot("missing")).resolves.toBe("already-removed");
-  await expect(dataDeleteRobot("other")).rejects.toThrow(
-    "Unable to delete robot.",
-  );
-  await expect(dataDeleteRobot("unrecognized")).rejects.toThrow(
+  await expect(dataDeleteRobot("failure")).rejects.toThrow(
     "Unable to delete robot.",
   );
 });
 
-test("a failed response carries the server's error code and message", async () => {
+test("a failed response carries its status and the server's message", async () => {
   vi.stubGlobal(
     "fetch",
     vi
       .fn()
       .mockResolvedValueOnce(
         Response.json(
-          {
-            error: {
-              code: "ACTION_UNAVAILABLE",
-              message: "Robot isn't connected",
-            },
-          },
+          { error: { message: "Robot isn't connected" } },
           { status: 409 },
         ),
       )
@@ -102,11 +94,10 @@ test("a failed response carries the server's error code and message", async () =
   );
 
   await expect(sendRobotAction("robot", "stop")).rejects.toEqual(
-    new ApiError(409, "ACTION_UNAVAILABLE", "Robot isn't connected"),
+    new ApiError(409, "Robot isn't connected"),
   );
   await expect(sendRobotAction("robot", "stop")).rejects.toMatchObject({
     status: 502,
-    code: undefined,
     message: "Unable to request robot action.",
   });
 });
@@ -151,11 +142,10 @@ test("detail requests encode IDs, support cancellation, and distinguish deletion
     .fn()
     .mockResolvedValueOnce(
       Response.json(
-        { error: { code: "NOT_FOUND", message: "Robot not found." } },
+        { error: { message: "Robot not found." } },
         { status: 404 },
       ),
     )
-    .mockResolvedValueOnce(new Response(null, { status: 404 }))
     .mockResolvedValueOnce(new Response(null, { status: 500 }));
   vi.stubGlobal("fetch", fetcher);
 
@@ -169,15 +159,13 @@ test("detail requests encode IDs, support cancellation, and distinguish deletion
     signal: expect.any(AbortSignal) as AbortSignal,
   });
 
-  // A 404 without the server's code is a missing route, not a deleted robot.
-  const missingRoute = await getRobotContext("robot").catch(
+  const failure = await getRobotContext("failure").catch(
     (error: unknown) => error,
   );
-  expect(isRobotNotFound(missingRoute)).toBe(false);
-
-  await expect(getRobotContext("failure")).rejects.toThrow(
-    "Unable to refresh robot context.",
-  );
+  expect(isRobotNotFound(failure)).toBe(false);
+  expect(failure).toMatchObject({
+    message: "Unable to refresh robot context.",
+  });
 });
 
 test("encodes literal search text and combined filters in the list request", async () => {

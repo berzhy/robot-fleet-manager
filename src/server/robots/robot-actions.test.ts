@@ -148,7 +148,6 @@ test("action persistence failures roll back the target and return a generic erro
   expect(response.status).toBe(500);
   expect(await response.json()).toEqual({
     error: {
-      code: "INTERNAL_ERROR",
       message: "Unable to request robot action.",
     },
   });

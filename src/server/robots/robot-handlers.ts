@@ -31,7 +31,7 @@ export function robotHandlers(database: () => FleetDatabase) {
       return operation();
     } catch (reason) {
       console.error("Robot API failed", reason);
-      return errorResponse(500, "INTERNAL_ERROR", failureMessage);
+      return errorResponse(500, failureMessage);
     }
   }
 
@@ -48,25 +48,17 @@ export function robotHandlers(database: () => FleetDatabase) {
       );
 
       if (!pageSize.success) {
-        return errorResponse(
-          400,
-          "INVALID_INPUT",
-          "Page size must be 10, 20 or 50.",
-        );
+        return errorResponse(400, "Page size must be 10, 20 or 50.");
       }
       if (!page.success) {
-        return errorResponse(
-          400,
-          "INVALID_INPUT",
-          "Page must be a nonnegative integer.",
-        );
+        return errorResponse(400, "Page must be a nonnegative integer.");
       }
 
       // The schema keeps only its own keys, so page and pageSize drop out.
       const filters = robotFiltersSchema.safeParse(Object.fromEntries(params));
 
       if (!filters.success) {
-        return errorResponse(400, "INVALID_INPUT", "Invalid robot filters.");
+        return errorResponse(400, "Invalid robot filters.");
       }
 
       return safely(() =>
@@ -81,11 +73,7 @@ export function robotHandlers(database: () => FleetDatabase) {
         await readJsonBody(request),
       );
       if (!input.success) {
-        return errorResponse(
-          400,
-          "INVALID_INPUT",
-          "Provide between 1 and 100 valid robots.",
-        );
+        return errorResponse(400, "Provide between 1 and 100 valid robots.");
       }
 
       return safely(() =>
@@ -101,7 +89,7 @@ export function robotHandlers(database: () => FleetDatabase) {
         const context = getRobotContext(database(), id);
         return context
           ? jsonResponse(context)
-          : errorResponse(404, "NOT_FOUND", "Robot not found.");
+          : errorResponse(404, "Robot not found.");
       });
     },
 
@@ -117,7 +105,7 @@ export function robotHandlers(database: () => FleetDatabase) {
         await readJsonBody(request),
       );
       if (!input.success) {
-        return errorResponse(400, "INVALID_INPUT", "Invalid robot action.");
+        return errorResponse(400, "Invalid robot action.");
       }
 
       return safely(() => {
@@ -126,9 +114,9 @@ export function robotHandlers(database: () => FleetDatabase) {
           case "requested":
             return new Response(null, { status: 202 });
           case "not-found":
-            return errorResponse(404, "NOT_FOUND", "Robot not found.");
+            return errorResponse(404, "Robot not found.");
           case "unavailable":
-            return errorResponse(409, "ACTION_UNAVAILABLE", result.reason);
+            return errorResponse(409, result.reason);
         }
       }, "Unable to request robot action.");
     },
@@ -137,7 +125,7 @@ export function robotHandlers(database: () => FleetDatabase) {
       return safely(() =>
         deleteRobot(database(), id)
           ? new Response(null, { status: 204 })
-          : errorResponse(404, "NOT_FOUND", "Robot not found."),
+          : errorResponse(404, "Robot not found."),
       );
     },
   };

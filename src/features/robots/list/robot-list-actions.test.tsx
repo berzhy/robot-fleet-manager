@@ -22,12 +22,23 @@ async function openMenu(robotName = "Atlas") {
   return screen.findByRole("menu");
 }
 
-test.each([202, 409, 500])(
+test.each([
+  [202, "Stop activity requested for"],
+  [409, "Robot isn't connected. Check the latest report"],
+  [500, "Unable to request stop activity for"],
+])(
   "Stop request response %s notifies without changing reported activity",
-  async (status) => {
+  async (status, notification) => {
     const fetcher = vi.fn((url: string, init?: RequestInit) => {
       if (init?.method === "POST") {
-        return Promise.resolve(new Response(null, { status }));
+        return Promise.resolve(
+          status === 409
+            ? Response.json(
+                { error: { message: "Robot isn't connected" } },
+                { status },
+              )
+            : new Response(null, { status }),
+        );
       }
       return Promise.resolve(
         Response.json({
@@ -50,11 +61,7 @@ test.each([202, 409, 500])(
     );
 
     const notice = await screen.findByTestId("fleet-notification");
-    expect(notice).toHaveTextContent(
-      status === 202
-        ? "Stop activity requested for"
-        : "Unable to request stop activity for",
-    );
+    expect(notice).toHaveTextContent(notification);
     expect(fetcher).toHaveBeenCalledWith(
       "/api/robots/control/actions",
       expect.objectContaining({

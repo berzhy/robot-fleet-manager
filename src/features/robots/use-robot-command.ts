@@ -6,7 +6,7 @@ import {
 } from "@/common/robots/robot-actions";
 import { useNotifications } from "@/shared/notifications/notification-provider";
 
-import { ApiError, isRequestTimeout } from "./api/robot-api";
+import { isActionUnavailable, isRequestTimeout } from "./api/robot-api";
 import { useSendRobotAction } from "./api/robot-mutations";
 
 /**
@@ -49,7 +49,7 @@ export default function useRobotCommand(robot: Robot) {
         }),
       (error: Error) => {
         // The server checks the robot's latest report, which may be newer than this screen's.
-        if (error instanceof ApiError && error.code === "ACTION_UNAVAILABLE") {
+        if (isActionUnavailable(error)) {
           showUnavailable(error.message);
           return;
         }

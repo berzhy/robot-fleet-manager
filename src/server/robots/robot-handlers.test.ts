@@ -103,7 +103,6 @@ test("database failures return generic errors without leaking details", async ()
   expect(response.status).toBe(500);
   expect(await response.json()).toEqual({
     error: {
-      code: "INTERNAL_ERROR",
       message: "Unable to complete robot request.",
     },
   });
@@ -235,8 +234,8 @@ test("failed bulk deletion returns an error and rolls back every deletion", asyn
   const result = robotHandlers(() => db).removeAll();
 
   expect(result.status).toBe(500);
-  expect(await result.json()).toMatchObject({
-    error: { code: "INTERNAL_ERROR" },
+  expect(await result.json()).toEqual({
+    error: { message: "Unable to complete robot request." },
   });
   expect(listRobots(db, 0).total).toBe(2);
   expect(log).toHaveBeenCalledOnce();

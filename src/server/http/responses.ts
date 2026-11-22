@@ -1,5 +1,3 @@
-import type { ApiErrorCode } from "@/common/api/api-errors";
-
 export function jsonResponse(value: unknown, status = 200) {
   return Response.json(value, {
     status,
@@ -7,10 +5,7 @@ export function jsonResponse(value: unknown, status = 200) {
   });
 }
 
-export function errorResponse(
-  status: number,
-  code: ApiErrorCode,
-  message: string,
-) {
-  return jsonResponse({ error: { code, message } }, status);
+/** The status says what failed; the message says it in the operator's words. */
+export function errorResponse(status: number, message: string) {
+  return jsonResponse({ error: { message } }, status);
 }

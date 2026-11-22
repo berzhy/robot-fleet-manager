@@ -694,7 +694,7 @@ test("failed action keeps reported activity and explains the failure", async () 
     vi.fn().mockImplementation((_url: string, init?: RequestInit) =>
       Promise.resolve(
         init?.method === "POST"
-          ? new Response(null, { status: 409 })
+          ? new Response(null, { status: 500 })
           : Response.json({
               robot: online,
               peerCounts: [],
@@ -732,10 +732,7 @@ test("an action the server refuses shows the server's reason", async () => {
         init?.method === "POST"
           ? Response.json(
               {
-                error: {
-                  code: "ACTION_UNAVAILABLE",
-                  message: "Robot isn't connected",
-                },
+                error: { message: "Robot isn't connected" },
               },
               { status: 409 },
             )

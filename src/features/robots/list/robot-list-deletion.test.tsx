@@ -127,7 +127,7 @@ test("pending deletion blocks duplicate submission and dismissal; failure permit
   expect(dialog).toBeInTheDocument();
   expect(fetcher).toHaveBeenCalledTimes(2);
 
-  act(() => resolve(new Response(null, { status: 404 })));
+  act(() => resolve(new Response(null, { status: 500 })));
   const error = await within(dialog).findByRole("alert");
   expect(error).toHaveAttribute("data-testid", "fleet-notification");
   expect(error).toHaveTextContent(
@@ -242,7 +242,10 @@ test("an already removed robot closes confirmation and refreshes the fleet", asy
       .fn()
       .mockResolvedValueOnce(response([robot]))
       .mockResolvedValueOnce(
-        Response.json({ error: { code: "NOT_FOUND" } }, { status: 404 }),
+        Response.json(
+          { error: { message: "Robot not found." } },
+          { status: 404 },
+        ),
       )
       .mockResolvedValueOnce(response([])),
   );
