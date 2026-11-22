@@ -1,4 +1,9 @@
-import type { ConnectionStatus, Robot, RobotActivity } from "./robot";
+import type {
+  ConnectionStatus,
+  Robot,
+  RobotActivity,
+  RobotProblemCode,
+} from "./robot";
 
 const unknownLabel = "Unknown";
 
@@ -28,6 +33,12 @@ const connectionLabels = {
   delayed: "Delayed",
   offline: "Offline",
 } satisfies Record<ConnectionStatus, string>;
+
+export const robotProblemLabels = {
+  "path-blocked": "Path blocked",
+  "position-lost": "Position lost",
+  "sensor-obstructed": "Sensor obstructed",
+} satisfies Record<RobotProblemCode, string>;
 
 export function formatRobotType(type: Robot["type"]) {
   return robotTypeLabels[type];

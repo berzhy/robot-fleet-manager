@@ -4,7 +4,14 @@ import ReplayIcon from "@mui/icons-material/Replay";
 import StopIcon from "@mui/icons-material/Stop";
 import type SvgIcon from "@mui/material/SvgIcon";
 
-import type { RobotAction } from "@/common/robot-actions";
+import type { RobotAction } from "@/common/robot";
+
+export const actionLabels = {
+  start: "Start activity",
+  stop: "Stop activity",
+  "return-to-base": "Return to base",
+  retry: "Retry activity",
+} satisfies Record<RobotAction, string>;
 
 export const actionIcons = {
   start: PlayArrowIcon,

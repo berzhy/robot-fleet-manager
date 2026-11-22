@@ -12,7 +12,7 @@ Pay extra attention to architecture, structure, code cleanlines and code quality
 
 - **`src/app`**: Next routes only (pages and `api/**` handlers), wiring features to the server.
 - **`src/common`**: the contract shared by server, UI and simulator: types, enums, zod schemas and labels. No fleet rules.
-- **`src/server`**: data access and fleet rules; it sends each robot with its connection, battery level and blocked actions.
+- **`src/server`**: data access and fleet rules; it sends each robot with its connection, battery level, blocked actions and queued actions.
 - **`src/features`**: UI by feature; **`src/shared`**: UI used by more than one feature or the app shell.
 - **`src/simulator`**: the robot simulator, which reaches the app only over HTTP.
 

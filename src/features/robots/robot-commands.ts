@@ -1,5 +1,4 @@
-import { actionControlTargets, type RobotAction } from "@/common/robot-actions";
-import type { Robot } from "@/common/robot";
+import type { Robot, RobotAction } from "@/common/robot";
 
 /** The obvious next thing for the robot's state: Start, Stop or Retry. */
 export function mainActivityAction(robot: Robot): RobotAction {
@@ -18,23 +17,11 @@ export function mainActivityAction(robot: Robot): RobotAction {
 }
 
 /**
- * Whether this action was sent and a connected robot has yet to apply it, so
- * the reported activity is from before it. A disconnected robot may never
- * apply it, so its connection is the reason to show instead.
- */
-export function isActionQueued(robot: Robot, action: RobotAction) {
-  return (
-    robot.queuedControlTarget === actionControlTargets[action] &&
-    robot.connection === "online"
-  );
-}
-
-/**
  * Why a screen cannot offer an action now. A queued action blocks only
  * itself, so another command can always replace it.
  */
 export function commandUnavailable(robot: Robot, action: RobotAction) {
-  if (isActionQueued(robot, action)) {
+  if (robot.queuedActions.includes(action)) {
     return "Waiting for the robot…";
   }
   return robot.blockedActions[action] ?? null;

@@ -1,7 +1,11 @@
 import { z } from "zod";
 
-import { robotPageSizes, robotTypes, integrationTypes } from "./robot";
-import { robotActions } from "./robot-actions";
+import {
+  integrationTypes,
+  robotActions,
+  robotPageSizes,
+  robotTypes,
+} from "./robot";
 import { fleetViews } from "./robot-filters";
 
 const label = z.string().trim().min(1).max(100);

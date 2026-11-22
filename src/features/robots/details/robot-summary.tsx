@@ -14,13 +14,13 @@ import cleaning from "@/assets/robots/cleaning.webp";
 import delivery from "@/assets/robots/delivery.webp";
 import inspection from "@/assets/robots/inspection.webp";
 import security from "@/assets/robots/security.webp";
-import type { Robot } from "@/common/robot";
+import type { Robot, RobotProblemCode } from "@/common/robot";
 import {
   formatActivity,
   formatIntegrationType,
   formatRobotType,
+  robotProblemLabels,
 } from "@/common/robot-labels";
-import { robotProblemDetails } from "@/common/robot-problems";
 import { useNotifications } from "@/shared/notifications/notification-provider";
 import { monospaceFontFamily } from "@/theme/theme";
 
@@ -38,6 +38,12 @@ const illustrationSizePx = 640;
 const pictureWidthPx = { small: 160, medium: 220, large: 260 };
 // Fits "Last reported location" and "Needs attention" on one line.
 const valueWidthPx = 160;
+
+const problemGuidance = {
+  "path-blocked": "Clear the obstruction before retrying activity.",
+  "position-lost": "Check the robot’s position before retrying activity.",
+  "sensor-obstructed": "Clear the sensor obstruction before retrying activity.",
+} satisfies Record<RobotProblemCode, string>;
 
 /**
  * Who the robot is, how it is doing and what it can do, in one card. Narrow
@@ -139,7 +145,7 @@ export default function RobotSummary({
 function LiveValues({ reading }: { reading: RobotReading }) {
   const { robot, evaluatedAt, isStale, unverified, isLastKnown } = reading;
   const { connection, batteryLevel } = robot;
-  const problem = robot.problemCode && robotProblemDetails[robot.problemCode];
+  const { problemCode } = robot;
 
   function label(name: string) {
     return isLastKnown ? `Last reported ${name.toLowerCase()}` : name;
@@ -221,14 +227,14 @@ function LiveValues({ reading }: { reading: RobotReading }) {
           </Typography>
         </Field>
       </Box>
-      {problem && (
+      {problemCode && (
         <Alert
           severity="warning"
           // As wide as the values above, however long its text.
           sx={{ mt: 3, contain: "inline-size" }}
         >
           {isLastKnown && "Last reported problem: "}
-          {problem.label}. {problem.guidance}
+          {robotProblemLabels[problemCode]}. {problemGuidance[problemCode]}
         </Alert>
       )}
     </>

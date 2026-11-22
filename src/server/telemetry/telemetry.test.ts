@@ -1,5 +1,4 @@
-import { robotActivities } from "@/common/robot";
-import { robotProblemCodes } from "@/common/robot-problems";
+import { robotActivities, robotProblemCodes } from "@/common/robot";
 import {
   afterAll,
   afterEach,
@@ -78,7 +77,7 @@ test("ingestion persists latest telemetry and receipt times in list, registry an
   const robot = getRobot(db, id)!;
   expect(robot).toMatchObject({
     batteryPercent: 50,
-    queuedControlTarget: null,
+    queuedActions: [],
   });
   expect(Date.parse(robot.lastReceivedAt!)).toBeGreaterThan(
     Date.parse(observedAt),

@@ -1,25 +1,42 @@
-import type { RobotAction } from "@/common/robot-actions";
-import { robotActions } from "@/common/robot-actions";
+import {
+  robotActions,
+  type BatteryLevel,
+  type ConnectionStatus,
+  type ControlTarget,
+  type Robot,
+  type RobotAction,
+} from "@/common/robot";
 import {
   criticalBatteryPercent,
   lowBatteryPercent,
   offlineAfterMs,
 } from "@/common/robot-filters";
-import type { BatteryLevel, ConnectionStatus, Robot } from "@/common/robot";
 
 // Plain functions without "server-only", so test fixtures can build robots
 // exactly as the server answers them.
 
-export const onlineReportMaxAgeMs = 10_000;
-
 /** A robot as stored: what the server works out from it is left off. */
 export type RobotRow = Omit<
   Robot,
-  "connection" | "batteryLevel" | "blockedActions"
->;
+  "connection" | "batteryLevel" | "blockedActions" | "queuedActions"
+> & {
+  /** The latest command's target until the robot reports applying it, else `null`. */
+  queuedControlTarget: ControlTarget | null;
+};
+
+export const onlineReportMaxAgeMs = 10_000;
+
+/** What the robot is told to do when an action is requested. */
+export const actionControlTargets: Record<RobotAction, ControlTarget> = {
+  start: "work",
+  retry: "work",
+  stop: "stop",
+  "return-to-base": "base",
+};
 
 /** The robot as the API answers it at `evaluatedAt`. */
 export function toRobot<Row extends RobotRow>(row: Row, evaluatedAt: number) {
+  const { queuedControlTarget, ...robot } = row;
   const connection = connectionStatus(row.lastReceivedAt, evaluatedAt);
   const blockedActions: Robot["blockedActions"] = {};
   for (const action of robotActions) {
@@ -30,10 +47,16 @@ export function toRobot<Row extends RobotRow>(row: Row, evaluatedAt: number) {
   }
 
   return {
-    ...row,
+    ...robot,
     connection,
     batteryLevel: batteryLevel(row),
     blockedActions,
+    queuedActions:
+      connection === "online"
+        ? robotActions.filter(
+            (action) => actionControlTargets[action] === queuedControlTarget,
+          )
+        : [],
   } satisfies Robot;
 }
 

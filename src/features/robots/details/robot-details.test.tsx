@@ -11,8 +11,8 @@ import { expect, test, vi, afterEach, onTestFinished } from "vitest";
 import { render } from "@/test/render";
 import { testRobot } from "@/test/robots";
 import type { Robot, RobotContext } from "@/common/robot";
-import { actionLabels } from "@/common/robot-actions";
 
+import { actionLabels } from "../robot-action-display";
 import { robotReading } from "../robot-reading";
 import { formatRobotTimestamp } from "../utils/robot-formatters";
 
@@ -180,7 +180,7 @@ afterEach(() => {
 });
 
 function renderControls(
-  overrides: Partial<Robot>,
+  overrides: Parameters<typeof testRobot>[0],
   props: Partial<ComponentProps<typeof ActivityControls>> = {},
 ) {
   const now = Date.now();

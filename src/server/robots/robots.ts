@@ -36,7 +36,7 @@ const selection = {
   batteryPercent: latestTelemetry.batteryPercent,
   lastReceivedAt: latestTelemetry.receivedAt,
   queuedControlTarget: sql<
-    Robot["queuedControlTarget"]
+    RobotRow["queuedControlTarget"]
   >`case when ${robots.controlRevision} > coalesce(${latestTelemetry.appliedControlRevision}, 0) then ${robots.controlTarget} end`,
 };
 
@@ -150,13 +150,15 @@ export function listRobots(
 export function getRobot(
   db: Pick<FleetDatabase, "select">,
   id: string,
-): RobotRow | undefined {
-  return db
+  evaluatedAt = Date.now(),
+): Robot | undefined {
+  const row = db
     .select(selection)
     .from(robots)
     .leftJoin(latestTelemetry, eq(robots.id, latestTelemetry.robotId))
     .where(eq(robots.id, id))
     .get();
+  return row && toRobot(row, evaluatedAt);
 }
 
 export function createRobot(db: FleetDatabase, input: CreateRobotInput): Robot {
@@ -218,7 +220,8 @@ export function getRobotContext(
   id: string,
 ): RobotContext | undefined {
   return db.transaction((tx) => {
-    const robot = getRobot(tx, id);
+    const evaluatedAt = Date.now();
+    const robot = getRobot(tx, id, evaluatedAt);
     if (!robot) {
       return undefined;
     }
@@ -232,7 +235,6 @@ export function getRobotContext(
       .orderBy(latestTelemetry.area)
       .all();
 
-    const evaluatedAt = Date.now();
-    return { robot: toRobot(robot, evaluatedAt), peerCounts, evaluatedAt };
+    return { robot, peerCounts, evaluatedAt };
   });
 }

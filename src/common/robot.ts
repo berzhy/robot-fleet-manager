@@ -1,6 +1,4 @@
-import type { RobotAction } from "./robot-actions";
 import type { FleetSummary, FilterOptions } from "./robot-filters";
-import type { RobotProblemCode } from "./robot-problems";
 
 export const robotTypes = [
   "cleaning",
@@ -23,6 +21,21 @@ export const robotActivities = [
   "needs-attention",
 ] as const;
 export type RobotActivity = (typeof robotActivities)[number];
+
+export const robotProblemCodes = [
+  "path-blocked",
+  "position-lost",
+  "sensor-obstructed",
+] as const;
+export type RobotProblemCode = (typeof robotProblemCodes)[number];
+
+export const robotActions = [
+  "start",
+  "stop",
+  "retry",
+  "return-to-base",
+] as const;
+export type RobotAction = (typeof robotActions)[number];
 
 /** What the robot's latest command asks of it. */
 export const controlTargets = ["work", "stop", "base"] as const;
@@ -51,13 +64,18 @@ export type Robot = {
   problemCode: RobotProblemCode | null;
   batteryPercent: number | null;
   lastReceivedAt: string | null;
-  /** The latest command's target until the robot reports applying it, else `null`. */
-  queuedControlTarget: ControlTarget | null;
   // Worked out by the server at the response's `evaluatedAt`.
   connection: ConnectionStatus | null;
   batteryLevel: BatteryLevel | null;
   /** Why each action the robot's state rules out is unavailable. */
   blockedActions: Partial<Record<RobotAction, string>>;
+  /**
+   * Actions whose command the connected robot has yet to apply, so its
+   * reported activity is from before it. Start and Retry send the same
+   * command, so both count. Empty while it is disconnected, since it may
+   * never apply it.
+   */
+  queuedActions: RobotAction[];
 };
 
 /**

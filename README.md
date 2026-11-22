@@ -56,7 +56,7 @@ Sections read their own data instead of receiving everything from one root compo
 
 ### Business rules live in one place
 
-The server works out what each robot's last report means at the poll's time (`evaluatedAt`) and sends it with the robot: its connection, its battery level, and why each action it rules out is unavailable. `src/server/robots/robot-status.ts` is the only place those rules live, and the browser renders what it receives. `src/common` holds just the contract the server, the browser and the simulator share: types, enums, request schemas and labels.
+The server works out what each robot's last report means at the poll's time (`evaluatedAt`) and sends it with the robot: its connection, its battery level, why each action it rules out is unavailable, and which actions it has yet to apply. `src/server/robots/robot-status.ts` is the only place those rules live, and the browser renders what it receives. `src/common` holds just the contract the server, the browser and the simulator share: types, enums, request schemas and labels.
 
 The battery and offline rules must exist in SQL too, because the server counts the views. Rather than generate SQL from TypeScript, a test runs the real SQL views over every activity × battery × report age, boundaries included, and checks each robot lands in the views its own fields say.
 

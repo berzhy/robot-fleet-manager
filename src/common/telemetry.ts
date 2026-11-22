@@ -1,7 +1,6 @@
 import { z } from "zod";
 
-import { robotProblemCodes } from "./robot-problems";
-import { robotActivities } from "./robot";
+import { robotActivities, robotProblemCodes } from "./robot";
 
 export const maxReportsPerBatch = 100;
 

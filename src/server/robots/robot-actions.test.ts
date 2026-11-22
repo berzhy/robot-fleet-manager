@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { robotProblemCodes } from "@/common/robot-problems";
+import { robotProblemCodes } from "@/common/robot";
 import { openTestDatabase, removeTestDatabase } from "@/test/database";
 import { testRobotInput } from "@/test/robots";
 
@@ -59,14 +59,14 @@ test("actions validate current state, persist latest intent, and stay queued unt
     controlTarget: "stop",
     controlRevision: 1,
     appliedControlRevision: 0,
-    queuedControlTarget: "stop",
+    queuedActions: ["stop"],
   });
 
   expect((await action({ action: "return-to-base" })).status).toBe(202);
   expect(registryEntry(db, robot.id)).toMatchObject({
     controlTarget: "base",
     controlRevision: 2,
-    queuedControlTarget: "base",
+    queuedActions: ["return-to-base"],
   });
 
   db.$client
@@ -74,7 +74,7 @@ test("actions validate current state, persist latest intent, and stay queued unt
       "UPDATE latest_telemetry SET applied_control_revision = 2 WHERE robot_id = ?",
     )
     .run(robot.id);
-  expect(registryEntry(db, robot.id)?.queuedControlTarget).toBeNull();
+  expect(registryEntry(db, robot.id)?.queuedActions).toEqual([]);
 
   db.$client
     .prepare("UPDATE latest_telemetry SET received_at = ? WHERE robot_id = ?")

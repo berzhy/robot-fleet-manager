@@ -13,8 +13,8 @@ import {
   formatConnection,
   formatIntegrationType,
   formatRobotType,
+  robotProblemLabels,
 } from "@/common/robot-labels";
-import { robotProblemDetails } from "@/common/robot-problems";
 import type { Robot } from "@/common/robot";
 
 import type { RobotReading } from "../../robot-reading";
@@ -162,7 +162,7 @@ export default function RobotTableRow({
         {robot.problemCode && (
           <Typography variant="body2" color="textSecondary">
             <SearchHighlight
-              text={robotProblemDetails[robot.problemCode].label}
+              text={robotProblemLabels[robot.problemCode]}
               search={search}
             />
           </Typography>

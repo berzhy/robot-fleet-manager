@@ -1,8 +1,12 @@
 import { z } from "zod";
 
-import type { RobotAction } from "@/common/robot-actions";
 import type { CreateRobotInput } from "@/common/robot-schemas";
-import type { Robot, RobotContext, RobotPage } from "@/common/robot";
+import type {
+  Robot,
+  RobotAction,
+  RobotContext,
+  RobotPage,
+} from "@/common/robot";
 
 import {
   robotFilterSearchParams,

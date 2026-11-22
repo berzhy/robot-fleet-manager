@@ -1,8 +1,8 @@
 import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
-import { robotProblemCodes } from "@/common/robot-problems";
 import {
   controlTargets,
+  robotProblemCodes,
   robotTypes,
   integrationTypes,
   type RobotActivity,

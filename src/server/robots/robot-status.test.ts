@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { robotActions, type RobotAction } from "@/common/robot-actions";
+import { robotActions, type RobotAction } from "@/common/robot";
 import { lowBatteryPercent, offlineAfterMs } from "@/common/robot-filters";
 
 import { onlineReportMaxAgeMs, toRobot, type RobotRow } from "./robot-status";
@@ -124,4 +124,22 @@ test.each([
   for (const action of robotActions) {
     expect(robot.blockedActions[action]).toBe("Robot isn't connected");
   }
+});
+
+test.each([
+  ["work", ["start", "retry"]],
+  ["stop", ["stop"]],
+  ["base", ["return-to-base"]],
+] as const)(
+  "a %s command the robot has yet to apply queues %o",
+  (queuedControlTarget, actions) => {
+    expect(connected({ queuedControlTarget }).queuedActions).toEqual(actions);
+  },
+);
+
+test("a disconnected robot has nothing queued, since it may never apply it", () => {
+  expect(
+    connected({ queuedControlTarget: "work", lastReceivedAt: null })
+      .queuedActions,
+  ).toEqual([]);
 });

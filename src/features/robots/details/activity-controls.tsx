@@ -5,14 +5,10 @@ import Tooltip from "@mui/material/Tooltip";
 import { visuallyHidden } from "@mui/utils";
 import { useId } from "react";
 
-import { actionLabels, type RobotAction } from "@/common/robot-actions";
+import type { RobotAction } from "@/common/robot";
 
-import { actionIcons } from "../robot-action-icons";
-import {
-  commandUnavailable,
-  isActionQueued,
-  mainActivityAction,
-} from "../robot-commands";
+import { actionIcons, actionLabels } from "../robot-action-display";
+import { commandUnavailable, mainActivityAction } from "../robot-commands";
 import type { RobotReading } from "../robot-reading";
 
 const tileSizePx = 120;
@@ -36,8 +32,8 @@ export default function ActivityControls({
 }) {
   const { robot } = reading;
   const activity = mainActivityAction(robot);
-  const isActivityQueued = isActionQueued(robot, activity);
-  const isReturnQueued = isActionQueued(robot, "return-to-base");
+  const isActivityQueued = robot.queuedActions.includes(activity);
+  const isReturnQueued = robot.queuedActions.includes("return-to-base");
 
   function reason(action: RobotAction) {
     return waitReason ?? commandUnavailable(robot, action);

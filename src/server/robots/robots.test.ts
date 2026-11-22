@@ -43,7 +43,7 @@ test("created metadata persists after reopening with unknown telemetry", () => {
     batteryLevel: null,
     area: null,
     batteryPercent: null,
-    queuedControlTarget: null,
+    queuedActions: [],
     lastReceivedAt: null,
   });
   expect(Number.isNaN(Date.parse(robot.createdAt))).toBe(false);
@@ -117,7 +117,7 @@ test("deletion cascades only the selected robot's telemetry", () => {
     activity: "working",
     batteryPercent: 42,
     area: "Lobby",
-    queuedControlTarget: null,
+    queuedActions: [],
   });
 
   expect(deleteRobot(db, first.id)).toBe(true);

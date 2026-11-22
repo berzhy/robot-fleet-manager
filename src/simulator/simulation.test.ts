@@ -1,4 +1,3 @@
-import { robotProblemCodes } from "@/common/robot-problems";
 import { expect, test } from "vitest";
 import {
   advanceRobot,
@@ -6,7 +5,7 @@ import {
   applyControl,
   telemetryAvailable,
 } from "./simulation";
-import type { RegistryRobot } from "@/common/robot";
+import { robotProblemCodes, type RegistryRobot } from "@/common/robot";
 
 const robot: RegistryRobot = {
   problemCode: null,
@@ -20,7 +19,6 @@ const robot: RegistryRobot = {
   integrationType: "vendor-api" as const,
   site: "Munich",
   createdAt: "2026-01-01T00:00:00.000Z",
-  queuedControlTarget: null,
   lastReceivedAt: null,
   batteryPercent: null,
   area: null,
@@ -28,6 +26,7 @@ const robot: RegistryRobot = {
   connection: null,
   batteryLevel: null,
   blockedActions: {},
+  queuedActions: [],
 };
 
 function tick(state: ReturnType<typeof initializeRobot>, seconds: number) {

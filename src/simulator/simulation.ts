@@ -1,8 +1,8 @@
-import { robotProblemCodes } from "@/common/robot-problems";
-import type {
-  ControlTarget,
-  RegistryRobot,
-  RobotActivity,
+import {
+  robotProblemCodes,
+  type ControlTarget,
+  type RegistryRobot,
+  type RobotActivity,
 } from "@/common/robot";
 import type { TelemetryReport } from "@/common/telemetry";
 

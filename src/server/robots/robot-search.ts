@@ -7,12 +7,14 @@ import {
   formatIntegrationType,
   formatActivity,
   formatConnection,
+  robotProblemLabels,
 } from "@/common/robot-labels";
 import {
+  robotTypes,
+  robotActivities,
+  integrationTypes,
   robotProblemCodes,
-  robotProblemDetails,
-} from "@/common/robot-problems";
-import { robotTypes, robotActivities, integrationTypes } from "@/common/robot";
+} from "@/common/robot";
 
 import { robots, latestTelemetry } from "../db/schema";
 
@@ -85,7 +87,7 @@ export function robotSearchCondition(
           ),
         ...robotProblemCodes
           .filter((code) =>
-            robotProblemDetails[code].label.toLowerCase().includes(query),
+            robotProblemLabels[code].toLowerCase().includes(query),
           )
           .map((code) => eq(latestTelemetry.problemCode, code)),
         ...connectionSearches,

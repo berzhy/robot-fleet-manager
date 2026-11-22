@@ -1,9 +1,9 @@
-import type { Robot } from "@/common/robot";
-import { actionLabels, type RobotAction } from "@/common/robot-actions";
+import type { Robot, RobotAction } from "@/common/robot";
 import { useNotifications } from "@/shared/notifications/notification-provider";
 
 import { isActionUnavailable, isRequestTimeout } from "./api/robot-api";
 import { useSendRobotAction } from "./api/robot-mutations";
+import { actionLabels } from "./robot-action-display";
 
 /**
  * Sends this robot's actions from any screen and reports each outcome as a
