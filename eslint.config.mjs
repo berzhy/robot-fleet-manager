@@ -29,7 +29,7 @@ const eslintConfig = defineConfig([
   },
   {
     files: ["src/**"],
-    extends: [query.configs["flat/recommended"]],
+    extends: [query.configs["flat/recommended-strict"]],
   },
   prettier,
   {
