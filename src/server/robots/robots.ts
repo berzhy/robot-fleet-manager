@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, count, desc, eq, ne, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, lte, ne, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 
 import type { RobotFilters } from "@/modules/robots/robot-filters";
@@ -10,6 +10,7 @@ import {
   robotPageSize,
   type RegistryRobot,
   type Robot,
+  type RobotActivity,
   type RobotPage,
 } from "@/modules/robots/robot";
 import type { CreateRobotInput } from "@/modules/robots/robot-validation";
@@ -33,9 +34,8 @@ const selection = {
   integrationType: robots.integrationType,
   site: robots.site,
   area: latestTelemetry.area,
-  activity: sql<
-    Robot["activity"]
-  >`coalesce(${latestTelemetry.activity}, 'unknown')`,
+  // A parameter rather than SQL text, so the value is type-checked.
+  activity: sql<RobotActivity>`coalesce(${latestTelemetry.activity}, ${"unknown" satisfies RobotActivity})`,
   batteryPercent: latestTelemetry.batteryPercent,
   lastReceivedAt: latestTelemetry.receivedAt,
   queuedControlTarget: sql<
@@ -65,8 +65,15 @@ export function listRobots(
   ).toISOString();
 
   const offline = sql<boolean>`${latestTelemetry.receivedAt} < ${delayedCutoff}`;
-  const lowBattery = sql<boolean>`${latestTelemetry.batteryPercent} <= ${lowBatteryPercent} and ${latestTelemetry.activity} != 'charging'`;
-  const criticalBattery = sql<boolean>`${latestTelemetry.batteryPercent} <= ${criticalBatteryPercent} and ${latestTelemetry.activity} != 'charging'`;
+  const notCharging = ne(latestTelemetry.activity, "charging");
+  const lowBattery = and(
+    lte(latestTelemetry.batteryPercent, lowBatteryPercent),
+    notCharging,
+  )!;
+  const criticalBattery = and(
+    lte(latestTelemetry.batteryPercent, criticalBatteryPercent),
+    notCharging,
+  )!;
   const attention = or(
     offline,
     sql`${latestTelemetry.problemCode} is not null`,

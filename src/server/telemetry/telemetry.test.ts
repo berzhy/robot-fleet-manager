@@ -1,3 +1,4 @@
+import { robotActivities } from "@/modules/robots/robot";
 import { robotProblemCodes } from "@/modules/robots/robot-problems";
 import {
   afterAll,
@@ -230,6 +231,17 @@ test("telemetry preserves problems and rejects impossible or regressing acknowle
     ).toBe(400);
   }
 });
+
+// schema.sql lists the activities again in a CHECK constraint.
+test.each(robotActivities.filter((activity) => activity !== "needs-attention"))(
+  "%s ingests and persists",
+  async (activity) => {
+    expect((await post({ reports: [{ ...report(), activity }] })).status).toBe(
+      200,
+    );
+    expect(getRobot(db, id)).toMatchObject({ activity });
+  },
+);
 
 test.each(robotProblemCodes)(
   "%s ingests, persists, counts as attention",

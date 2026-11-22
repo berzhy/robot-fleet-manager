@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { apiErrorCodes, type ApiErrorCode } from "@/modules/api/api-errors";
 import type { RobotAction } from "@/modules/robots/robot-actions";
 import {
   robotFilterSearchParams,
@@ -19,7 +20,7 @@ function requestSignal(signal?: AbortSignal) {
 export class ApiError extends Error {
   constructor(
     readonly status: number,
-    readonly code: string | undefined,
+    readonly code: ApiErrorCode | undefined,
     message: string,
   ) {
     super(message);
@@ -31,7 +32,8 @@ export class ApiError extends Error {
 // can answer with anything, so the body is checked rather than trusted.
 const errorBodySchema = z.object({
   error: z.object({
-    code: z.string().optional(),
+    // A code this app does not know still keeps the message.
+    code: z.enum(apiErrorCodes).optional().catch(undefined),
     message: z.string().optional(),
   }),
 });

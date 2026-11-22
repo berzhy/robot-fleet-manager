@@ -16,6 +16,7 @@ import {
   robotTypes,
   robotActivities,
   integrationTypes,
+  type RobotActivity,
 } from "@/modules/robots/robot";
 
 import { robots, latestTelemetry } from "../db/schema";
@@ -67,7 +68,7 @@ export function robotSearchCondition(
           robots.type,
           robots.integrationType,
           latestTelemetry.problemCode,
-          sql`coalesce(${latestTelemetry.activity}, 'unknown')`,
+          sql`coalesce(${latestTelemetry.activity}, ${"unknown" satisfies RobotActivity})`,
         ].map((column) => sql`${column} like ${pattern} escape '\\'`),
         ...robotTypes
           .filter((type) => formatRobotType(type).toLowerCase().includes(query))

@@ -1,3 +1,5 @@
+import type { ApiErrorCode } from "@/modules/api/api-errors";
+
 export function jsonResponse(value: unknown, status = 200) {
   return Response.json(value, {
     status,
@@ -5,6 +7,10 @@ export function jsonResponse(value: unknown, status = 200) {
   });
 }
 
-export function errorResponse(status: number, code: string, message: string) {
+export function errorResponse(
+  status: number,
+  code: ApiErrorCode,
+  message: string,
+) {
   return jsonResponse({ error: { code, message } }, status);
 }
