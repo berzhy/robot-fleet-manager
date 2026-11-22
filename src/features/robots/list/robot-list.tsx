@@ -22,7 +22,9 @@ import useRobotList, {
   useRobotListAnnouncement,
   useRobotListPageCorrection,
 } from "./use-robot-list";
-import useRobotListView from "./use-robot-list-view";
+import useRobotListView, {
+  useRememberRobotListView,
+} from "./use-robot-list-view";
 
 export default function RobotList() {
   const searchFieldRef = useRef<SearchFieldHandle>(null);
@@ -31,6 +33,7 @@ export default function RobotList() {
   }
 
   const { filters } = useRobotListView();
+  useRememberRobotListView();
   const list = useRobotList();
   const { status, refreshFailed } = list;
   const announcement = useRobotListAnnouncement(filters, list);

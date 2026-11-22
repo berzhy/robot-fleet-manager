@@ -10,6 +10,7 @@ import {
   usePendingRobotAction,
   useRobotWriteLock,
 } from "../api/robot-mutations";
+import { robotListHref } from "../list/use-robot-list-view";
 import useRobotCommand from "../use-robot-command";
 
 import ActivityControls from "./activity-controls";
@@ -32,7 +33,7 @@ export default function RobotDetails({ robotId }: { robotId: string }) {
     >
       <Link
         component={NextLink}
-        href="/robots"
+        href={robotListHref()}
         sx={{
           display: "inline-flex",
           alignItems: "center",

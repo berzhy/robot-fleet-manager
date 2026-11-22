@@ -79,15 +79,15 @@ test("investigates a reported problem and retries it from robot details", async 
   await expect(row).toHaveCount(0);
   await expect(page.getByText("No robots match these filters.")).toBeVisible();
 
-  // The back link is a plain link to the whole fleet.
+  // The back link also returns to the view as it was left.
   await page.goForward();
   await page.getByRole("link", { name: "Back to robots" }).click();
-  await expect(page).toHaveURL("/robots");
+  await expect(page).toHaveURL("/robots?view=needs-attention");
   await expect(
     page.getByRole("button", {
-      name: /All robots$/,
+      name: /Needs attention$/,
       pressed: true,
     }),
   ).toBeVisible();
-  await expect(row).toBeVisible();
+  await expect(row).toHaveCount(0);
 });

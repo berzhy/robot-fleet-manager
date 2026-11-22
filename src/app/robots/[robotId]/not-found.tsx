@@ -5,6 +5,8 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 
+import { robotListHref } from "@/features/robots/list/use-robot-list-view";
+
 export default function RobotNotFound() {
   return (
     <Stack spacing={2}>
@@ -14,7 +16,7 @@ export default function RobotNotFound() {
       <Link
         data-testid="robot-not-found-back"
         component={NextLink}
-        href="/robots"
+        href={robotListHref()}
       >
         Back to robots
       </Link>
