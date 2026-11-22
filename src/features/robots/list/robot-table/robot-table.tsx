@@ -87,7 +87,15 @@ export default function RobotTable({
   const { search } = filters;
 
   return (
-    <Paper elevation={2} sx={{ overflow: "hidden" }}>
+    <Paper
+      elevation={2}
+      sx={{
+        // "clip" rounds the corners without making the card a scroll box,
+        // which would stop the header sticking to the page.
+        overflow: "clip",
+        containerType: "inline-size",
+      }}
+    >
       {toolbar && <Box sx={{ p: 2 }}>{toolbar}</Box>}
       <TableContainer
         onBlurCapture={(event) => {
@@ -101,11 +109,20 @@ export default function RobotTable({
         aria-busy={isLoading}
         // Keeps the hidden Actions label (absolutely positioned) inside the
         // sideways scroll; otherwise it widens the page on phones.
-        sx={{ position: "relative" }}
+        sx={{
+          position: "relative",
+          // Once the table fits the card it stops scrolling sideways, so its
+          // header can stick to the page. A sideways scroll box would hold
+          // the header itself.
+          [`@container (min-width: ${tableMinWidthPx}px)`]: {
+            overflowX: "visible",
+          },
+        }}
       >
         <Table
           data-testid="fleet-table"
           size="small"
+          stickyHeader
           aria-label="Robot fleet"
           sx={{
             minWidth: tableMinWidthPx,

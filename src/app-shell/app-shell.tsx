@@ -94,13 +94,23 @@ export default function AppShell({ children }: { children: ReactNode }) {
             flex: 1,
             minHeight: 0,
             overflow: "auto",
-            // Less above and below than at the sides, so a 10-row page fits
-            // without scrolling on a laptop screen.
-            px: { xs: 2, sm: 3 },
-            py: 2,
           }}
         >
-          {children}
+          {/* The padding sits inside the scrolling area, so sticky headers
+              stick flush to its top edge. */}
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              flex: 1,
+              // Less above and below than at the sides, so a 10-row page fits
+              // without scrolling on a laptop screen.
+              px: { xs: 2, sm: 3 },
+              py: 2,
+            }}
+          >
+            {children}
+          </Box>
         </Box>
       </Box>
     </Box>
