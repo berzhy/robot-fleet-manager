@@ -46,6 +46,7 @@ const theme = createTheme({
     button: { textTransform: "none", fontWeight: 600 },
   },
   components: {
+    // Readable blue text on the grey page (see background.default).
     MuiLink: {
       variants: [
         {
@@ -65,8 +66,7 @@ const theme = createTheme({
       defaultProps: { disableFocusRipple: true },
       styleOverrides: {
         root: ({ theme }) => ({
-          // Sentence case, like buttons.
-          textTransform: "none",
+          // Readable blue text, like MuiLink.
           [`&.${tabClasses.selected}`]: theme.applyStyles("light", {
             color: theme.vars.palette.primary.dark,
           }),

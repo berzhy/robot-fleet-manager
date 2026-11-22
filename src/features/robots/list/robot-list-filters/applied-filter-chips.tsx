@@ -56,6 +56,10 @@ export default function AppliedFilterChips({
           size="small"
           data-testid={`fleet-chip-${chip.key}`}
           label={chip.label}
+          // Enter, Space and a click remove the filter too, not only Delete
+          // and Backspace, and the name says what pressing it does.
+          aria-label={`Remove ${chip.label} filter`}
+          onClick={() => remove(chip.key, index)}
           sx={
             chip.key === "search"
               ? { maxWidth: { xs: "100%", sm: 360 } }

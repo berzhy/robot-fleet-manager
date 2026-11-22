@@ -73,7 +73,10 @@ export default function AppShell({ children }: { children: ReactNode }) {
         open={navigationOpen && !desktop}
         onClose={() => setNavigationOpen(false)}
         sx={{ display: { xs: "block", md: "none" } }}
-        slotProps={{ paper: { sx: { width: sidebarWidth } } }}
+        // MUI makes the open drawer a dialog, which needs a name.
+        slotProps={{
+          paper: { "aria-label": "Navigation", sx: { width: sidebarWidth } },
+        }}
       >
         {navigation}
       </Drawer>

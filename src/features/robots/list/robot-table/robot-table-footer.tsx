@@ -74,7 +74,9 @@ export default function RobotTableFooter() {
           onRowsPerPageChange={(event) =>
             setRobotListPageSize(Number(event.target.value))
           }
-          disabled={isWritePending || status !== "success"}
+          // Stays enabled while a page loads: the previous page stays on screen,
+          // and disabling the pressed button would drop keyboard focus.
+          disabled={isWritePending}
           slotProps={{
             actions: {
               previousButton: {

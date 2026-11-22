@@ -27,6 +27,7 @@ export default function AddRobotSplitButton({
 }) {
   const [anchor, setAnchor] = useState<HTMLButtonElement | null>(null);
   const id = useId();
+  const optionsButtonId = `${id}-button`;
   return (
     <>
       <ButtonGroup variant="contained" color="primary" aria-label="Add robots">
@@ -44,6 +45,7 @@ export default function AddRobotSplitButton({
           data-testid="fleet-add-options"
           size="small"
           disabled={disabled || loading}
+          id={optionsButtonId}
           aria-label="More add options"
           aria-haspopup="menu"
           aria-expanded={anchor ? true : undefined}
@@ -55,6 +57,7 @@ export default function AddRobotSplitButton({
       </ButtonGroup>
       <Menu
         id={id}
+        slotProps={{ list: { "aria-labelledby": optionsButtonId } }}
         anchorEl={anchor}
         open={Boolean(anchor)}
         onClose={() => setAnchor(null)}
@@ -73,7 +76,7 @@ export default function AddRobotSplitButton({
             Add {count} robots
           </MenuItem>
         ))}
-        <Divider />
+        <Divider component="li" />
         <MenuItem
           onClick={() => {
             if (anchor) {

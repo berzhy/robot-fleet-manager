@@ -147,9 +147,7 @@ export default function RobotTable({
                 <TableCell
                   key={column.label}
                   scope="col"
-                  aria-sort={
-                    column.label === "Registered" ? "descending" : undefined
-                  }
+                  sortDirection={column.label === "Registered" ? "desc" : false}
                   align={column.label === "Actions" ? "right" : "left"}
                 >
                   {column.label === "Registered" ? (

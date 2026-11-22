@@ -123,7 +123,7 @@ test.each(["Clear search", "Clear filters"])(
   },
 );
 
-test("requests pages and keeps the pager mounted while loading", async () => {
+test("requests pages and keeps the pager usable while loading", async () => {
   const rows = Array.from({ length: 10 }, (_, i) => ({
     ...robot,
     id: String(i),
@@ -143,9 +143,11 @@ test("requests pages and keeps the pager mounted while loading", async () => {
 
   await screen.findByTestId("robot-row-0");
   const next = screen.getByTestId("fleet-next-page");
+  next.focus();
   fireEvent.click(next);
-  expect(next).toBeInTheDocument();
-  expect(next).toBeDisabled();
+  // Disabling the pressed button would drop keyboard focus.
+  expect(next).toBeEnabled();
+  expect(next).toHaveFocus();
 
   act(() =>
     resolve(Response.json(page([{ ...robot, name: "Last robot" }], 21, 1))),

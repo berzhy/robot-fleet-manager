@@ -121,6 +121,8 @@ export default function RobotStatusFilters() {
                   />
                 )}
                 <Stack
+                  // Inside a <button>, which allows only phrasing content.
+                  component="span"
                   direction="row"
                   spacing={1}
                   sx={{

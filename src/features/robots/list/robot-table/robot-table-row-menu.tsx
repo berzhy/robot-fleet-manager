@@ -32,6 +32,7 @@ export default function RobotTableRowMenu({
   const { isWritePending } = useRobotWriteLock();
   const [anchor, setAnchor] = useState<HTMLButtonElement | null>(null);
   const id = useId();
+  const buttonId = `${id}-button`;
 
   return (
     <>
@@ -39,6 +40,7 @@ export default function RobotTableRowMenu({
         data-testid="robot-actions"
         size="small"
         disabled={isWritePending}
+        id={buttonId}
         aria-label={`Actions for ${robot.name}`}
         aria-haspopup="menu"
         aria-controls={anchor ? id : undefined}
@@ -49,7 +51,9 @@ export default function RobotTableRowMenu({
       </IconButton>
       <Menu
         id={id}
-        slotProps={{ list: { disabledItemsFocusable: true } }}
+        slotProps={{
+          list: { disabledItemsFocusable: true, "aria-labelledby": buttonId },
+        }}
         anchorEl={anchor}
         open={Boolean(anchor)}
         onClose={() => setAnchor(null)}
