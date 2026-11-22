@@ -48,13 +48,12 @@ export default function RobotList() {
   });
 
   return (
-    <Stack spacing={2} sx={{ flex: 1, minHeight: 0 }}>
+    <Stack spacing={2}>
       <Stack
         direction="row"
         spacing={2}
         useFlexGap
         sx={{
-          flexShrink: 0,
           flexWrap: "wrap",
           alignItems: "center",
           justifyContent: "space-between",

@@ -12,9 +12,7 @@ export default function RobotTableErrorState({
     <Stack
       spacing={2}
       sx={{
-        flex: 1,
         alignItems: "center",
-        justifyContent: "center",
         textAlign: "center",
         p: 3,
       }}

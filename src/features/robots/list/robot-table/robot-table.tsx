@@ -87,17 +87,8 @@ export default function RobotTable({
   const { search } = filters;
 
   return (
-    <Paper
-      elevation={2}
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        // Fits its rows, or shrinks to the screen and scrolls them.
-        minHeight: 0,
-        overflow: "hidden",
-      }}
-    >
-      {toolbar && <Box sx={{ flexShrink: 0, p: 2 }}>{toolbar}</Box>}
+    <Paper elevation={2} sx={{ overflow: "hidden" }}>
+      {toolbar && <Box sx={{ p: 2 }}>{toolbar}</Box>}
       <TableContainer
         onBlurCapture={(event) => {
           if (
@@ -108,25 +99,18 @@ export default function RobotTable({
           }
         }}
         aria-busy={isLoading}
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          minHeight: 0,
-          overflowX: "auto",
-          overflowY: isLoading ? "hidden" : "auto",
-          overscrollBehaviorY: "none",
-        }}
+        // Keeps the hidden Actions label (absolutely positioned) inside the
+        // sideways scroll; otherwise it widens the page on phones.
+        sx={{ position: "relative" }}
       >
         <Table
           data-testid="fleet-table"
           size="small"
-          stickyHeader
           aria-label="Robot fleet"
           sx={{
             minWidth: tableMinWidthPx,
             // Columns keep their widths; longer text is cut short with "…".
             tableLayout: "fixed",
-            flexShrink: 0,
           }}
         >
           <colgroup>

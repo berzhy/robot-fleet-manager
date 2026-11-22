@@ -19,9 +19,7 @@ export default function RobotTableEmptyState({
     <Stack
       spacing={2}
       sx={{
-        flex: 1,
         alignItems: "center",
-        justifyContent: "center",
         textAlign: "center",
         p: 3,
       }}

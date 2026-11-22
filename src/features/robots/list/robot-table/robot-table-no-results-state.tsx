@@ -34,9 +34,7 @@ export default function RobotTableNoResultsState({
     <Stack
       data-testid="fleet-no-results"
       sx={{
-        flex: 1,
         alignItems: "center",
-        justifyContent: "center",
         p: 3,
       }}
       spacing={2}

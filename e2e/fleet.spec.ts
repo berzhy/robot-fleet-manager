@@ -33,15 +33,12 @@ test("loading rows follow the page size when the viewport shrinks", async ({
 
     await page.setViewportSize({ width: 650, height: 600 });
     await expect(rows).toHaveCount(robotPageSize);
-    await expect(scrollContainer).toHaveCSS("overflow-y", "hidden");
-    await expect(scrollContainer).toHaveCSS("overflow-x", "auto");
   } finally {
     resolve();
   }
 
   await expect(table.getByRole("link", { name: robot.name })).toBeVisible();
   await expect(scrollContainer).toHaveAttribute("aria-busy", "false");
-  await expect(scrollContainer).toHaveCSS("overflow-y", "auto");
 });
 
 test("adds two robots and deletes one", async ({ page, request }) => {
