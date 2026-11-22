@@ -7,7 +7,7 @@ import {
 } from "@/modules/robots/robot";
 import type { TelemetryReport } from "@/modules/telemetry/telemetry";
 
-import { test } from "./fixtures";
+import { createRobots, test } from "./fixtures";
 
 test("loading rows follow the page size when the viewport shrinks", async ({
   page,
@@ -209,20 +209,14 @@ test("keyboard explanations and Stop/Retry requests follow reported activity", a
   });
 });
 
-async function seedFleet(request: APIRequestContext, count = 1) {
-  const response = await request.post("/api/robots/batch", {
-    data: {
-      robots: Array.from({ length: count }, (_, index) => ({
-        name: `Filter robot ${index}`,
-        manufacturer: "Boston Dynamics",
-        type: "inspection",
-        integrationType: "ros2",
-        site: "Munich",
-      })),
-    },
-  });
-  expect(response.status()).toBe(201);
-  return ((await response.json()) as { items: Robot[] }).items;
+function seedFleet(request: APIRequestContext, count = 1) {
+  return createRobots(
+    request,
+    Array.from({ length: count }, (_, index) => ({
+      name: `Filter robot ${index}`,
+      manufacturer: "Boston Dynamics",
+    })),
+  );
 }
 
 // The URL change applies in a later render, and until then the previous view's
@@ -278,27 +272,15 @@ test("combines dropdowns and tiles, removes chips and retries a failed filter re
   page,
   request,
 }) => {
-  const matching = {
-    name: "Matching robot",
-    manufacturer: "Boston Dynamics",
-    type: "inspection",
-    integrationType: "ros2",
-    site: "Munich",
-  };
-  const created = await request.post("/api/robots/batch", {
-    data: {
-      robots: [
-        matching,
-        { ...matching, name: "Other location", site: "Berlin" },
-        { ...matching, name: "Other manufacturer", manufacturer: "LG" },
-        { ...matching, name: "Other integration", integrationType: "vda5050" },
-        { ...matching, name: "Other type", type: "delivery" },
-        { ...matching, name: "Healthy robot" },
-      ],
-    },
-  });
-  expect(created.status()).toBe(201);
-  const { items } = (await created.json()) as { items: Robot[] };
+  const matching = { name: "Matching robot", manufacturer: "Boston Dynamics" };
+  const items = await createRobots(request, [
+    matching,
+    { ...matching, name: "Other location", site: "Berlin" },
+    { ...matching, name: "Other manufacturer", manufacturer: "LG" },
+    { ...matching, name: "Other integration", integrationType: "vda5050" },
+    { ...matching, name: "Other type", type: "delivery" },
+    { ...matching, name: "Healthy robot" },
+  ]);
   const robot = items[0];
 
   async function reportFleet() {
@@ -373,20 +355,14 @@ for (const filter of ["Location", "Manufacturer"] as const) {
     page,
     request,
   }) => {
-    const created = await request.post("/api/robots/batch", {
-      data: {
-        robots: ["Atlas", "Bishop"].map((name) => ({
-          name,
-          manufacturer: name,
-          site: name,
-          type: "inspection",
-          integrationType: "ros2",
-        })),
-      },
-    });
-    expect(created.status()).toBe(201);
-    const { items } = (await created.json()) as { items: Robot[] };
-    const [atlas] = items;
+    const [atlas] = await createRobots(
+      request,
+      ["Atlas", "Bishop"].map((name) => ({
+        name,
+        manufacturer: name,
+        site: name,
+      })),
+    );
 
     await page.goto("/robots");
     if (filter === "Manufacturer") {
@@ -595,20 +571,10 @@ test("delete all clears robots outside the active search and allows adding again
   page,
   request,
 }) => {
-  const records = [];
-  for (const name of ["Bulk visible", "Hidden robot"]) {
-    const response = await request.post("/api/robots", {
-      data: {
-        name,
-        site: "Munich",
-        manufacturer: "Maker",
-        type: "inspection",
-        integrationType: "ros2",
-      },
-    });
-    expect(response.status()).toBe(201);
-    records.push((await response.json()) as Robot);
-  }
+  const records = await createRobots(request, [
+    { name: "Bulk visible" },
+    { name: "Hidden robot" },
+  ]);
 
   await page.goto("/robots");
   await expect(page.getByTestId(`robot-row-${records[1].id}`)).toBeVisible();

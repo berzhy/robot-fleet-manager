@@ -1,6 +1,5 @@
 import { expect } from "@playwright/test";
-import { test } from "./fixtures";
-import type { Robot } from "@/modules/robots/robot";
+import { createRobots, test } from "./fixtures";
 
 test.use({ locale: "de-DE", timezoneId: "America/New_York" });
 
@@ -12,15 +11,10 @@ test("detail context and controls follow reported telemetry", async ({
   page.on("pageerror", (error) => browserErrors.push(error.message));
 
   const site = "Detail demo";
-  const records: Robot[] = [];
-  for (const [index, type] of [
-    "cleaning",
-    "delivery",
-    "security",
-    "inspection",
-  ].entries()) {
-    const response = await request.post("/api/robots", {
-      data: {
+  const records = await createRobots(
+    request,
+    (["cleaning", "delivery", "security", "inspection"] as const).map(
+      (type, index) => ({
         name:
           index === 0
             ? "Service robot assigned to the northern warehouse service corridor"
@@ -28,12 +22,9 @@ test("detail context and controls follow reported telemetry", async ({
         site,
         manufacturer: "Demo manufacturer",
         type,
-        integrationType: "ros2",
-      },
-    });
-    expect(response.status()).toBe(201);
-    records.push((await response.json()) as Robot);
-  }
+      }),
+    ),
+  );
   const selected = records[0];
 
   async function report(activity: "working" | "idle", revision: number) {
@@ -180,17 +171,7 @@ test("going Back to a robot after adding another shows its details", async ({
   page,
   request,
 }) => {
-  const response = await request.post("/api/robots", {
-    data: {
-      name: "Back robot",
-      site: "Munich",
-      manufacturer: "Demo manufacturer",
-      type: "inspection",
-      integrationType: "ros2",
-    },
-  });
-  expect(response.status()).toBe(201);
-  const robot = (await response.json()) as Robot;
+  const [robot] = await createRobots(request, [{ name: "Back robot" }]);
 
   await page.goto(`/robots/${robot.id}`);
   await expect(page.getByTestId("robot-details")).toBeVisible();

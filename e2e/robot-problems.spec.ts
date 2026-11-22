@@ -1,22 +1,11 @@
 import { expect } from "@playwright/test";
-import type { Robot } from "@/modules/robots/robot";
-import { test } from "./fixtures";
+import { createRobots, test } from "./fixtures";
 
 test("investigates a reported problem and retries it from robot details", async ({
   page,
   request,
 }) => {
-  const created = await request.post("/api/robots", {
-    data: {
-      name: "Problem demo",
-      site: "Munich",
-      manufacturer: "Maker",
-      type: "inspection",
-      integrationType: "ros2",
-    },
-  });
-  expect(created.status()).toBe(201);
-  const robot = (await created.json()) as Robot;
+  const [robot] = await createRobots(request, [{ name: "Problem demo" }]);
 
   async function report(recovered: boolean) {
     const response = await request.post("/api/telemetry/batch", {
