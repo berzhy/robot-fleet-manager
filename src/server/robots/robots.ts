@@ -215,14 +215,15 @@ export function getRobotContext(db: FleetDatabase, id: string) {
       return undefined;
     }
 
-    const siteRobots = tx
-      .select({ id: robots.id, area: latestTelemetry.area })
+    const peerCounts = tx
+      .select({ area: latestTelemetry.area, count: count() })
       .from(robots)
       .leftJoin(latestTelemetry, eq(robots.id, latestTelemetry.robotId))
       .where(and(eq(robots.site, robot.site), ne(robots.id, id)))
-      .orderBy(robots.id)
+      .groupBy(latestTelemetry.area)
+      .orderBy(latestTelemetry.area)
       .all();
 
-    return { robot, siteRobots, evaluatedAt: Date.now() };
+    return { robot, peerCounts, evaluatedAt: Date.now() };
   });
 }

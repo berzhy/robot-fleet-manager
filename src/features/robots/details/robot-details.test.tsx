@@ -26,7 +26,7 @@ function renderDetails(context: RobotContext) {
 }
 
 test("details show the robot, missing values, and the way back", async () => {
-  renderDetails({ robot: robot, siteRobots: [], evaluatedAt: Date.now() });
+  renderDetails({ robot: robot, peerCounts: [], evaluatedAt: Date.now() });
 
   const details = within(screen.getByTestId("robot-details"));
   expect(screen.getAllByRole("heading", { hidden: true })).toEqual([
@@ -92,7 +92,7 @@ test("a stale report is labelled as last reported, problem included", () => {
       batteryPercent: 40,
       lastReceivedAt: "2026-11-14T12:00:00.000Z",
     },
-    siteRobots: [],
+    peerCounts: [],
     evaluatedAt,
   });
 
@@ -123,7 +123,7 @@ test.each([
         batteryPercent,
         lastReceivedAt: new Date().toISOString(),
       },
-      siteRobots: [],
+      peerCounts: [],
       evaluatedAt: Date.now(),
     });
 
@@ -137,7 +137,7 @@ test("the exact time of the last report is reachable by keyboard", async () => {
   const lastReceivedAt = "2026-11-14T12:00:00.000Z";
   renderDetails({
     robot: { ...robot, lastReceivedAt },
-    siteRobots: [],
+    peerCounts: [],
     evaluatedAt: Date.parse("2026-11-14T12:03:00.000Z"),
   });
 
@@ -161,7 +161,7 @@ test("copying the ID puts it on the clipboard and says so", async () => {
   onTestFinished(() => {
     Reflect.deleteProperty(navigator, "clipboard");
   });
-  renderDetails({ robot: robot, siteRobots: [], evaluatedAt: Date.now() });
+  renderDetails({ robot: robot, peerCounts: [], evaluatedAt: Date.now() });
 
   await act(async () => {
     fireEvent.click(screen.getByRole("button", { name: "Copy robot ID" }));
@@ -355,12 +355,12 @@ test.each([
       vi.fn().mockResolvedValue(
         Response.json({
           robot: online,
-          siteRobots: [],
+          peerCounts: [],
           evaluatedAt: Date.now(),
         }),
       ),
     );
-    renderDetails({ robot: online, siteRobots: [], evaluatedAt: Date.now() });
+    renderDetails({ robot: online, peerCounts: [], evaluatedAt: Date.now() });
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent(`${label}. ${guidance}`);
@@ -387,7 +387,7 @@ test.each([
       lastReceivedAt: new Date().toISOString(),
     };
     const context = () =>
-      Response.json({ robot: online, siteRobots: [], evaluatedAt: Date.now() });
+      Response.json({ robot: online, peerCounts: [], evaluatedAt: Date.now() });
     let resolveAction!: (response: Response) => void;
     let resolveRefresh!: (response: Response) => void;
     const fetcher = vi
@@ -400,7 +400,7 @@ test.each([
       )
       .mockImplementation(() => Promise.resolve(context()));
     vi.stubGlobal("fetch", fetcher);
-    renderDetails({ robot: online, siteRobots: [], evaluatedAt: Date.now() });
+    renderDetails({ robot: online, peerCounts: [], evaluatedAt: Date.now() });
     await act(async () => {});
 
     await act(async () => {
@@ -485,13 +485,13 @@ test("activity requests are guarded while pending and telemetry confirms the cha
       return Promise.resolve(
         Response.json({
           robot: observed,
-          siteRobots: [],
+          peerCounts: [],
           evaluatedAt: Date.now(),
         }),
       );
     });
   vi.stubGlobal("fetch", fetcher);
-  renderDetails({ robot: online, siteRobots: [], evaluatedAt: Date.now() });
+  renderDetails({ robot: online, peerCounts: [], evaluatedAt: Date.now() });
 
   const stop = screen.getByRole("button", {
     name: "Stop activity",
@@ -578,7 +578,7 @@ test("a command result is reported after leaving the details screen", async () =
         : Promise.resolve(
             Response.json({
               robot: online,
-              siteRobots: [],
+              peerCounts: [],
               evaluatedAt: Date.now(),
             }),
           ),
@@ -586,7 +586,7 @@ test("a command result is reported after leaving the details screen", async () =
   );
   const { rerender } = renderDetails({
     robot: online,
-    siteRobots: [],
+    peerCounts: [],
     evaluatedAt: Date.now(),
   });
 
@@ -632,7 +632,7 @@ test("activity controls stay disabled until the command refresh lands", async ()
     });
   });
   vi.stubGlobal("fetch", fetcher);
-  renderDetails({ robot: online, siteRobots: [], evaluatedAt: Date.now() });
+  renderDetails({ robot: online, peerCounts: [], evaluatedAt: Date.now() });
 
   const stop = screen.getByRole("button", { name: "Stop activity" });
   await waitFor(() => expect(stop).toHaveAttribute("aria-disabled", "false"));
@@ -664,7 +664,7 @@ test("activity controls stay disabled until the command refresh lands", async ()
     resolveRefresh!(
       Response.json({
         robot: { ...online, activity: "idle" },
-        siteRobots: [],
+        peerCounts: [],
         evaluatedAt: Date.now(),
       }),
     );
@@ -697,13 +697,13 @@ test("failed action keeps reported activity and explains the failure", async () 
           ? new Response(null, { status: 409 })
           : Response.json({
               robot: online,
-              siteRobots: [],
+              peerCounts: [],
               evaluatedAt: Date.now(),
             }),
       ),
     ),
   );
-  renderDetails({ robot: online, siteRobots: [], evaluatedAt: Date.now() });
+  renderDetails({ robot: online, peerCounts: [], evaluatedAt: Date.now() });
 
   await act(async () => {
     fireEvent.click(screen.getByRole("button", { name: /^Stop activity$/ }));
@@ -741,13 +741,13 @@ test("an action the server refuses shows the server's reason", async () => {
             )
           : Response.json({
               robot: online,
-              siteRobots: [],
+              peerCounts: [],
               evaluatedAt: Date.now(),
             }),
       ),
     ),
   );
-  renderDetails({ robot: online, siteRobots: [], evaluatedAt: Date.now() });
+  renderDetails({ robot: online, peerCounts: [], evaluatedAt: Date.now() });
 
   fireEvent.click(screen.getByRole("button", { name: /^Stop activity$/ }));
 

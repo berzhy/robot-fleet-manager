@@ -46,7 +46,7 @@ const page = (battery = 50) =>
 const robotContext = (batteryPercent: number) =>
   Response.json({
     robot: { ...robot, batteryPercent },
-    siteRobots: [],
+    peerCounts: [],
     evaluatedAt: Date.now(),
   });
 
@@ -178,7 +178,7 @@ test.each(["fleet", "detail"] as const)(
     if (surface === "fleet") {
       render(<RobotList />);
     } else {
-      renderDetails({ robot, siteRobots: [], evaluatedAt: evaluatedAt });
+      renderDetails({ robot, peerCounts: [], evaluatedAt: evaluatedAt });
     }
     await tick();
 
@@ -250,7 +250,7 @@ test("details render with the page's data and first ask again at the next poll",
   vi.useFakeTimers();
   const fetcher = liveFetcher();
   vi.stubGlobal("fetch", fetcher);
-  renderDetails({ robot, siteRobots: [], evaluatedAt: Date.now() });
+  renderDetails({ robot, peerCounts: [], evaluatedAt: Date.now() });
   await tick();
 
   expect(screen.getByTestId("robot-details")).toBeInTheDocument();
@@ -269,7 +269,7 @@ test("detail refreshes while Logs is selected and stops when its robot is delete
       .mockResolvedValueOnce(
         Response.json({
           robot: { ...robot, batteryPercent: 42, site: "Berlin" },
-          siteRobots: [],
+          peerCounts: [],
           evaluatedAt: Date.now(),
         }),
       )
@@ -277,7 +277,7 @@ test("detail refreshes while Logs is selected and stops when its robot is delete
   );
   renderDetails({
     robot: { ...robot, batteryPercent: 45 },
-    siteRobots: [],
+    peerCounts: [],
     evaluatedAt: Date.now(),
   });
   await tick();
@@ -358,7 +358,7 @@ test("a confirmed detail deletion clears an earlier refresh warning", async () =
       .mockResolvedValueOnce(new Response(null, { status: 500 }))
       .mockResolvedValueOnce(robotNotFound()),
   );
-  renderDetails({ robot: robot, siteRobots: [], evaluatedAt: Date.now() });
+  renderDetails({ robot: robot, peerCounts: [], evaluatedAt: Date.now() });
   await tick(robotContextPollIntervalMs);
 
   expect(screen.getByTestId("robot-refresh-warning")).toHaveTextContent(
@@ -376,7 +376,7 @@ test("a failed first detail poll keeps server-verified connection information", 
   vi.useFakeTimers();
   vi.setSystemTime(new Date(Date.parse(robot.lastReceivedAt!) + 20000));
   vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("unavailable")));
-  renderDetails({ robot: robot, siteRobots: [], evaluatedAt: Date.now() });
+  renderDetails({ robot: robot, peerCounts: [], evaluatedAt: Date.now() });
   await tick(robotContextPollIntervalMs);
 
   expect(
@@ -441,7 +441,7 @@ test("fleet and detail retain snapshots after a request timeout and recover on t
       url.includes("/context")
         ? Response.json({
             robot: { ...robot, batteryPercent: 45 },
-            siteRobots: [],
+            peerCounts: [],
             evaluatedAt: Date.now(),
           })
         : page(45),
@@ -450,7 +450,7 @@ test("fleet and detail retain snapshots after a request timeout and recover on t
   vi.stubGlobal("fetch", fetcher);
   const context = {
     robot: { ...robot, batteryPercent: 45 },
-    siteRobots: [],
+    peerCounts: [],
     evaluatedAt: Date.now(),
   };
   const { result } = renderHook(() => ({
@@ -500,7 +500,7 @@ test("unmount cancels outstanding fleet and detail requests without restarting p
       }),
   );
   vi.stubGlobal("fetch", fetcher);
-  const context = { robot, siteRobots: [], evaluatedAt: Date.now() };
+  const context = { robot, peerCounts: [], evaluatedAt: Date.now() };
   const { unmount } = renderHook(() => ({
     fleet: useRobotList(),
     detail: useLiveRobot(context),
@@ -568,7 +568,7 @@ test.each(["fleet", "detail"] as const)(
         ? page(batteryPercent)
         : Response.json({
             robot: { ...robot, batteryPercent },
-            siteRobots: [],
+            peerCounts: [],
             evaluatedAt: Date.now(),
           });
     }
@@ -595,7 +595,7 @@ test.each(["fleet", "detail"] as const)(
     } else {
       renderDetails({
         robot: { ...robot, batteryPercent: 45 },
-        siteRobots: [],
+        peerCounts: [],
         evaluatedAt: Date.now(),
       });
     }
@@ -675,7 +675,7 @@ test.each(["fleet", "detail"] as const)(
         ? page(batteryPercent)
         : Response.json({
             robot: { ...robot, batteryPercent },
-            siteRobots: [],
+            peerCounts: [],
             evaluatedAt: Date.now(),
           });
     }
@@ -701,7 +701,7 @@ test.each(["fleet", "detail"] as const)(
     } else {
       renderDetails({
         robot: { ...robot, batteryPercent: 45 },
-        siteRobots: [],
+        peerCounts: [],
         evaluatedAt: Date.now(),
       });
     }
@@ -816,7 +816,7 @@ test("a command cancels the poll in flight and stays pending until fresh data la
   const { fetcher, reads, acceptWrite } = deferredFetch();
   vi.stubGlobal("fetch", fetcher);
 
-  const context = { robot, siteRobots: [], evaluatedAt: Date.now() };
+  const context = { robot, peerCounts: [], evaluatedAt: Date.now() };
   const { result } = renderHook(() => ({
     detail: useLiveRobot(context),
     command: useSendRobotAction(robot.id),

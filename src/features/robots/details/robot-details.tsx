@@ -23,7 +23,7 @@ export default function RobotDetails({
 }: {
   initialContext: RobotContext;
 }) {
-  const { robot, siteRobots, missing, refreshFailed, evaluatedAt } =
+  const { robot, peerCounts, missing, refreshFailed, evaluatedAt } =
     useLiveRobot(initialContext);
   const { requestAction, waitReason } = useRobotCommand(robot);
   const pendingAction = usePendingRobotAction(robot.id);
@@ -66,7 +66,9 @@ export default function RobotDetails({
           />
         }
       />
-      {!missing && <RobotDetailsTabs reading={reading} peers={siteRobots} />}
+      {!missing && (
+        <RobotDetailsTabs reading={reading} peerCounts={peerCounts} />
+      )}
     </Stack>
   );
 }

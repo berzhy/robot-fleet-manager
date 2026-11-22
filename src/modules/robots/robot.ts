@@ -69,10 +69,11 @@ export type RobotPage = {
   pageSize: number;
 };
 
-/** Another robot at the same site; the map only counts robots per area. */
-export type SiteRobot = Pick<Robot, "id" | "area">;
+/** How many of the site's other robots last reported this area. */
+export type PeerCount = { area: string | null; count: number };
 export type RobotContext = {
   robot: Robot;
-  siteRobots: SiteRobot[];
+  /** Counts rather than the robots: the map shows only how many are where. */
+  peerCounts: PeerCount[];
   evaluatedAt: number;
 };

@@ -4,7 +4,7 @@ import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import { useId, useState, type ReactNode } from "react";
 
-import type { SiteRobot } from "@/modules/robots/robot";
+import type { PeerCount } from "@/modules/robots/robot";
 import type { RobotReading } from "@/modules/robots/robot-reading";
 
 import LocationMap from "./location-map";
@@ -15,10 +15,10 @@ type DetailsTab = "location" | "logs";
 /** The robot's location and logs, one at a time, in a card with its tabs. */
 export default function RobotDetailsTabs({
   reading,
-  peers,
+  peerCounts,
 }: {
   reading: RobotReading;
-  peers: SiteRobot[];
+  peerCounts: PeerCount[];
 }) {
   const baseId = useId();
   const [tab, setTab] = useState<DetailsTab>("location");
@@ -47,7 +47,7 @@ export default function RobotDetailsTabs({
         </Tabs>
       </Box>
       <TabPanel baseId={baseId} value="location" selected={tab}>
-        <LocationMap reading={reading} peers={peers} />
+        <LocationMap reading={reading} peerCounts={peerCounts} />
       </TabPanel>
       <TabPanel baseId={baseId} value="logs" selected={tab}>
         <RobotLogs robot={reading.robot} />

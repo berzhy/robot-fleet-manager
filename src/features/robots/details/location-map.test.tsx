@@ -13,10 +13,6 @@ const evaluatedAt = Date.parse(robot.createdAt);
 const freshReport = new Date(evaluatedAt).toISOString();
 
 test("each area counts the other robots in it and separates unknown areas", () => {
-  const peers = Array.from({ length: 17 }, (_, index) => ({
-    id: `peer-${index}`,
-    area: "Lobby",
-  }));
   render(
     <LocationMap
       reading={robotReading(
@@ -24,7 +20,10 @@ test("each area counts the other robots in it and separates unknown areas", () =
         evaluatedAt,
         false,
       )}
-      peers={[...peers, { ...peers[0], id: "unknown", area: "Unmapped" }]}
+      peerCounts={[
+        { area: "Lobby", count: 17 },
+        { area: "Unmapped", count: 1 },
+      ]}
     />,
   );
 
@@ -42,7 +41,7 @@ test("a robot outside the plan is listed as in an unknown area", () => {
   render(
     <LocationMap
       reading={robotReading(robot, evaluatedAt, false)}
-      peers={[]}
+      peerCounts={[]}
     />,
   );
 
@@ -70,7 +69,7 @@ test.each([
           evaluatedAt,
           unverified,
         )}
-        peers={[]}
+        peerCounts={[]}
       />,
     );
 
@@ -88,7 +87,7 @@ test("each site with a drawing gets its own, and other sites a generic one", () 
     const { container, unmount } = render(
       <LocationMap
         reading={robotReading({ ...robot, site }, evaluatedAt, false)}
-        peers={[]}
+        peerCounts={[]}
       />,
     );
     const plan = container.querySelector("svg")?.innerHTML;
@@ -110,7 +109,7 @@ test.each([
   render(
     <LocationMap
       reading={robotReading({ ...robot, site }, evaluatedAt, false)}
-      peers={[]}
+      peerCounts={[]}
     />,
   );
 
@@ -125,7 +124,7 @@ test("a site with the generic drawing does not borrow another site's details", (
         evaluatedAt,
         false,
       )}
-      peers={[]}
+      peerCounts={[]}
     />,
   );
 

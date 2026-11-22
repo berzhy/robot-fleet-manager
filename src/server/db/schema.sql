@@ -15,6 +15,8 @@ CREATE TABLE robots (
   CONSTRAINT robot_type_value CHECK (type IN ('cleaning', 'security', 'delivery', 'inspection'))
 );
 
+-- WITHOUT ROWID: keyed by robot, so the list's counts and each report's
+-- upsert reach a robot's row directly, not through a separate key index.
 CREATE TABLE latest_telemetry (
   robot_id text PRIMARY KEY NOT NULL,
   activity text NOT NULL,
@@ -44,4 +46,11 @@ CREATE TABLE latest_telemetry (
       'unknown'
     )
   )
-);
+) WITHOUT ROWID;
+
+-- The list's only order, newest first.
+CREATE INDEX robots_newest_first ON robots (created_at DESC, id DESC);
+-- The site and manufacturer filters, and their options: SQLite lists an
+-- indexed column's distinct values without reading every robot.
+CREATE INDEX robots_site ON robots (site);
+CREATE INDEX robots_manufacturer ON robots (manufacturer);

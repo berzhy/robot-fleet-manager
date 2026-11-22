@@ -200,22 +200,39 @@ test("fresh schema rejects missing and unsupported integrations outside the API"
   expect(listRobots(db, 0).total).toBe(0);
 });
 
-test("detail context includes only same-site peers and returns 404 for a missing robot", async () => {
+test("detail context counts only same-site peers per area and returns 404 for a missing robot", async () => {
   const selected = createRobot(db, testRobotInput);
-  const peer = createRobot(db, { ...testRobotInput, name: "Peer" });
+  const [lobbyPeer, otherLobbyPeer] = createRobots(db, [
+    { ...testRobotInput, name: "Lobby peer" },
+    { ...testRobotInput, name: "Other lobby peer" },
+    { ...testRobotInput, name: "Unreported peer" },
+  ]);
   createRobot(db, { ...testRobotInput, site: "Berlin" });
+  db.insert(latestTelemetry)
+    .values(
+      [selected, lobbyPeer, otherLobbyPeer].map((robot) => ({
+        robotId: robot.id,
+        activity: "working" as const,
+        area: "Lobby",
+        observedAt: new Date().toISOString(),
+      })),
+    )
+    .run();
 
   const context = getRobotContext(db, selected.id)!;
 
   expect(context.robot.id).toBe(selected.id);
-  expect(context.siteRobots).toEqual([{ id: peer.id, area: null }]);
+  expect(context.peerCounts).toEqual([
+    { area: null, count: 1 },
+    { area: "Lobby", count: 2 },
+  ]);
 
   const response = robotHandlers(() => db).context(selected.id);
 
   expect(response.status).toBe(200);
   expect(await response.json()).toMatchObject({
     robot: { id: selected.id },
-    siteRobots: [{ id: peer.id }],
+    peerCounts: [{ area: null }, { area: "Lobby" }],
   });
 
   expect(robotHandlers(() => db).context("missing").status).toBe(404);
