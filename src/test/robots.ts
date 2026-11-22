@@ -1,4 +1,14 @@
 import type { Robot, RobotPage } from "@/modules/robots/robot";
+import type { CreateRobotInput } from "@/modules/robots/robot-validation";
+
+/** What a test registers when the details do not matter to it. */
+export const testRobotInput: CreateRobotInput = {
+  name: "New robot",
+  manufacturer: "Maker",
+  type: "inspection",
+  integrationType: "vendor-api",
+  site: "Munich",
+};
 
 /** A registered robot that has not reported yet; a test overrides what it checks. */
 export function testRobot(overrides: Partial<Robot> = {}): Robot {
