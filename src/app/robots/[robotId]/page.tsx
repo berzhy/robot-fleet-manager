@@ -3,21 +3,26 @@ import Typography from "@mui/material/Typography";
 import type { Metadata } from "next";
 import { io } from "next/cache";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
+import { cache, Suspense } from "react";
 
 import { robotKeys } from "@/features/robots/api/robot-queries";
 import RobotDetails from "@/features/robots/details/robot-details";
 import { createQueryClient } from "@/query/query-client";
 import { getDatabase } from "@/server/db/runtime-database";
-import { getRobot, getRobotContext } from "@/server/robots/robots";
+import { getRobotContext } from "@/server/robots/robots";
+
+// The title and the page read the robot once per request, so they agree.
+const readRobotContext = cache(async (robotId: string) => {
+  await io();
+  return getRobotContext(getDatabase(), robotId);
+});
 
 export async function generateMetadata({
   params,
 }: PageProps<"/robots/[robotId]">): Promise<Metadata> {
   const { robotId } = await params;
-  await io();
-  const robot = getRobot(getDatabase(), robotId);
-  return { title: robot?.name ?? "Robot not found" };
+  const snapshot = await readRobotContext(robotId);
+  return { title: snapshot?.robot.name ?? "Robot not found" };
 }
 
 export default function RobotPage({ params }: PageProps<"/robots/[robotId]">) {
@@ -36,8 +41,7 @@ async function RobotContent({
   params: Promise<{ robotId: string }>;
 }) {
   const { robotId } = await params;
-  await io();
-  const snapshot = getRobotContext(getDatabase(), robotId);
+  const snapshot = await readRobotContext(robotId);
   if (!snapshot) {
     notFound();
   }
