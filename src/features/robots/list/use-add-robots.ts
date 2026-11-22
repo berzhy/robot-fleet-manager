@@ -39,10 +39,12 @@ export default function useAddRobots({ blocked }: { blocked: boolean }) {
     notifications.clear();
     focusTargetRef.current = trigger;
 
-    createRobots.mutate(
-      Array.from({ length: count }, () => generateRobotInput()),
-      {
-        onSuccess: (robots) => {
+    // The promise settles even after the list unmounts, unlike per-call mutate
+    // callbacks, so the outcome is still reported after navigating away.
+    createRobots
+      .mutateAsync(Array.from({ length: count }, () => generateRobotInput()))
+      .then(
+        (robots) => {
           notifications.show({
             severity: "success",
             message:
@@ -54,7 +56,7 @@ export default function useAddRobots({ blocked }: { blocked: boolean }) {
           // the menu item or empty-state button that started it.
           focusTargetRef.current = addButtonRef.current;
         },
-        onError: (error) => {
+        (error: Error) => {
           notifications.show({
             severity: "error",
             message: isRequestTimeout(error)
@@ -64,8 +66,7 @@ export default function useAddRobots({ blocked }: { blocked: boolean }) {
                 : "Unable to add robots. Please try again.",
           });
         },
-      },
-    );
+      );
   }
 
   return { addRobots, adding: createRobots.isPending, addButtonRef };

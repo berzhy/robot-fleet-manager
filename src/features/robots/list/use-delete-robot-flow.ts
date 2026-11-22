@@ -82,21 +82,24 @@ export default function useDeleteRobotFlow({
       );
     }
 
+    // Promises rather than per-call mutate callbacks, which are dropped if the
+    // list unmounts, so the outcome is still reported after navigating away.
     if (target.kind === "robot") {
-      deleteRobot.mutate(target.id, {
-        onSuccess: (result) =>
-          handleDeleted(
-            result === "already-removed"
-              ? `“${target.name}” was already removed.`
-              : `“${target.name}” deleted.`,
-          ),
-        onError: handleError,
-      });
+      deleteRobot
+        .mutateAsync(target.id)
+        .then(
+          (result) =>
+            handleDeleted(
+              result === "already-removed"
+                ? `“${target.name}” was already removed.`
+                : `“${target.name}” deleted.`,
+            ),
+          handleError,
+        );
     } else {
-      deleteAllRobots.mutate(undefined, {
-        onSuccess: () => handleDeleted("All robots deleted."),
-        onError: handleError,
-      });
+      deleteAllRobots
+        .mutateAsync()
+        .then(() => handleDeleted("All robots deleted."), handleError);
     }
   }
 
