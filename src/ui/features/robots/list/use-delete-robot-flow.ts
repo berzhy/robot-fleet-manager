@@ -6,18 +6,14 @@ import { isRequestTimeout } from "../api/robot-api";
 import { useDeleteAllRobots, useDeleteRobot } from "../api/robot-mutations";
 
 import type DeleteRobotDialog from "./delete-robot-dialog";
+import { focusSearchField } from "./filters/robot-search-field";
 import type { DeleteTarget } from "./delete-robot-dialog";
 
 /**
  * Confirm, delete, report. The dialog owns its error so it stays next to the
  * buttons that retry; success goes to the app notification.
  */
-export default function useDeleteRobotFlow({
-  focusFallback,
-}: {
-  /** Where focus goes when the button that opened the dialog is gone. */
-  focusFallback: () => void;
-}) {
+export default function useDeleteRobotFlow() {
   const deleteRobot = useDeleteRobot();
   const deleteAllRobots = useDeleteAllRobots();
   const notifications = useNotifications();
@@ -102,7 +98,8 @@ export default function useDeleteRobotFlow({
     if (trigger?.isConnected && !trigger.disabled) {
       trigger.focus();
     } else {
-      focusFallback();
+      // The button that opened the dialog went with its row.
+      focusSearchField();
     }
 
     setConfirmation(null);

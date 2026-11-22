@@ -112,7 +112,10 @@ test("quiet polling preserves DOM and focus, retains failed data, and recovers",
   expect(row.getByTestId("robot-battery")).toHaveTextContent("49%");
   expect(row.getByTestId("robot-link")).toBe(link);
   expect(link).toHaveFocus();
-  expect(screen.getByTestId("fleet-loading")).toBeEmptyDOMElement();
+  // The count did not change, so there is nothing new to read out.
+  expect(screen.getByTestId("fleet-loading")).toHaveTextContent(
+    "1 robot found.",
+  );
 
   await tick(robotListPollIntervalMs);
   expect(screen.getByTestId("fleet-refresh-warning")).toHaveRole("alert");

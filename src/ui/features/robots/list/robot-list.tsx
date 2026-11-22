@@ -6,37 +6,28 @@ import Divider from "@mui/material/Divider";
 import Stack from "@mui/material/Stack";
 import { visuallyHidden } from "@mui/utils";
 import Typography from "@mui/material/Typography";
-import { useRef } from "react";
 
 import { useRememberRobotListView } from "../robot-list-return";
 
 import AddRobotSplitButton from "./add-robot-split-button";
 import DeleteRobotDialog from "./delete-robot-dialog";
 import RobotListFilters from "./filters/robot-list-filters";
-import type { SearchFieldHandle } from "./filters/robot-search-field";
+import { focusSearchField } from "./filters/robot-search-field";
 import RobotStatusFilters from "./filters/robot-status-filters";
 import RobotTable from "./table/robot-table";
 import useAddRobots from "./use-add-robots";
 import useDeleteRobotFlow from "./use-delete-robot-flow";
-import useRobotList, { useRobotListAnnouncement } from "./use-robot-list";
+import useRobotList, { type RobotListResult } from "./use-robot-list";
 import useRobotListParams from "./robot-list-url";
 
 export default function RobotList() {
-  const searchFieldRef = useRef<SearchFieldHandle>(null);
-  function focusSearch() {
-    searchFieldRef.current?.focus();
-  }
-
   const params = useRobotListParams();
   const { filters } = params;
   useRememberRobotListView();
   const list = useRobotList(params);
   const { isLoading, refreshFailed } = list;
-  const announcement = useRobotListAnnouncement(filters, list);
 
-  const { requestDelete, dialog } = useDeleteRobotFlow({
-    focusFallback: focusSearch,
-  });
+  const { requestDelete, dialog } = useDeleteRobotFlow();
   const { addRobots, adding, addButtonRef } = useAddRobots();
 
   return (
@@ -68,7 +59,7 @@ export default function RobotList() {
         aria-atomic="true"
         sx={visuallyHidden}
       >
-        {isLoading ? "Loading robots" : announcement}
+        {loadingStatus(list)}
       </Box>
       {refreshFailed && (
         <Alert data-testid="fleet-refresh-warning" severity="warning">
@@ -91,28 +82,33 @@ export default function RobotList() {
             <RobotListFilters
               filters={filters}
               available={list.data?.filterOptions}
-              searchFieldRef={searchFieldRef}
             />
           </Stack>
+        }
+        onDelete={({ id, name }, trigger) =>
+          requestDelete({ kind: "robot", id, name }, trigger)
         }
         onFocusSearch={() => {
           // The delete dialog keeps focus while it is open.
           if (!dialog) {
-            focusSearch();
+            focusSearchField();
           }
         }}
-        onFiltersCleared={() => {
-          // Text the debounce has not applied yet would bring a search back.
-          searchFieldRef.current?.discardDraft();
-          focusSearch();
-        }}
-        onDelete={({ id, name }, trigger) =>
-          requestDelete({ kind: "robot", id, name }, trigger)
-        }
-        onAdd={(trigger) => addRobots(trigger)}
+        onAdd={() => addRobots()}
         adding={adding}
       />
       {dialog && <DeleteRobotDialog {...dialog} />}
     </Stack>
   );
+}
+
+// Read out when it changes: after loading, or when a poll changes the count.
+function loadingStatus({ data, isLoading }: RobotListResult) {
+  if (isLoading) {
+    return "Loading robots";
+  }
+  if (!data) {
+    return "";
+  }
+  return `${data.total} ${data.total === 1 ? "robot" : "robots"} found.`;
 }

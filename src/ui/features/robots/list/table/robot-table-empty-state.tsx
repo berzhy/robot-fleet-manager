@@ -12,7 +12,7 @@ export default function RobotTableEmptyState({
   onAdd,
   adding,
 }: {
-  onAdd: (trigger: HTMLButtonElement) => void;
+  onAdd: () => void;
   adding: boolean;
 }) {
   return (
@@ -49,7 +49,7 @@ export default function RobotTableEmptyState({
         variant="text"
         startIcon={<AddIcon />}
         loading={adding}
-        onClick={(event) => onAdd(event.currentTarget)}
+        onClick={onAdd}
       >
         Add robot
       </Button>

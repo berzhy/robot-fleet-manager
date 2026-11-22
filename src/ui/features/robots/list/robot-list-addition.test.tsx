@@ -331,7 +331,9 @@ test("batch failure preserves rows and resumes fleet updates", async () => {
     within(screen.getByTestId("robot-row-new")).getByTestId("robot-link"),
   ).toBeInTheDocument();
   expect(fetcher).toHaveBeenCalledTimes(3);
-  await waitFor(() => expect(more).toHaveFocus());
+  await waitFor(() =>
+    expect(screen.getByTestId("fleet-add-robot")).toHaveFocus(),
+  );
 });
 
 test("addition outside the selected view retains filters and reports success without revealing the robot", async () => {

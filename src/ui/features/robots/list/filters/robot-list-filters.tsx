@@ -1,6 +1,4 @@
 import Stack from "@mui/material/Stack";
-import type { RefObject } from "react";
-
 import type { RobotFilters } from "@/common/schemas";
 import type { FilterOptions } from "@/common/types";
 
@@ -10,19 +8,17 @@ import AppliedFilterChips from "./applied-filter-chips";
 import { toolbarFilterFields } from "./filter-fields";
 import FilterSelect from "./filter-select";
 import MoreFiltersButton from "./more-filters-button";
-import RobotSearchField, { type SearchFieldHandle } from "./robot-search-field";
+import RobotSearchField from "./robot-search-field";
 
 const toolbarFieldSx = { minWidth: 120, maxWidth: 260, flex: "1 1 150px" };
 
 export default function RobotListFilters({
   filters,
   available,
-  searchFieldRef,
 }: {
   filters: RobotFilters;
   /** Undefined until the first page arrives. */
   available: FilterOptions | undefined;
-  searchFieldRef: RefObject<SearchFieldHandle | null>;
 }) {
   return (
     <Stack spacing={3}>
@@ -36,7 +32,7 @@ export default function RobotListFilters({
           justifyContent: "space-between",
         }}
       >
-        <RobotSearchField search={filters.search} ref={searchFieldRef} />
+        <RobotSearchField search={filters.search} />
         <Stack
           direction="row"
           spacing={2}
@@ -62,10 +58,7 @@ export default function RobotListFilters({
           <MoreFiltersButton filters={filters} available={available} />
         </Stack>
       </Stack>
-      <AppliedFilterChips
-        filters={filters}
-        onDiscardSearchDraft={() => searchFieldRef.current?.discardDraft()}
-      />
+      <AppliedFilterChips filters={filters} />
     </Stack>
   );
 }

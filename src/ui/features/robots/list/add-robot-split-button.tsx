@@ -19,7 +19,7 @@ export default function AddRobotSplitButton({
   buttonRef: Ref<HTMLButtonElement>;
   loading: boolean;
   onDeleteAll: (trigger: HTMLButtonElement) => void;
-  onAdd: (trigger: HTMLButtonElement, count: 1 | 10 | 100) => void;
+  onAdd: (count: 1 | 10 | 100) => void;
 }) {
   const [anchor, setAnchor] = useState<HTMLButtonElement | null>(null);
   const id = useId();
@@ -32,7 +32,7 @@ export default function AddRobotSplitButton({
           ref={buttonRef}
           startIcon={<AddIcon />}
           loading={loading}
-          onClick={(event) => onAdd(event.currentTarget, 1)}
+          onClick={() => onAdd(1)}
         >
           Add robot
         </Button>
@@ -62,9 +62,7 @@ export default function AddRobotSplitButton({
             key={count}
             data-testid={`fleet-add-robots-${count}`}
             onClick={() => {
-              if (anchor) {
-                onAdd(anchor, count);
-              }
+              onAdd(count);
               setAnchor(null);
             }}
           >

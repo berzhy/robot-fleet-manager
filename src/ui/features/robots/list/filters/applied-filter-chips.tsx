@@ -10,15 +10,8 @@ import { filterControlId, getFilterChips } from "./filter-fields";
 
 export default function AppliedFilterChips({
   filters,
-  onDiscardSearchDraft,
 }: {
   filters: RobotFilters;
-  /**
-   * Drops search text the debounce has not applied yet. The URL reaches the
-   * search box a moment later, so without this the pending text could be
-   * applied again and bring the chip back.
-   */
-  onDiscardSearchDraft: () => void;
 }) {
   const chips = getFilterChips(filters);
 
@@ -32,9 +25,6 @@ export default function AppliedFilterChips({
     const nextChip = chips[index + 1];
 
     setRobotListFilters({ [key]: key === "view" ? "all" : undefined });
-    if (key === "search") {
-      onDiscardSearchDraft();
-    }
     focusById(nextChip ? chipId(nextChip.key) : filterControlId(key));
   }
 
@@ -68,7 +58,6 @@ export default function AppliedFilterChips({
         size="small"
         onClick={() => {
           clearRobotListFilters();
-          onDiscardSearchDraft();
           // This button goes away with the chips.
           focusById(filterControlId("view"));
         }}

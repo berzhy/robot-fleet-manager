@@ -62,7 +62,6 @@ export default function RobotTable({
   list,
   toolbar,
   onFocusSearch,
-  onFiltersCleared,
   onAdd,
   adding,
   onDelete,
@@ -70,10 +69,9 @@ export default function RobotTable({
   params: RobotListParams;
   list: RobotListResult;
   toolbar?: ReactNode;
+  /** A poll removed the row that had focus. */
   onFocusSearch: () => void;
-  /** The no-results view cleared the search or filters. */
-  onFiltersCleared: () => void;
-  onAdd: (trigger: HTMLButtonElement) => void;
+  onAdd: () => void;
   adding: boolean;
   onDelete: (robot: Robot, trigger: HTMLButtonElement) => void;
 }) {
@@ -211,10 +209,7 @@ export default function RobotTable({
         {data?.total === 0 &&
           !isLoading &&
           (data.fleetTotal > 0 ? (
-            <RobotTableNoResultsState
-              filters={filters}
-              onCleared={onFiltersCleared}
-            />
+            <RobotTableNoResultsState filters={filters} />
           ) : (
             <RobotTableEmptyState onAdd={onAdd} adding={adding} />
           ))}

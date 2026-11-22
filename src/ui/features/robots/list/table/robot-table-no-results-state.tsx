@@ -4,28 +4,28 @@ import Typography from "@mui/material/Typography";
 
 import type { RobotFilters } from "@/common/schemas";
 
+import { focusSearchField } from "../filters/robot-search-field";
 import { clearRobotListFilters, setRobotListFilters } from "../robot-list-url";
 
 export default function RobotTableNoResultsState({
   filters: { search, view, ...fields },
-  onCleared,
 }: {
   filters: RobotFilters;
-  onCleared: () => void;
 }) {
   // With other filters applied, the search alone may not be what empties the list.
   const otherFilters =
     view !== "all" ||
     Object.values(fields).some((value) => value !== undefined);
 
+  // The buttons go away with this view, so focus moves to the search box.
   function clearSearch() {
-    onCleared();
     setRobotListFilters({ search: undefined });
+    focusSearchField();
   }
 
   function clearFilters() {
-    onCleared();
     clearRobotListFilters();
+    focusSearchField();
   }
 
   return (

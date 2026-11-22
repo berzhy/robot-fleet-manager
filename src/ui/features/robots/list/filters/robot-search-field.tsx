@@ -3,15 +3,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import IconButton from "@mui/material/IconButton";
 import InputAdornment from "@mui/material/InputAdornment";
 import TextField from "@mui/material/TextField";
-import {
-  useEffect,
-  useEffectEvent,
-  useImperativeHandle,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type Ref,
-} from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 import { appliedSearch, setRobotListFilters } from "../robot-list-url";
 
@@ -19,19 +11,16 @@ import { searchFieldId } from "./filter-fields";
 
 const searchDebounceMs = 300;
 
-export type SearchFieldHandle = {
-  focus: () => void;
-  /** Drops typed text, including text the debounce has not applied yet. */
-  discardDraft: () => void;
-};
+/** For controls that go away once used, such as Clear filters. */
+export function focusSearchField() {
+  document.getElementById(searchFieldId)?.focus();
+}
 
 export default function RobotSearchField({
   search,
-  ref,
 }: {
   /** The search the URL applies. */
   search: string | undefined;
-  ref: Ref<SearchFieldHandle>;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -51,26 +40,7 @@ export default function RobotSearchField({
     }
   }
 
-  // Next keeps this page alive while hidden. Drop unsent text so it is not
-  // applied on return; the box then reads the URL again.
-  useLayoutEffect(
-    () => () => {
-      setDraft("");
-      setUrlSearch(undefined);
-      setOwnSearch(undefined);
-    },
-    [],
-  );
-
   const [composing, setComposing] = useState(false);
-
-  useImperativeHandle(ref, () => ({
-    focus: () => inputRef.current?.focus(),
-    discardDraft: () => {
-      setDraft("");
-      setOwnSearch(undefined);
-    },
-  }));
 
   const applySearch = useEffectEvent((value: string) => {
     const applied = appliedSearch(value);

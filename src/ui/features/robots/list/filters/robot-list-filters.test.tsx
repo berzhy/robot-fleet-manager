@@ -5,7 +5,7 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
-import { useRef, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { afterEach, expect, test, vi } from "vitest";
 
 import type { RobotPage } from "@/common/types";
@@ -16,7 +16,6 @@ import { testRobotPage } from "@/ui/features/robots/test-robots";
 import useRobotListParams from "../robot-list-url";
 import useRobotList from "../use-robot-list";
 import RobotListFilters from "./robot-list-filters";
-import type { SearchFieldHandle } from "./robot-search-field";
 import RobotStatusFilters from "./robot-status-filters";
 
 const filterPage: RobotPage = testRobotPage([], {
@@ -62,14 +61,12 @@ function StatusFilters() {
 }
 
 function ListFilters() {
-  const searchFieldRef = useRef<SearchFieldHandle>(null);
   const params = useRobotListParams();
   const { data } = useRobotList(params);
   return (
     <RobotListFilters
       filters={params.filters}
       available={data?.filterOptions}
-      searchFieldRef={searchFieldRef}
     />
   );
 }
@@ -218,7 +215,7 @@ test("removing the only chip, a search, returns focus to the search box", async 
   expect(screen.getByRole("textbox", { name: "Search robots" })).toHaveFocus();
 });
 
-test("chip removal and Clear filters cancel pending search", async () => {
+test("removing the search chip also drops text typed since", async () => {
   vi.useFakeTimers();
   renderFilters(<ListFilters />, "?site=Munich");
   const field = screen.getByRole("textbox", { name: "Search robots" });
@@ -240,17 +237,6 @@ test("chip removal and Clear filters cancel pending search", async () => {
   expect(field).toHaveValue("");
   expect(screen.getByTestId("fleet-chip-site")).toHaveFocus();
   expect(screen.queryByTestId("fleet-chip-search")).not.toBeInTheDocument();
-
-  fireEvent.change(field, { target: { value: "Robot" } });
-
-  fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
-  await act(async () => {
-    await vi.advanceTimersByTimeAsync(500);
-  });
-
-  expect(field).toHaveValue("");
-  expect(screen.queryByTestId("fleet-chip-search")).not.toBeInTheDocument();
-  expect(screen.queryByText("Location: Munich")).not.toBeInTheDocument();
 });
 
 test("more filters opens a named dialog that applies each selection and stays open", async () => {

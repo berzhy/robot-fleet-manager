@@ -13,43 +13,35 @@ export default function useAddRobots() {
   const notifications = useNotifications();
 
   const addButtonRef = useRef<HTMLButtonElement>(null);
-  const focusTargetRef = useRef<HTMLButtonElement | null>(null);
+  const isReturningFocus = useRef(false);
 
   // The add buttons are disabled while the write and the refresh run, which
-  // drops focus; return it once they are enabled again.
+  // drops focus; it goes to the main add button once they are enabled again.
   useEffect(() => {
-    const target = focusTargetRef.current;
-    if (!target || createRobots.isPending) {
-      return;
+    if (isReturningFocus.current && !createRobots.isPending) {
+      isReturningFocus.current = false;
+      addButtonRef.current?.focus();
     }
-
-    // A list refresh can remove the recorded trigger before focus returns.
-    focusTargetRef.current = null;
-    (target.isConnected ? target : addButtonRef.current)?.focus();
   }, [createRobots.isPending]);
 
-  function addRobots(trigger: HTMLButtonElement, count: 1 | 10 | 100 = 1) {
+  function addRobots(count: 1 | 10 | 100 = 1) {
     notifications.clear();
-    focusTargetRef.current = trigger;
+    isReturningFocus.current = true;
 
     // The promise settles even after the list unmounts, unlike per-call mutate
     // callbacks, so the outcome is still reported after navigating away.
     createRobots
       .mutateAsync(Array.from({ length: count }, () => generateRobotInput()))
       .then(
-        (robots) => {
+        (robots) =>
           notifications.show({
             severity: "success",
             message:
               count === 1
                 ? `“${robots[0].name}” added.`
                 : `${robots.length} robots added.`,
-          });
-          // The list changes, so focus goes to the main add button rather than
-          // the menu item or empty-state button that started it.
-          focusTargetRef.current = addButtonRef.current;
-        },
-        (error: Error) => {
+          }),
+        (error: Error) =>
           notifications.show({
             severity: "error",
             message: isRequestTimeout(error)
@@ -57,8 +49,7 @@ export default function useAddRobots() {
               : count === 1
                 ? "Unable to add robot. Please try again."
                 : "Unable to add robots. Please try again.",
-          });
-        },
+          }),
       );
   }
 

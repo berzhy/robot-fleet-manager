@@ -6,7 +6,7 @@ import type { RobotPage } from "@/common/types";
 
 import { getRobots } from "../api/robot-api";
 import { testRobotPage } from "@/ui/features/robots/test-robots";
-import useRobotList, { useRobotListAnnouncement } from "./use-robot-list";
+import useRobotList from "./use-robot-list";
 import useRobotListParams, {
   clearRobotListFilters,
   setRobotListFilters,
@@ -22,7 +22,6 @@ function useListUnderTest() {
   return {
     ...params,
     ...list,
-    announcement: useRobotListAnnouncement(params.filters, list),
   };
 }
 
@@ -154,7 +153,6 @@ test("filter changes cancel old scope requests and reset page while retaining pa
     await Promise.resolve();
   });
   expect(result.current.data?.total).toBe(30);
-  expect(result.current.announcement).toBe("30 robots found.");
 });
 
 test("zero matching results correct a later page and preserve filters", async () => {
@@ -185,25 +183,6 @@ test("zero matching results correct a later page and preserve filters", async ()
     },
     expect.any(AbortSignal),
   );
-});
-
-test("announces explicit search results but keeps background refreshes quiet", async () => {
-  const response = testRobotPage([], { total: 2 });
-  vi.mocked(getRobots).mockResolvedValue(response);
-  const { result } = renderHook(() => useListUnderTest());
-  await waitFor(() => expect(result.current.isLoading).toBe(false));
-  expect(result.current.announcement).toBe("");
-
-  act(() => setRobotListFilters({ view: "all", search: "Boston" }));
-  await waitFor(() =>
-    expect(result.current.announcement).toBe("2 robots found."),
-  );
-
-  vi.mocked(getRobots).mockResolvedValue({ ...response, total: 1 });
-  act(() => result.current.refresh());
-  await waitFor(() => expect(result.current.data?.total).toBe(1));
-  expect(result.current.announcement).toBe("2 robots found.");
-  expect(result.current.filters.search).toBe("Boston");
 });
 
 test("an uncached view keeps the previous result on screen until its own arrives", async () => {
@@ -346,28 +325,6 @@ test("an out-of-range page in the URL is corrected to the last page", async () =
   await waitFor(() => expect(window.location.search).toBe("?page=1"));
   await waitFor(() => expect(result.current.isLoading).toBe(false));
   expect(result.current.page).toBe(1);
-});
-
-test("switching filters and back before results load still announces", async () => {
-  let finishOffline!: (page: RobotPage) => void;
-  vi.mocked(getRobots).mockImplementation(({ filters }) =>
-    filters.view === "offline"
-      ? new Promise((resolve) => {
-          finishOffline = resolve;
-        })
-      : Promise.resolve(emptyPage(3)),
-  );
-  const { result } = renderHook(() => useListUnderTest());
-  await waitFor(() => expect(result.current.isLoading).toBe(false));
-  expect(result.current.announcement).toBe("");
-
-  act(() => setRobotListFilters({ view: "offline" }));
-  act(() => setRobotListFilters({ view: "all" }));
-
-  await waitFor(() =>
-    expect(result.current.announcement).toBe("3 robots found."),
-  );
-  finishOffline(emptyPage());
 });
 
 test("a filter change keeps query parameters and the fragment the list does not own", async () => {

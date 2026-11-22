@@ -1,12 +1,7 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
-import type { RobotFilters } from "@/common/schemas";
-
-import {
-  robotFilterSearchParams,
-  type RobotListParams,
-} from "../api/robot-list-params";
+import type { RobotListParams } from "../api/robot-list-params";
 import { robotListOptions } from "../api/robot-queries";
 
 import { setRobotListPage } from "./robot-list-url";
@@ -47,34 +42,6 @@ export default function useRobotList(params: RobotListParams) {
 }
 
 export type RobotListResult = ReturnType<typeof useRobotList>;
-
-// Screen readers hear the count after a filter change, not after every poll.
-export function useRobotListAnnouncement(
-  filters: RobotFilters,
-  { data, isLoading }: Pick<RobotListResult, "data" | "isLoading">,
-) {
-  const filtersKey = robotFilterSearchParams(filters).toString();
-
-  const [announced, setAnnounced] = useState({
-    filtersKey,
-    text: "",
-    isWaiting: false,
-  });
-
-  if (announced.filtersKey !== filtersKey) {
-    // Clear at once, so the same count is announced again.
-    setAnnounced({ filtersKey, text: "", isWaiting: true });
-  } else if (announced.isWaiting && data && !isLoading) {
-    const robots = data.total === 1 ? "robot" : "robots";
-    setAnnounced({
-      filtersKey,
-      text: `${data.total} ${robots} found.`,
-      isWaiting: false,
-    });
-  }
-
-  return announced.text;
-}
 
 function lastRobotPage(total: number, size: number) {
   return Math.max(0, Math.ceil(total / size) - 1);

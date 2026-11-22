@@ -689,7 +689,7 @@ test("the URL keeps the list view across shared links, reloads and Back", async 
   expect(listResponses).not.toContain(400);
 });
 
-test("the back link returns to the applied search, not to unapplied text", async ({
+test("the back link returns to the applied search", async ({
   page,
   request,
 }) => {
@@ -703,17 +703,6 @@ test("the back link returns to the applied search, not to unapplied text", async
   await backLink.click();
   await expect(page).toHaveURL("/robots?search=Filter");
   await expect(search).toHaveValue("Filter");
-
-  // Text typed but not yet applied is not applied after returning.
-  await page.getByRole("button", { name: "Clear search" }).click();
-  await expect(page).toHaveURL("/robots");
-  await search.fill("Zed");
-  await page.getByRole("link", { name: robot.name }).click();
-  await backLink.click();
-  await expect(search).toHaveValue("");
-  await page.waitForTimeout(500);
-  await expect(page).toHaveURL("/robots");
-  await expect(page.getByRole("link", { name: robot.name })).toBeVisible();
 });
 
 test("a typed search survives opening a robot and going Back", async ({

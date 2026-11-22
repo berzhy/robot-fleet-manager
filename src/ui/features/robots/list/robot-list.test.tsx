@@ -5,7 +5,6 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
-import { Activity } from "react";
 import { afterEach, expect, test, vi } from "vitest";
 
 import { render } from "@/ui/test-render";
@@ -102,32 +101,6 @@ test.each(["Clear search", "Clear filters"])(
     expect(search).toHaveFocus();
   },
 );
-
-test("Clear filters in the no-results view drops search text not yet applied", async () => {
-  vi.stubGlobal(
-    "fetch",
-    vi.fn((url: string) => {
-      const { searchParams } = new URL(url, "http://localhost");
-      const result = searchParams.has("view")
-        ? testRobotPage([], { fleetTotal: 1 })
-        : page([robot]);
-      return Promise.resolve(Response.json(result));
-    }),
-  );
-  window.history.replaceState(null, "", "/robots?view=offline");
-  render(<RobotList />);
-  const noResults = await screen.findByTestId("fleet-no-results");
-
-  const search = screen.getByRole("textbox", { name: "Search robots" });
-  fireEvent.change(search, { target: { value: "Atlas" } });
-  fireEvent.click(
-    within(noResults).getByRole("button", { name: "Clear filters" }),
-  );
-  await waitPastSearchDebounce();
-
-  expect(search).toHaveValue("");
-  expect(window.location.search).toBe("");
-});
 
 test("requests pages and keeps the pager usable while loading", async () => {
   const rows = Array.from({ length: 10 }, (_, i) =>
@@ -305,39 +278,6 @@ test("the search box follows a search change from outside", async () => {
 
   expect(box).toHaveValue("");
   await waitPastSearchDebounce();
-  expect(window.location.search).toBe("");
-});
-
-test("unsent search text is dropped while the list is hidden", async () => {
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(() => Promise.resolve(Response.json(page([robot])))),
-  );
-  const { rerender } = render(
-    <Activity mode="visible">
-      <RobotList />
-    </Activity>,
-  );
-  fireEvent.change(screen.getByRole("textbox", { name: "Search robots" }), {
-    target: { value: "Zed" },
-  });
-
-  // Leave before the debounce applies it, then come back.
-  rerender(
-    <Activity mode="hidden">
-      <RobotList />
-    </Activity>,
-  );
-  rerender(
-    <Activity mode="visible">
-      <RobotList />
-    </Activity>,
-  );
-  await waitPastSearchDebounce();
-
-  expect(screen.getByRole("textbox", { name: "Search robots" })).toHaveValue(
-    "",
-  );
   expect(window.location.search).toBe("");
 });
 
