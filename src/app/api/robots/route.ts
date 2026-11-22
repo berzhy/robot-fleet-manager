@@ -11,11 +11,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  await io();
   return handlers.create(request);
 }
 
-export async function DELETE() {
-  await io();
+export function DELETE() {
   return handlers.removeAll();
 }
