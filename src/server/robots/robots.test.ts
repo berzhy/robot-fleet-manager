@@ -392,11 +392,10 @@ test("fresh schema rejects missing and unsupported integrations outside the API"
 });
 
 test("actions validate current state, persist latest intent, and stay queued until applied", async () => {
-  const { requestRobotAction } = await import("./robot-actions");
+  const api = robotHandlers(() => db);
   const robot = createRobot(db, input);
   const action = (value: unknown, id = robot.id) =>
-    requestRobotAction(
-      db,
+    api.requestAction(
       id,
       new Request("http://local", {
         method: "POST",
@@ -455,7 +454,7 @@ test("actions validate current state, persist latest intent, and stay queued unt
 test.each(robotProblemCodes)(
   "Retry for %s reissues work with a new revision",
   async (problemCode) => {
-    const { requestRobotAction } = await import("./robot-actions");
+    const api = robotHandlers(() => db);
     const robot = createRobot(db, input);
     db.insert(latestTelemetry)
       .values({
@@ -469,8 +468,7 @@ test.each(robotProblemCodes)(
       })
       .run();
 
-    const response = await requestRobotAction(
-      db,
+    const response = await api.requestAction(
       robot.id,
       new Request("http://local", {
         method: "POST",
@@ -489,7 +487,7 @@ test.each(robotProblemCodes)(
 );
 
 test("action persistence failures roll back the target and return a generic error", async () => {
-  const { requestRobotAction } = await import("./robot-actions");
+  const api = robotHandlers(() => db);
   const robot = createRobot(db, input);
   db.insert(latestTelemetry)
     .values({
@@ -506,8 +504,7 @@ test("action persistence failures roll back the target and return a generic erro
   );
   vi.spyOn(console, "error").mockImplementation(() => {});
 
-  const response = await requestRobotAction(
-    db,
+  const response = await api.requestAction(
     robot.id,
     new Request("http://local", {
       method: "POST",
@@ -860,7 +857,7 @@ test.each(
 )(
   "Start activity from %s requires a known battery above 20%% (%s)",
   async (activity, batteryPercent) => {
-    const { requestRobotAction } = await import("./robot-actions");
+    const api = robotHandlers(() => db);
     const robot = createRobot(db, input);
     db.insert(latestTelemetry)
       .values({
@@ -873,8 +870,7 @@ test.each(
       })
       .run();
 
-    const response = await requestRobotAction(
-      db,
+    const response = await api.requestAction(
       robot.id,
       new Request("http://local", {
         method: "POST",

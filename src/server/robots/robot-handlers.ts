@@ -5,6 +5,7 @@ import { robotFiltersSchema } from "@/modules/robots/robot-filters";
 import {
   createRobotSchema,
   createRobotBatchSchema,
+  robotActionRequestSchema,
   robotPageSchema,
   robotPageSizeSchema,
 } from "@/modules/robots/robot-validation";
@@ -24,16 +25,15 @@ import {
 } from "./robots";
 
 export function robotHandlers(database: () => FleetDatabase) {
-  function safely(operation: () => Response) {
+  function safely(
+    operation: () => Response,
+    failureMessage = "Unable to complete robot request.",
+  ) {
     try {
       return operation();
     } catch (reason) {
       console.error("Robot API failed", reason);
-      return errorResponse(
-        500,
-        "INTERNAL_ERROR",
-        "Unable to complete robot request.",
-      );
+      return errorResponse(500, "INTERNAL_ERROR", failureMessage);
     }
   }
 
@@ -150,9 +150,30 @@ export function robotHandlers(database: () => FleetDatabase) {
       });
     },
 
-    // Not wrapped in safely(): it reports its own failure message.
-    requestAction(id: string, request: Request) {
-      return requestRobotAction(database(), id, request);
+    async requestAction(id: string, request: Request) {
+      let body: unknown;
+      try {
+        body = await request.json();
+      } catch {
+        return errorResponse(400, "INVALID_INPUT", "Invalid JSON body.");
+      }
+
+      const input = robotActionRequestSchema.safeParse(body);
+      if (!input.success) {
+        return errorResponse(400, "INVALID_INPUT", "Invalid robot action.");
+      }
+
+      return safely(() => {
+        const result = requestRobotAction(database(), id, input.data.action);
+        switch (result.outcome) {
+          case "requested":
+            return new Response(null, { status: 202 });
+          case "not-found":
+            return errorResponse(404, "NOT_FOUND", "Robot not found.");
+          case "unavailable":
+            return errorResponse(409, "ACTION_UNAVAILABLE", result.reason);
+        }
+      }, "Unable to request robot action.");
     },
 
     remove(id: string) {

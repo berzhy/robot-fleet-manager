@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { robotPageSizes, robotTypes, integrationTypes } from "./robot";
+import { robotActions } from "./robot-actions";
 
 const label = z.string().trim().min(1).max(100);
 export const createRobotSchema = z.strictObject({
@@ -30,4 +31,8 @@ export const robotPageSizeSchema = z
 
 export const createRobotBatchSchema = z.strictObject({
   robots: z.array(createRobotSchema).min(1).max(100),
+});
+
+export const robotActionRequestSchema = z.strictObject({
+  action: z.enum(robotActions),
 });

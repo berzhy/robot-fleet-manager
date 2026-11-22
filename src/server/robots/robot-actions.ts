@@ -1,62 +1,43 @@
 import "server-only";
 import { eq, sql } from "drizzle-orm";
-import { z } from "zod";
 import {
   actionControlTargets,
   actionUnavailable,
-  robotActions,
+  type RobotAction,
 } from "@/modules/robots/robot-actions";
 import type { FleetDatabase } from "../db/database";
 import { robots } from "../db/schema";
-import { errorResponse } from "../http/responses";
 import { getRobot } from "./robots";
 
-const schema = z.strictObject({ action: z.enum(robotActions) });
+type RobotActionRequest =
+  | { outcome: "requested" }
+  | { outcome: "not-found" }
+  | { outcome: "unavailable"; reason: string };
 
-export async function requestRobotAction(
+/** Records the action as the robot's new control target, if its state allows it. */
+export function requestRobotAction(
   db: FleetDatabase,
   id: string,
-  request: Request,
-) {
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return errorResponse(400, "INVALID_INPUT", "Invalid JSON body.");
-  }
+  action: RobotAction,
+): RobotActionRequest {
+  return db.transaction((tx) => {
+    const robot = getRobot(tx, id);
+    if (!robot) {
+      return { outcome: "not-found" };
+    }
 
-  const parsed = schema.safeParse(body);
-  if (!parsed.success) {
-    return errorResponse(400, "INVALID_INPUT", "Invalid robot action.");
-  }
+    const reason = actionUnavailable(robot, action, Date.now());
+    if (reason) {
+      return { outcome: "unavailable", reason };
+    }
 
-  try {
-    return db.transaction((tx) => {
-      const robot = getRobot(tx, id);
-      if (!robot) {
-        return errorResponse(404, "NOT_FOUND", "Robot not found.");
-      }
-
-      const reason = actionUnavailable(robot, parsed.data.action, Date.now());
-      if (reason) {
-        return errorResponse(409, "ACTION_UNAVAILABLE", reason);
-      }
-
-      tx.update(robots)
-        .set({
-          controlTarget: actionControlTargets[parsed.data.action],
-          controlRevision: sql`${robots.controlRevision} + 1`,
-        })
-        .where(eq(robots.id, id))
-        .run();
-      return new Response(null, { status: 202 });
-    });
-  } catch (reason) {
-    console.error("Robot action failed", reason);
-    return errorResponse(
-      500,
-      "INTERNAL_ERROR",
-      "Unable to request robot action.",
-    );
-  }
+    tx.update(robots)
+      .set({
+        controlTarget: actionControlTargets[action],
+        controlRevision: sql`${robots.controlRevision} + 1`,
+      })
+      .where(eq(robots.id, id))
+      .run();
+    return { outcome: "requested" };
+  });
 }
