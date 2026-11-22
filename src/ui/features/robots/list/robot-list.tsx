@@ -18,10 +18,7 @@ import RobotStatusFilters from "./filters/robot-status-filters";
 import RobotTable from "./table/robot-table";
 import useAddRobots from "./use-add-robots";
 import useDeleteRobotFlow from "./use-delete-robot-flow";
-import useRobotList, {
-  useRobotListAnnouncement,
-  useRobotListPageCorrection,
-} from "./use-robot-list";
+import useRobotList, { useRobotListAnnouncement } from "./use-robot-list";
 import useRobotListParams from "./robot-list-url";
 
 export default function RobotList() {
@@ -30,12 +27,12 @@ export default function RobotList() {
     searchFieldRef.current?.focus();
   }
 
-  const { filters } = useRobotListParams();
+  const params = useRobotListParams();
+  const { filters } = params;
   useRememberRobotListView();
-  const list = useRobotList();
+  const list = useRobotList(params);
   const { isLoading, refreshFailed } = list;
   const announcement = useRobotListAnnouncement(filters, list);
-  useRobotListPageCorrection(list);
 
   const { requestDelete, dialog } = useDeleteRobotFlow({
     focusFallback: focusSearch,
@@ -80,11 +77,22 @@ export default function RobotList() {
         </Alert>
       )}
       <RobotTable
+        params={params}
+        list={list}
         toolbar={
           <Stack spacing={2}>
-            <RobotStatusFilters />
+            <RobotStatusFilters
+              view={filters.view}
+              summary={list.data?.summary}
+              isLoading={isLoading}
+              loadFailed={list.loadFailed}
+            />
             <Divider />
-            <RobotListFilters searchFieldRef={searchFieldRef} />
+            <RobotListFilters
+              filters={filters}
+              available={list.data?.filterOptions}
+              searchFieldRef={searchFieldRef}
+            />
           </Stack>
         }
         onFocusSearch={() => {

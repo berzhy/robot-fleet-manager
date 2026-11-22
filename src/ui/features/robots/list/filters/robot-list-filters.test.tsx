@@ -13,6 +13,8 @@ import { render } from "@/ui/test-render";
 
 import { testRobotPage } from "@/ui/features/robots/test-robots";
 
+import useRobotListParams from "../robot-list-url";
+import useRobotList from "../use-robot-list";
 import RobotListFilters from "./robot-list-filters";
 import type { SearchFieldHandle } from "./robot-search-field";
 import RobotStatusFilters from "./robot-status-filters";
@@ -45,16 +47,37 @@ async function filterOptionsLoaded() {
   );
 }
 
+// The filters as the list screen feeds them: the URL's view and its page of robots.
+function StatusFilters() {
+  const params = useRobotListParams();
+  const { data, isLoading, loadFailed } = useRobotList(params);
+  return (
+    <RobotStatusFilters
+      view={params.filters.view}
+      summary={data?.summary}
+      isLoading={isLoading}
+      loadFailed={loadFailed}
+    />
+  );
+}
+
 function ListFilters() {
   const searchFieldRef = useRef<SearchFieldHandle>(null);
-
-  return <RobotListFilters searchFieldRef={searchFieldRef} />;
+  const params = useRobotListParams();
+  const { data } = useRobotList(params);
+  return (
+    <RobotListFilters
+      filters={params.filters}
+      available={data?.filterOptions}
+      searchFieldRef={searchFieldRef}
+    />
+  );
 }
 
 test("dropdowns, tiles and removable chips share one selection", async () => {
   renderFilters(
     <>
-      <RobotStatusFilters />
+      <StatusFilters />
       <ListFilters />
     </>,
   );
@@ -98,7 +121,7 @@ test("dropdowns, tiles and removable chips share one selection", async () => {
 });
 
 test("selecting the active tile does not restart its query", async () => {
-  const fetcher = renderFilters(<RobotStatusFilters />);
+  const fetcher = renderFilters(<StatusFilters />);
   await waitFor(() => expect(fetcher).toHaveBeenCalledOnce());
 
   fireEvent.click(screen.getByRole("button", { name: /All robots$/ }));

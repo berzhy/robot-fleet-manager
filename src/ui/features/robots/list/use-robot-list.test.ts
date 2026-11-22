@@ -6,10 +6,7 @@ import type { RobotPage } from "@/common/types";
 
 import { getRobots } from "../api/robot-api";
 import { testRobotPage } from "@/ui/features/robots/test-robots";
-import useRobotList, {
-  useRobotListAnnouncement,
-  useRobotListPageCorrection,
-} from "./use-robot-list";
+import useRobotList, { useRobotListAnnouncement } from "./use-robot-list";
 import useRobotListParams, {
   clearRobotListFilters,
   setRobotListFilters,
@@ -20,8 +17,7 @@ import useRobotListParams, {
 // The list hooks as RobotList composes them.
 function useListUnderTest() {
   const params = useRobotListParams();
-  const list = useRobotList();
-  useRobotListPageCorrection(list);
+  const list = useRobotList(params);
 
   return {
     ...params,

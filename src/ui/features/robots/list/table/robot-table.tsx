@@ -13,10 +13,10 @@ import { useLayoutEffect, useRef, type ReactNode } from "react";
 
 import type { Robot } from "@/common/types";
 
+import type { RobotListParams } from "../../api/robot-list-params";
 import { robotReading } from "../../robot-reading";
 
-import useRobotList from "../use-robot-list";
-import useRobotListParams from "../robot-list-url";
+import type { RobotListResult } from "../use-robot-list";
 
 import RobotTableEmptyState from "./robot-table-empty-state";
 import RobotTableErrorState from "./robot-table-error-state";
@@ -58,6 +58,8 @@ const tableMinWidthPx = columns.reduce(
 const rowHeightPx = 56;
 
 export default function RobotTable({
+  params,
+  list,
   toolbar,
   onFocusSearch,
   onFiltersCleared,
@@ -65,6 +67,8 @@ export default function RobotTable({
   adding,
   onDelete,
 }: {
+  params: RobotListParams;
+  list: RobotListResult;
   toolbar?: ReactNode;
   onFocusSearch: () => void;
   /** The no-results view cleared the search or filters. */
@@ -73,9 +77,8 @@ export default function RobotTable({
   adding: boolean;
   onDelete: (robot: Robot, trigger: HTMLButtonElement) => void;
 }) {
-  const { filters, pageSize } = useRobotListParams();
-  const { data, isLoading, loadFailed, refreshFailed, refresh } =
-    useRobotList();
+  const { filters, pageSize } = params;
+  const { data, isLoading, loadFailed, refreshFailed, refresh } = list;
 
   // Focus events from the portalled menu follow the React tree to its row.
   const focusedRowElement = useRef<HTMLTableRowElement | null>(null);
@@ -208,13 +211,16 @@ export default function RobotTable({
         {data?.total === 0 &&
           !isLoading &&
           (data.fleetTotal > 0 ? (
-            <RobotTableNoResultsState onCleared={onFiltersCleared} />
+            <RobotTableNoResultsState
+              filters={filters}
+              onCleared={onFiltersCleared}
+            />
           ) : (
             <RobotTableEmptyState onAdd={onAdd} adding={adding} />
           ))}
         {loadFailed && <RobotTableErrorState onRetry={refresh} />}
       </TableContainer>
-      <RobotTableFooter />
+      <RobotTableFooter params={params} list={list} />
     </Paper>
   );
 }

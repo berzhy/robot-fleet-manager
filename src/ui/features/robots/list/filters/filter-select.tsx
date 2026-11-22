@@ -20,7 +20,7 @@ export default function FilterSelect({
 }: {
   field: FilterField;
   value: string | undefined;
-  /** From the parent: a list query subscribed here would refetch on mount. */
+  /** Undefined until the first page arrives. */
   available: FilterOptions | undefined;
   /** `undefined` when the user picks the field's "all" option. */
   onChange: (value: string | undefined) => void;

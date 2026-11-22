@@ -13,10 +13,8 @@ import {
 import RobotDetails from "./details/robot-details";
 import useLiveRobot from "./details/use-live-robot";
 import RobotList from "./list/robot-list";
-import useRobotList, {
-  useRobotListPageCorrection,
-} from "./list/use-robot-list";
-import { setRobotListPage } from "./list/robot-list-url";
+import useRobotList from "./list/use-robot-list";
+import useRobotListParams, { setRobotListPage } from "./list/robot-list-url";
 import { testRobotPage, testRobot } from "@/ui/features/robots/test-robots";
 
 const reportedAt = "2026-01-01T00:00:00.000Z";
@@ -248,7 +246,7 @@ test("a stale in-flight poll cannot overwrite an explicit refresh", async () => 
       )
       .mockResolvedValueOnce(page(40)),
   );
-  const { result } = renderHook(() => useRobotList());
+  const { result } = renderHook(() => useRobotList(useRobotListParams()));
   await tick();
 
   await tick(robotListPollIntervalMs);
@@ -487,7 +485,7 @@ test("fleet and detail retain snapshots after a request timeout and recover on t
     evaluatedAt: Date.now(),
   };
   const { result } = renderHook(() => ({
-    fleet: useRobotList(),
+    fleet: useRobotList(useRobotListParams()),
     detail: useLiveRobot(context),
   }));
   await tick();
@@ -539,7 +537,7 @@ test("unmount cancels outstanding fleet and detail requests without restarting p
     evaluatedAt: Date.now(),
   };
   const { unmount } = renderHook(() => ({
-    fleet: useRobotList(),
+    fleet: useRobotList(useRobotListParams()),
     detail: useLiveRobot(context),
   }));
   expect(signals).toHaveLength(1);
@@ -786,11 +784,7 @@ test("page correction after a hidden fleet shrinks immediately verifies the dest
   });
   vi.stubGlobal("fetch", fetcher);
 
-  const { result } = renderHook(() => {
-    const list = useRobotList();
-    useRobotListPageCorrection(list);
-    return list;
-  });
+  const { result } = renderHook(() => useRobotList(useRobotListParams()));
   await tick();
   act(() => setRobotListPage(2));
   await tick();

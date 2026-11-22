@@ -16,9 +16,9 @@ import {
   offlineAfterMs,
 } from "@/common/constants";
 import type { RobotFilters } from "@/common/schemas";
+import type { RobotPage } from "@/common/types";
 
-import useRobotList from "../use-robot-list";
-import useRobotListParams, { setRobotListFilters } from "../robot-list-url";
+import { setRobotListFilters } from "../robot-list-url";
 
 import { fleetViewId, fleetViewLabels } from "./filter-fields";
 
@@ -52,11 +52,17 @@ const quietIconOpacity = 0.09;
 const alertIconOpacity = 0.28;
 const darkAlertIconOpacity = 0.42;
 
-export default function RobotStatusFilters() {
-  const { filters } = useRobotListParams();
-  const { data, isLoading, loadFailed } = useRobotList();
-  const summary = data?.summary;
-
+export default function RobotStatusFilters({
+  view: selectedView,
+  summary,
+  isLoading,
+  loadFailed,
+}: {
+  view: RobotFilters["view"];
+  summary: RobotPage["summary"] | undefined;
+  isLoading: boolean;
+  loadFailed: boolean;
+}) {
   return (
     <Box
       role="group"
@@ -70,7 +76,7 @@ export default function RobotStatusFilters() {
       }}
     >
       {fleetViews.map((view) => {
-        const selected = filters.view === view;
+        const selected = selectedView === view;
         return (
           <Card key={view} elevation={tileElevation}>
             <Tooltip

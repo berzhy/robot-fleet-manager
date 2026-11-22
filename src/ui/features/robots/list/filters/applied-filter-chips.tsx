@@ -4,16 +4,15 @@ import Stack from "@mui/material/Stack";
 
 import type { RobotFilters } from "@/common/schemas";
 
-import useRobotListParams, {
-  clearRobotListFilters,
-  setRobotListFilters,
-} from "../robot-list-url";
+import { clearRobotListFilters, setRobotListFilters } from "../robot-list-url";
 
 import { filterControlId, getFilterChips } from "./filter-fields";
 
 export default function AppliedFilterChips({
+  filters,
   onDiscardSearchDraft,
 }: {
+  filters: RobotFilters;
   /**
    * Drops search text the debounce has not applied yet. The URL reaches the
    * search box a moment later, so without this the pending text could be
@@ -21,7 +20,6 @@ export default function AppliedFilterChips({
    */
   onDiscardSearchDraft: () => void;
 }) {
-  const { filters } = useRobotListParams();
   const chips = getFilterChips(filters);
 
   if (chips.length === 0) {

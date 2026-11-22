@@ -8,19 +8,21 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { useId, useState } from "react";
 
+import type { RobotFilters } from "@/common/schemas";
 import type { FilterOptions } from "@/common/types";
 
-import useRobotListParams, { setRobotListFilters } from "../robot-list-url";
+import { setRobotListFilters } from "../robot-list-url";
 
 import { moreFilterFields, moreFiltersButtonId } from "./filter-fields";
 import FilterSelect from "./filter-select";
 
 export default function MoreFiltersButton({
+  filters,
   available,
 }: {
+  filters: RobotFilters;
   available: FilterOptions | undefined;
 }) {
-  const { filters } = useRobotListParams();
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const popoverId = useId();
   const titleId = `${popoverId}-title`;

@@ -1,43 +1,39 @@
-import {
-  keepPreviousData,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 import type { RobotFilters } from "@/common/schemas";
 
-import { robotFilterSearchParams } from "../api/robot-list-params";
+import {
+  robotFilterSearchParams,
+  type RobotListParams,
+} from "../api/robot-list-params";
 import { robotListOptions } from "../api/robot-queries";
 
-import useRobotListParams, { setRobotListPage } from "./robot-list-url";
+import { setRobotListPage } from "./robot-list-url";
 
-// No local state or effects, so any part of the list can call it; React Query
-// shares one request between them. A component that mounts later, such as one
-// in a popover, refetches on mount, so it should get the data as props instead.
-export default function useRobotList() {
-  const client = useQueryClient();
-  const params = useRobotListParams();
-
-  const options = robotListOptions(params);
+/** The page of robots the URL asks for. The list screen calls it once and passes the result down. */
+export default function useRobotList(params: RobotListParams) {
   // While the next view loads, the previous view's result stays on screen, so
   // the counts, filter options, pager and rows stay in place.
-  const query = useQuery({ ...options, placeholderData: keepPreviousData });
+  const query = useQuery({
+    ...robotListOptions(params),
+    placeholderData: keepPreviousData,
+  });
 
   const { data } = query;
-  const page = Math.min(
-    params.page,
-    lastRobotPage(data?.total ?? 0, params.pageSize),
-  );
+  const lastPage = lastRobotPage(data?.total ?? 0, params.pageSize);
+  const page = Math.min(params.page, lastPage);
   const isOutOfRange = Boolean(
-    data &&
-    !query.isPlaceholderData &&
-    params.page > lastRobotPage(data.total, params.pageSize),
+    data && !query.isPlaceholderData && params.page > lastPage,
   );
 
-  function refresh() {
-    void client.invalidateQueries({ queryKey: options.queryKey, exact: true });
-  }
+  // Correcting the URL, not just the shown page, keeps polling and shared links
+  // on a page that exists.
+  useEffect(() => {
+    if (isOutOfRange) {
+      setRobotListPage(page);
+    }
+  }, [isOutOfRange, page]);
 
   return {
     data,
@@ -46,30 +42,16 @@ export default function useRobotList() {
     loadFailed: query.isLoadingError,
     refreshFailed: query.isRefetchError,
     page,
-    isOutOfRange,
-    refresh,
+    refresh: () => void query.refetch(),
   };
 }
 
-type RobotList = ReturnType<typeof useRobotList>;
-
-// Correcting the URL, not just the shown page, keeps polling and shared links
-// on a page that exists.
-export function useRobotListPageCorrection({
-  page,
-  isOutOfRange,
-}: Pick<RobotList, "page" | "isOutOfRange">) {
-  useEffect(() => {
-    if (isOutOfRange) {
-      setRobotListPage(page);
-    }
-  }, [isOutOfRange, page]);
-}
+export type RobotListResult = ReturnType<typeof useRobotList>;
 
 // Screen readers hear the count after a filter change, not after every poll.
 export function useRobotListAnnouncement(
   filters: RobotFilters,
-  { data, isLoading }: Pick<RobotList, "data" | "isLoading">,
+  { data, isLoading }: Pick<RobotListResult, "data" | "isLoading">,
 ) {
   const filtersKey = robotFilterSearchParams(filters).toString();
 

@@ -13,10 +13,7 @@ import {
   type Ref,
 } from "react";
 
-import useRobotListParams, {
-  appliedSearch,
-  setRobotListFilters,
-} from "../robot-list-url";
+import { appliedSearch, setRobotListFilters } from "../robot-list-url";
 
 import { searchFieldId } from "./filter-fields";
 
@@ -29,26 +26,28 @@ export type SearchFieldHandle = {
 };
 
 export default function RobotSearchField({
+  search,
   ref,
 }: {
+  /** The search the URL applies. */
+  search: string | undefined;
   ref: Ref<SearchFieldHandle>;
 }) {
-  const { filters } = useRobotListParams();
   const inputRef = useRef<HTMLInputElement>(null);
 
   // The draft is what the user types; the URL holds the applied search.
-  const [draft, setDraft] = useState(filters.search ?? "");
-  const [urlSearch, setUrlSearch] = useState(filters.search);
-  const [ownSearch, setOwnSearch] = useState(filters.search);
+  const [draft, setDraft] = useState(search ?? "");
+  const [urlSearch, setUrlSearch] = useState(search);
+  const [ownSearch, setOwnSearch] = useState(search);
 
   // Next re-renders URL readers a moment after replaceState, so the box may be
   // ahead of the URL. Only a URL search this box did not apply (a link or
   // Back) replaces what the user typed.
-  if (filters.search !== urlSearch) {
-    setUrlSearch(filters.search);
-    if (filters.search !== ownSearch) {
-      setOwnSearch(filters.search);
-      setDraft(filters.search ?? "");
+  if (search !== urlSearch) {
+    setUrlSearch(search);
+    if (search !== ownSearch) {
+      setOwnSearch(search);
+      setDraft(search ?? "");
     }
   }
 
