@@ -1,6 +1,6 @@
 "use client";
 
-// A client component: the brand artwork's sx follows the colour scheme
+// A client component: the illustration's sx follows the colour scheme
 // through a function, which a server component cannot pass to MUI.
 import Box from "@mui/material/Box";
 import Link from "@mui/material/Link";
@@ -10,7 +10,7 @@ import Image from "next/image";
 import NextLink from "next/link";
 
 import illustration from "@/assets/not-found.webp";
-import { brandArtworkSx } from "@/theme/brand-artwork";
+import { illustrationSx } from "@/theme/illustration";
 
 const illustrationWidthPx = 384;
 const illustrationHeightPx = 256;
@@ -42,7 +42,7 @@ export default function NotFoundContent({
         height={illustrationHeightPx}
         sx={[
           { width: illustrationWidthPx, maxWidth: "100%", height: "auto" },
-          ...brandArtworkSx,
+          illustrationSx,
         ]}
       />
       <Typography component="h1" variant="h4">

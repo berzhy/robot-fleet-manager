@@ -1,6 +1,6 @@
 "use client";
 
-// A client component: the brand artwork's sx follows the colour scheme
+// A client component: the illustration's sx follows the colour scheme
 // through a function, which a server component cannot pass to MUI.
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
@@ -8,7 +8,7 @@ import Typography from "@mui/material/Typography";
 import Image from "next/image";
 
 import illustration from "@/assets/work-in-progress.png";
-import { brandArtworkSx } from "@/theme/brand-artwork";
+import { illustrationSx } from "@/theme/illustration";
 
 export default function WorkInProgress({
   section,
@@ -41,7 +41,7 @@ export default function WorkInProgress({
           height={320}
           sx={[
             { width: 480, maxWidth: "100%", height: "auto" },
-            ...brandArtworkSx,
+            illustrationSx,
           ]}
         />
         <Typography component="h2" variant="h6">

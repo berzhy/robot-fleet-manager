@@ -5,7 +5,7 @@ Pay extra attention to architecture, structure, code cleanlines and code quality
 - **Theme (`src/theme/theme.ts`)**: palette, typography and shape tokens, and looks shared across components (focus ring, accessible text colours). Each entry carries a one-line comment saying why it exists.
 - **Component props first**: dedicated MUI props (`spacing`, `align`, `variant`, `color`) and native props (SVG `opacity`) before `sx`.
 - **Component `sx`**: layout, and looks that belong to that one component. Use palette keys (`"text.secondary"`), never colour literals.
-- **Shared `sx` constant**: a recipe repeated across files (`src/theme/brand-artwork.ts`). Promote to the theme only when it becomes an app-wide rule.
+- **Shared `sx` constant**: a recipe repeated across files (`src/theme/illustration.ts`). Promote to the theme only when it becomes an app-wide rule.
 - **Theme values in code**: `theme.vars.palette` (CSS variables are always on; tests render with the app theme through `@/query/test-utils`).
 
 ## Code quality bar
