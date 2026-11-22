@@ -1,6 +1,6 @@
 import "server-only";
 import { inArray, sql } from "drizzle-orm";
-import type { TelemetryReport } from "@/modules/telemetry/telemetry";
+import type { TelemetryReport } from "@/common/telemetry/telemetry";
 import type { FleetDatabase } from "../db/database";
 import { robots, latestTelemetry } from "../db/schema";
 

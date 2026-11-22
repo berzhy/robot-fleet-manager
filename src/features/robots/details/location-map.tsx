@@ -4,8 +4,8 @@ import type { SxProps, Theme } from "@mui/material/styles";
 import Typography from "@mui/material/Typography";
 import type { ReactNode } from "react";
 
-import type { PeerCount } from "@/modules/robots/robot";
-import type { RobotReading } from "@/modules/robots/robot-reading";
+import type { PeerCount } from "@/common/robots/robot";
+import type { RobotReading } from "@/common/robots/robot-reading";
 
 import {
   facilityAreas,

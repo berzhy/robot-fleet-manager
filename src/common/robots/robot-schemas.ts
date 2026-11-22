@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { robotPageSizes, robotTypes, integrationTypes } from "./robot";
 import { robotActions } from "./robot-actions";
+import { fleetViews } from "./robot-filters";
 
 const label = z.string().trim().min(1).max(100);
 export const createRobotSchema = z.strictObject({
@@ -28,6 +29,16 @@ export const robotPageSchema = z
 export const robotPageSizeSchema = z
   .enum(robotPageSizes.map(String))
   .transform(Number);
+
+export const robotFiltersSchema = z.object({
+  search: z.string().trim().min(2).max(100).optional(),
+  site: z.string().min(1).max(100).optional(),
+  manufacturer: z.string().min(1).max(100).optional(),
+  integrationType: z.enum(integrationTypes).optional(),
+  type: z.enum(robotTypes).optional(),
+  view: z.enum(fleetViews).default("all"),
+});
+export type RobotFilters = z.infer<typeof robotFiltersSchema>;
 
 export const createRobotBatchSchema = z.strictObject({
   robots: z.array(createRobotSchema).min(1).max(100),

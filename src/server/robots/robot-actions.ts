@@ -4,7 +4,7 @@ import {
   actionControlTargets,
   actionUnavailable,
   type RobotAction,
-} from "@/modules/robots/robot-actions";
+} from "@/common/robots/robot-actions";
 import type { FleetDatabase } from "../db/database";
 import { robots } from "../db/schema";
 import { getRobot } from "./robots";

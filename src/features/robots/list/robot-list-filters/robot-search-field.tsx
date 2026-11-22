@@ -13,7 +13,7 @@ import {
   type Ref,
 } from "react";
 
-import { appliedSearch } from "@/modules/robots/robot-list-params";
+import { appliedSearch } from "@/common/robots/robot-list-params";
 
 import useRobotListView, { setRobotListFilters } from "../use-robot-list-view";
 

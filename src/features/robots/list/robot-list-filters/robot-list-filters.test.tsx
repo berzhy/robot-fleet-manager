@@ -8,7 +8,7 @@ import {
 import { useRef, type ReactNode } from "react";
 import { afterEach, expect, test, vi } from "vitest";
 
-import type { RobotPage } from "@/modules/robots/robot";
+import type { RobotPage } from "@/common/robots/robot";
 import { render } from "@/test/render";
 
 import { pageMetadata } from "@/test/robots";

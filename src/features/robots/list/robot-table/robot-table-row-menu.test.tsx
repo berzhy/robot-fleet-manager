@@ -1,7 +1,7 @@
 import { fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 
-import { robotReading } from "@/modules/robots/robot-reading";
+import { robotReading } from "@/common/robots/robot-reading";
 import { render } from "@/test/render";
 
 import { workingRobot } from "@/test/robots";

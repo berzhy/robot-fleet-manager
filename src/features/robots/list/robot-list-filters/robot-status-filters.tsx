@@ -9,12 +9,13 @@ import Stack from "@mui/material/Stack";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import Skeleton from "@mui/material/Skeleton";
-import { fleetViews, type RobotFilters } from "@/modules/robots/robot-filters";
+import { fleetViews } from "@/common/robots/robot-filters";
+import type { RobotFilters } from "@/common/robots/robot-schemas";
 import {
   criticalBatteryPercent,
   lowBatteryPercent,
-} from "@/modules/robots/robot";
-import { delayedReportMaxAgeMs } from "@/modules/telemetry/freshness";
+} from "@/common/robots/robot";
+import { delayedReportMaxAgeMs } from "@/common/telemetry/freshness";
 
 import useRobotList from "../use-robot-list";
 import useRobotListView, { setRobotListFilters } from "../use-robot-list-view";

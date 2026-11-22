@@ -3,7 +3,7 @@ import "server-only";
 import { and, count, desc, eq, lte, ne, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 
-import type { RobotFilters } from "@/modules/robots/robot-filters";
+import type { RobotFilters } from "@/common/robots/robot-schemas";
 import {
   criticalBatteryPercent,
   lowBatteryPercent,
@@ -12,13 +12,13 @@ import {
   type Robot,
   type RobotActivity,
   type RobotPage,
-} from "@/modules/robots/robot";
-import type { CreateRobotInput } from "@/modules/robots/robot-validation";
+} from "@/common/robots/robot";
+import type { CreateRobotInput } from "@/common/robots/robot-schemas";
 
 import {
   onlineReportMaxAgeMs,
   delayedReportMaxAgeMs,
-} from "@/modules/telemetry/freshness";
+} from "@/common/telemetry/freshness";
 
 import type { FleetDatabase } from "../db/database";
 import { latestTelemetry, robots } from "../db/schema";

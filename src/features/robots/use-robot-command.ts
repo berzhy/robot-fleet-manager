@@ -1,9 +1,9 @@
-import type { Robot } from "@/modules/robots/robot";
+import type { Robot } from "@/common/robots/robot";
 import {
   actionLabels,
   actionUnavailable,
   type RobotAction,
-} from "@/modules/robots/robot-actions";
+} from "@/common/robots/robot-actions";
 import { useNotifications } from "@/shared/notifications/notification-provider";
 
 import { ApiError, isRequestTimeout } from "./api/robot-api";

@@ -8,11 +8,11 @@ import {
 import type { ComponentProps } from "react";
 import { expect, test, vi, afterEach, onTestFinished } from "vitest";
 
-import { robotReading } from "@/modules/robots/robot-reading";
+import { robotReading } from "@/common/robots/robot-reading";
 import { render } from "@/test/render";
 import { testRobot } from "@/test/robots";
-import type { Robot, RobotContext } from "@/modules/robots/robot";
-import { actionLabels } from "@/modules/robots/robot-actions";
+import type { Robot, RobotContext } from "@/common/robots/robot";
+import { actionLabels } from "@/common/robots/robot-actions";
 
 import { formatRobotTimestamp } from "../utils/robot-formatters";
 

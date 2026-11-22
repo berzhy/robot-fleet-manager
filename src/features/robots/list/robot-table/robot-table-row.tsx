@@ -13,10 +13,10 @@ import {
   formatConnection,
   formatIntegrationType,
   formatRobotType,
-} from "@/modules/robots/robot-labels";
-import { robotProblemDetails } from "@/modules/robots/robot-problems";
-import type { Robot } from "@/modules/robots/robot";
-import type { RobotReading } from "@/modules/robots/robot-reading";
+} from "@/common/robots/robot-labels";
+import { robotProblemDetails } from "@/common/robots/robot-problems";
+import type { Robot } from "@/common/robots/robot";
+import type { RobotReading } from "@/common/robots/robot-reading";
 
 import { ConnectionIndicator } from "../../connection-status/connection-status";
 import TimeAgo from "../../time-ago/time-ago";

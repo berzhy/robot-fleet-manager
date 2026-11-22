@@ -1,13 +1,13 @@
 import { z } from "zod";
 
-import { apiErrorCodes, type ApiErrorCode } from "@/modules/api/api-errors";
-import type { RobotAction } from "@/modules/robots/robot-actions";
+import { apiErrorCodes, type ApiErrorCode } from "@/common/api/api-errors";
+import type { RobotAction } from "@/common/robots/robot-actions";
 import {
   robotFilterSearchParams,
   type RobotListParams,
-} from "@/modules/robots/robot-list-params";
-import type { CreateRobotInput } from "@/modules/robots/robot-validation";
-import type { Robot, RobotContext, RobotPage } from "@/modules/robots/robot";
+} from "@/common/robots/robot-list-params";
+import type { CreateRobotInput } from "@/common/robots/robot-schemas";
+import type { Robot, RobotContext, RobotPage } from "@/common/robots/robot";
 
 const requestTimeoutMs = 5_000;
 

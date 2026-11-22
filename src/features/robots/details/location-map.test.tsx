@@ -1,7 +1,7 @@
 import { screen } from "@testing-library/react";
 import { expect, test } from "vitest";
 
-import { robotReading } from "@/modules/robots/robot-reading";
+import { robotReading } from "@/common/robots/robot-reading";
 import { render } from "@/test/render";
 import { testRobot } from "@/test/robots";
 

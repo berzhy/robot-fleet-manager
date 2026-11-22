@@ -56,7 +56,7 @@ Sections read their own data instead of receiving everything from one root compo
 
 ### Business rules live in one place
 
-`src/modules/robots` holds the fleet's rules as plain functions shared by the server and the browser: which actions are available and why, the main action for a robot's state, when a command counts as queued, and the battery levels. `robotReading()` works out what a robot's last report means at the poll's time (connection, staleness, battery level) once, and every component renders from that reading.
+`src/common/robots` holds the fleet's rules as plain functions shared by the server and the browser: which actions are available and why, the main action for a robot's state, when a command counts as queued, and the battery levels. `robotReading()` works out what a robot's last report means at the poll's time (connection, staleness, battery level) once, and every component renders from that reading.
 
 The battery and offline rules must exist in SQL too, because the server counts the views. Rather than generate SQL from TypeScript, a test runs the real SQL views over every activity × battery × report age and checks both put each robot in the same view.
 

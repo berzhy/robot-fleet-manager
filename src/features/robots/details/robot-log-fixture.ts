@@ -1,8 +1,8 @@
-import type { Robot } from "@/modules/robots/robot";
+import type { Robot } from "@/common/robots/robot";
 import {
   formatIntegrationType,
   formatRobotType,
-} from "@/modules/robots/robot-labels";
+} from "@/common/robots/robot-labels";
 
 type LogEntry = { time: string; level: "INFO" | "WARN"; message: string };
 

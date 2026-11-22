@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { robotTypes, integrationTypes } from "@/modules/robots/robot";
+import { robotTypes, integrationTypes } from "@/common/robots/robot";
 import { openTestDatabase, removeTestDatabase } from "@/test/database";
 import { testRobotInput } from "@/test/robots";
 

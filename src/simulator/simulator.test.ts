@@ -1,7 +1,7 @@
 import { initializeRobot } from "./simulation";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { runSimulator } from "./simulator";
-import type { RegistryRobot } from "@/modules/robots/robot";
+import type { RegistryRobot } from "@/common/robots/robot";
 
 const robot: RegistryRobot = {
   problemCode: null,

@@ -2,7 +2,7 @@ import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
 
-import type { RobotFilters } from "@/modules/robots/robot-filters";
+import type { RobotFilters } from "@/common/robots/robot-schemas";
 
 import useRobotListView, {
   clearRobotListFilters,

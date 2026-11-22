@@ -1,4 +1,4 @@
-import type { BatteryLevel } from "@/modules/robots/robot-reading";
+import type { BatteryLevel } from "@/common/robots/robot-reading";
 
 export function formatBattery(value: number | null) {
   return value === null ? "Unknown" : `${Math.round(value)}%`;

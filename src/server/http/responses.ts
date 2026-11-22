@@ -1,4 +1,4 @@
-import type { ApiErrorCode } from "@/modules/api/api-errors";
+import type { ApiErrorCode } from "@/common/api/api-errors";
 
 export function jsonResponse(value: unknown, status = 200) {
   return Response.json(value, {

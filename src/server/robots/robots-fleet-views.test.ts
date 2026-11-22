@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, expect, test } from "vitest";
 
-import { robotActivities } from "@/modules/robots/robot";
-import type { RobotFilters } from "@/modules/robots/robot-filters";
-import { batteryLevel } from "@/modules/robots/robot-reading";
+import { robotActivities } from "@/common/robots/robot";
+import type { RobotFilters } from "@/common/robots/robot-schemas";
+import { batteryLevel } from "@/common/robots/robot-reading";
 import {
   connectionStatus,
   delayedReportMaxAgeMs,
   onlineReportMaxAgeMs,
-} from "@/modules/telemetry/freshness";
+} from "@/common/telemetry/freshness";
 import { openTestDatabase, removeTestDatabase } from "@/test/database";
 import { testRobotInput } from "@/test/robots";
 

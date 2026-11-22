@@ -1,6 +1,6 @@
-import { robotProblemCodes } from "@/modules/robots/robot-problems";
-import type { ControlTarget, RegistryRobot } from "@/modules/robots/robot";
-import type { TelemetryReport } from "@/modules/telemetry/telemetry";
+import { robotProblemCodes } from "@/common/robots/robot-problems";
+import type { ControlTarget, RegistryRobot } from "@/common/robots/robot";
+import type { TelemetryReport } from "@/common/telemetry/telemetry";
 
 export type SimulatedRobot = {
   battery: number;

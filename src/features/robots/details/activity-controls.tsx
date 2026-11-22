@@ -11,8 +11,8 @@ import {
   isActionQueued,
   mainActivityAction,
   type RobotAction,
-} from "@/modules/robots/robot-actions";
-import type { RobotReading } from "@/modules/robots/robot-reading";
+} from "@/common/robots/robot-actions";
+import type { RobotReading } from "@/common/robots/robot-reading";
 
 import { actionIcons } from "../robot-action-icons";
 

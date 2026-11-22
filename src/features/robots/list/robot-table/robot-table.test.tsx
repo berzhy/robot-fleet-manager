@@ -5,7 +5,7 @@ import {
   robotPageSizes,
   type Robot,
   type RobotPage,
-} from "@/modules/robots/robot";
+} from "@/common/robots/robot";
 
 import { render } from "@/test/render";
 

@@ -4,8 +4,8 @@ import {
   robotPageSize,
   type RegistryRobot,
   type Robot,
-} from "@/modules/robots/robot";
-import type { TelemetryReport } from "@/modules/telemetry/telemetry";
+} from "@/common/robots/robot";
+import type { TelemetryReport } from "@/common/telemetry/telemetry";
 
 import { createRobots, test } from "./fixtures";
 

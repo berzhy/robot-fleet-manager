@@ -7,17 +7,17 @@ import {
   formatIntegrationType,
   formatActivity,
   formatConnection,
-} from "@/modules/robots/robot-labels";
+} from "@/common/robots/robot-labels";
 import {
   robotProblemCodes,
   robotProblemDetails,
-} from "@/modules/robots/robot-problems";
+} from "@/common/robots/robot-problems";
 import {
   robotTypes,
   robotActivities,
   integrationTypes,
   type RobotActivity,
-} from "@/modules/robots/robot";
+} from "@/common/robots/robot";
 
 import { robots, latestTelemetry } from "../db/schema";
 

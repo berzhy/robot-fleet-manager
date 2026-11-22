@@ -11,9 +11,9 @@ import {
   actionLabels,
   commandUnavailable,
   robotActions,
-} from "@/modules/robots/robot-actions";
-import type { Robot } from "@/modules/robots/robot";
-import type { RobotReading } from "@/modules/robots/robot-reading";
+} from "@/common/robots/robot-actions";
+import type { Robot } from "@/common/robots/robot";
+import type { RobotReading } from "@/common/robots/robot-reading";
 
 import { actionIcons } from "../../robot-action-icons";
 import useRobotCommand from "../../use-robot-command";

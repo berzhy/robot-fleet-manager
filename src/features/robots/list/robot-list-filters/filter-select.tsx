@@ -3,7 +3,7 @@ import type { SxProps, Theme } from "@mui/material/styles";
 import TextField from "@mui/material/TextField";
 import { useState } from "react";
 
-import type { FilterOptions } from "@/modules/robots/robot-filters";
+import type { FilterOptions } from "@/common/robots/robot-filters";
 
 import {
   filterFieldId,

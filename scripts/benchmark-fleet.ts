@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { generateRobotInput } from "../src/features/robots/list/generate-robot-input";
-import { robotActivities, robotPageSize } from "../src/modules/robots/robot";
+import { robotActivities, robotPageSize } from "../src/common/robots/robot";
 import { createSchema } from "../src/server/db/create-schema";
 import { openDatabase } from "../src/server/db/database";
 import { latestTelemetry } from "../src/server/db/schema";

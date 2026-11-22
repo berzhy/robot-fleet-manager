@@ -5,8 +5,8 @@ import TablePagination from "@mui/material/TablePagination";
 import Typography from "@mui/material/Typography";
 import type { HTMLAttributes } from "react";
 
-import { robotPageSizes } from "@/modules/robots/robot";
-import type { RobotFilters } from "@/modules/robots/robot-filters";
+import { robotPageSizes } from "@/common/robots/robot";
+import type { RobotFilters } from "@/common/robots/robot-schemas";
 
 import useRobotList from "../use-robot-list";
 import useRobotListView, {

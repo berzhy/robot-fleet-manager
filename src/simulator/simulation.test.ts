@@ -1,4 +1,4 @@
-import { robotProblemCodes } from "@/modules/robots/robot-problems";
+import { robotProblemCodes } from "@/common/robots/robot-problems";
 import { expect, test } from "vitest";
 import {
   advanceRobot,
@@ -6,7 +6,7 @@ import {
   applyControl,
   telemetryAvailable,
 } from "./simulation";
-import type { RegistryRobot } from "@/modules/robots/robot";
+import type { RegistryRobot } from "@/common/robots/robot";
 
 const robot: RegistryRobot = {
   problemCode: null,

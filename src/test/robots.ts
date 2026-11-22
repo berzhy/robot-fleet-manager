@@ -1,5 +1,5 @@
-import type { Robot, RobotPage } from "@/modules/robots/robot";
-import type { CreateRobotInput } from "@/modules/robots/robot-validation";
+import type { Robot, RobotPage } from "@/common/robots/robot";
+import type { CreateRobotInput } from "@/common/robots/robot-schemas";
 
 /** What a test registers when the details do not matter to it. */
 export const testRobotInput: CreateRobotInput = {

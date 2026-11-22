@@ -4,8 +4,8 @@ import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import { useId, useState, type ReactNode } from "react";
 
-import type { PeerCount } from "@/modules/robots/robot";
-import type { RobotReading } from "@/modules/robots/robot-reading";
+import type { PeerCount } from "@/common/robots/robot";
+import type { RobotReading } from "@/common/robots/robot-reading";
 
 import LocationMap from "./location-map";
 import RobotLogs from "./robot-logs";

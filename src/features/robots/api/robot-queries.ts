@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import type { RobotListParams } from "@/modules/robots/robot-list-params";
+import type { RobotListParams } from "@/common/robots/robot-list-params";
 
 import { getRobotContext, getRobots } from "./robot-api";
 

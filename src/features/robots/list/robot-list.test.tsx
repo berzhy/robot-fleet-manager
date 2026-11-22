@@ -9,7 +9,7 @@ import { Activity } from "react";
 import { afterEach, expect, test, vi } from "vitest";
 
 import { render } from "@/test/render";
-import type { Robot, RobotPage } from "@/modules/robots/robot";
+import type { Robot, RobotPage } from "@/common/robots/robot";
 
 import { pageMetadata, testRobot } from "@/test/robots";
 import RobotList from "./robot-list";

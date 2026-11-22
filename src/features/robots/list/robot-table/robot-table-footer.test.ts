@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import type { RobotFilters } from "@/modules/robots/robot-filters";
+import type { RobotFilters } from "@/common/robots/robot-schemas";
 
 import { formatResultCount } from "./robot-table-footer";
 

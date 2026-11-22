@@ -14,14 +14,14 @@ import cleaning from "@/assets/robots/cleaning.webp";
 import delivery from "@/assets/robots/delivery.webp";
 import inspection from "@/assets/robots/inspection.webp";
 import security from "@/assets/robots/security.webp";
-import type { Robot } from "@/modules/robots/robot";
-import type { RobotReading } from "@/modules/robots/robot-reading";
+import type { Robot } from "@/common/robots/robot";
+import type { RobotReading } from "@/common/robots/robot-reading";
 import {
   formatActivity,
   formatIntegrationType,
   formatRobotType,
-} from "@/modules/robots/robot-labels";
-import { robotProblemDetails } from "@/modules/robots/robot-problems";
+} from "@/common/robots/robot-labels";
+import { robotProblemDetails } from "@/common/robots/robot-problems";
 import { useNotifications } from "@/shared/notifications/notification-provider";
 import { monospaceFontFamily } from "@/theme/theme";
 
