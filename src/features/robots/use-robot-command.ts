@@ -1,9 +1,5 @@
-import type { Robot } from "@/common/robots/robot";
-import {
-  actionLabels,
-  actionUnavailable,
-  type RobotAction,
-} from "@/common/robots/robot-actions";
+import type { Robot } from "@/common/robot";
+import { actionLabels, type RobotAction } from "@/common/robot-actions";
 import { useNotifications } from "@/shared/notifications/notification-provider";
 
 import { isActionUnavailable, isRequestTimeout } from "./api/robot-api";
@@ -27,13 +23,6 @@ export default function useRobotCommand(robot: Robot) {
 
   function requestAction(action: RobotAction) {
     if (sendAction.isPending) {
-      return;
-    }
-
-    // Controls reflect the last poll; a report can expire before the click.
-    const reason = actionUnavailable(robot, action, Date.now());
-    if (reason) {
-      showUnavailable(reason);
       return;
     }
 

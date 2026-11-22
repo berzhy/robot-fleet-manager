@@ -1,11 +1,7 @@
 import { act, fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 
-import {
-  robotPageSizes,
-  type Robot,
-  type RobotPage,
-} from "@/common/robots/robot";
+import { robotPageSizes, type Robot, type RobotPage } from "@/common/robot";
 
 import { render } from "@/test/render";
 
@@ -101,27 +97,27 @@ test("the previous rows and the pager stay while the next view loads", async () 
 });
 
 test("table renders the supplied server page without slicing or sorting", async () => {
-  const robotNeedingAttention = {
+  const robotNeedingAttention = testRobot({
     ...robot,
     problemCode: "path-blocked",
-  } as const;
+  });
   const metadata = pageMetadata(42);
 
   renderTable(
     {
       items: [
-        {
+        testRobot({
           ...robotNeedingAttention,
           id: "zulu",
           name: "Zulu robot",
           createdAt: "2026-01-03T00:00:00.000Z",
-        },
-        {
+        }),
+        testRobot({
           ...robotNeedingAttention,
           id: "alpha",
           name: "Alpha robot",
           createdAt: "2026-01-01T00:00:00.000Z",
-        },
+        }),
         robotNeedingAttention,
       ],
       total: 23,
@@ -211,7 +207,7 @@ test("columns put identity and operational context before catalog metadata", asy
 
 test("a robot registered today shows how long ago, with the exact time kept", async () => {
   const createdAt = new Date(Date.now() - 3 * 60_000).toISOString();
-  renderTable(robotPage([{ ...robot, createdAt }]));
+  renderTable(robotPage([testRobot({ ...robot, createdAt })]));
 
   const addedAt = await screen.findByTestId("robot-added-at");
   expect(addedAt).toHaveTextContent(/^3 min ago$/);
@@ -274,7 +270,9 @@ test.each([
   "%s shows Needs attention and its concrete reason",
   async (problemCode, label) => {
     renderTable(
-      robotPage([{ ...robot, activity: "needs-attention", problemCode }]),
+      robotPage([
+        testRobot({ ...robot, activity: "needs-attention", problemCode }),
+      ]),
     );
 
     expect(await screen.findByTestId("robot-activity")).toHaveTextContent(

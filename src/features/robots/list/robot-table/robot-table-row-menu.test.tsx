@@ -1,10 +1,11 @@
 import { fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 
-import { robotReading } from "@/common/robots/robot-reading";
 import { render } from "@/test/render";
 
-import { workingRobot } from "@/test/robots";
+import { testRobot, workingRobot } from "@/test/robots";
+
+import { robotReading } from "../../robot-reading";
 import RobotTableRowMenu from "./robot-table-row-menu";
 
 afterEach(() => {
@@ -20,10 +21,10 @@ test("disabled actions show their reason and cannot execute", async () => {
   render(
     <RobotTableRowMenu
       reading={robotReading(
-        {
+        testRobot({
           ...workingRobot,
           lastReceivedAt: new Date(evaluatedAt).toISOString(),
-        },
+        }),
         evaluatedAt,
         false,
       )}
@@ -52,10 +53,10 @@ test("a failed refresh does not block actions; the server checks them", async ()
   render(
     <RobotTableRowMenu
       reading={robotReading(
-        {
+        testRobot({
           ...workingRobot,
           lastReceivedAt: new Date(evaluatedAt).toISOString(),
-        },
+        }),
         evaluatedAt,
         true,
       )}

@@ -6,9 +6,9 @@ import Link from "@mui/material/Link";
 import Stack from "@mui/material/Stack";
 import NextLink from "next/link";
 
-import type { RobotContext } from "@/common/robots/robot";
-import { robotReading } from "@/common/robots/robot-reading";
+import type { RobotContext } from "@/common/robot";
 
+import { robotReading } from "../robot-reading";
 import { robotListHref } from "../robot-list-return";
 import useRobotCommand from "../use-robot-command";
 

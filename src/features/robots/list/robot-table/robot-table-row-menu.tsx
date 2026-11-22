@@ -7,15 +7,12 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import { useId, useState } from "react";
 
-import {
-  actionLabels,
-  commandUnavailable,
-  robotActions,
-} from "@/common/robots/robot-actions";
-import type { Robot } from "@/common/robots/robot";
-import type { RobotReading } from "@/common/robots/robot-reading";
+import { actionLabels, robotActions } from "@/common/robot-actions";
+import type { Robot } from "@/common/robot";
 
 import { actionIcons } from "../../robot-action-icons";
+import { commandUnavailable } from "../../robot-commands";
+import type { RobotReading } from "../../robot-reading";
 import useRobotCommand from "../../use-robot-command";
 
 export default function RobotTableRowMenu({
@@ -57,7 +54,7 @@ export default function RobotTableRowMenu({
         onClose={() => setAnchor(null)}
       >
         {robotActions.map((action) => {
-          const reason = waitReason ?? commandUnavailable(reading, action);
+          const reason = waitReason ?? commandUnavailable(robot, action);
           const Icon = actionIcons[action];
           return (
             <MenuItem

@@ -2,7 +2,7 @@ import { act, fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 
 import { renderHook, render } from "@/test/render";
-import type { RobotContext } from "@/common/robots/robot";
+import type { RobotContext } from "@/common/robot";
 
 import { useSendRobotAction } from "./api/robot-mutations";
 import {
@@ -19,20 +19,26 @@ import useRobotList, {
 import { setRobotListPage } from "./list/use-robot-list-view";
 import { pageMetadata, testRobot } from "@/test/robots";
 
-const robot = testRobot({
-  id: "live",
-  name: "Live robot",
-  manufacturer: "Maker",
-  createdAt: "2026-01-01T00:00:00.000Z",
-  activity: "working",
-  area: "Lobby",
-  batteryPercent: 50,
-  lastReceivedAt: "2026-01-01T00:00:00.000Z",
-});
+const reportedAt = "2026-01-01T00:00:00.000Z";
+// As the server answered it when the report arrived; each mocked response
+// derives it again at its own time.
+const robot = testRobot(
+  {
+    id: "live",
+    name: "Live robot",
+    manufacturer: "Maker",
+    createdAt: reportedAt,
+    activity: "working",
+    area: "Lobby",
+    batteryPercent: 50,
+    lastReceivedAt: reportedAt,
+  },
+  Date.parse(reportedAt),
+);
 
 const page = (battery = 50) =>
   Response.json({
-    items: [{ ...robot, batteryPercent: battery }],
+    items: [testRobot({ ...robot, batteryPercent: battery })],
     total: 1,
     page: 0,
     pageSize: 20,
@@ -41,7 +47,7 @@ const page = (battery = 50) =>
 
 const robotContext = (batteryPercent: number) =>
   Response.json({
-    robot: { ...robot, batteryPercent },
+    robot: testRobot({ ...robot, batteryPercent }),
     peerCounts: [],
     evaluatedAt: Date.now(),
   });
@@ -163,18 +169,35 @@ test("an open action menu receives fleet updates while a hidden tab stops pollin
 });
 
 test.each(["fleet", "detail"] as const)(
-  "%s blocks a command when the report expires between polls",
+  "%s reports the server's refusal when the report expires between polls",
   async (surface) => {
     vi.useFakeTimers();
     const evaluatedAt = Date.parse(robot.lastReceivedAt!) + 9_500;
     vi.setSystemTime(new Date(evaluatedAt));
-    const fetcher = liveFetcher();
+    const fetcher = vi.fn<
+      (url: string, init?: RequestInit) => Promise<Response>
+    >((url, init) =>
+      Promise.resolve(
+        init?.method === "POST"
+          ? Response.json(
+              { error: { message: "Robot isn't connected" } },
+              { status: 409 },
+            )
+          : url.includes("/context")
+            ? robotContext(50)
+            : page(50),
+      ),
+    );
     vi.stubGlobal("fetch", fetcher);
 
     if (surface === "fleet") {
       render(<RobotList />);
     } else {
-      renderDetails({ robot, peerCounts: [], evaluatedAt: evaluatedAt });
+      renderDetails({
+        robot: testRobot(robot, evaluatedAt),
+        peerCounts: [],
+        evaluatedAt,
+      });
     }
     await tick();
 
@@ -188,21 +211,24 @@ test.each(["fleet", "detail"] as const)(
       fireEvent.click(trigger);
     }
 
+    // The screen still shows the last poll, where the robot was online.
     const stop = screen.getByRole(surface === "fleet" ? "menuitem" : "button", {
       name: "Stop activity",
     });
     expect(stop).not.toHaveAttribute("aria-disabled", "true");
     await tick(600);
     fireEvent.click(stop);
+    await tick();
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "Robot isn't connected",
+      "Robot isn't connected. Check the latest report",
     );
+    expect(
+      fetcher.mock.calls.filter(([, init]) => init?.method === "POST"),
+    ).toHaveLength(1);
+    // The refusal refreshes the robot, which is no longer online.
     expect(screen.getByTestId("robot-connection")).toHaveTextContent(
-      /^Online$/,
-    );
-    expect(fetcher.mock.calls.some(([, init]) => init?.method === "POST")).toBe(
-      false,
+      /^Delayed$/,
     );
   },
 );
@@ -246,7 +272,11 @@ test("details render with the page's data and first ask again at the next poll",
   vi.useFakeTimers();
   const fetcher = liveFetcher();
   vi.stubGlobal("fetch", fetcher);
-  renderDetails({ robot, peerCounts: [], evaluatedAt: Date.now() });
+  renderDetails({
+    robot: testRobot(robot),
+    peerCounts: [],
+    evaluatedAt: Date.now(),
+  });
   await tick();
 
   expect(screen.getByTestId("robot-details")).toBeInTheDocument();
@@ -264,7 +294,7 @@ test("detail refreshes while Logs is selected and stops when its robot is delete
       .fn()
       .mockResolvedValueOnce(
         Response.json({
-          robot: { ...robot, batteryPercent: 42, site: "Berlin" },
+          robot: testRobot({ ...robot, batteryPercent: 42, site: "Berlin" }),
           peerCounts: [],
           evaluatedAt: Date.now(),
         }),
@@ -272,7 +302,7 @@ test("detail refreshes while Logs is selected and stops when its robot is delete
       .mockResolvedValueOnce(robotNotFound()),
   );
   renderDetails({
-    robot: { ...robot, batteryPercent: 45 },
+    robot: testRobot({ ...robot, batteryPercent: 45 }),
     peerCounts: [],
     evaluatedAt: Date.now(),
   });
@@ -354,7 +384,11 @@ test("a confirmed detail deletion clears an earlier refresh warning", async () =
       .mockResolvedValueOnce(new Response(null, { status: 500 }))
       .mockResolvedValueOnce(robotNotFound()),
   );
-  renderDetails({ robot: robot, peerCounts: [], evaluatedAt: Date.now() });
+  renderDetails({
+    robot: testRobot(robot),
+    peerCounts: [],
+    evaluatedAt: Date.now(),
+  });
   await tick(robotContextPollIntervalMs);
 
   expect(screen.getByTestId("robot-refresh-warning")).toHaveTextContent(
@@ -372,7 +406,11 @@ test("a failed first detail poll keeps server-verified connection information", 
   vi.useFakeTimers();
   vi.setSystemTime(new Date(Date.parse(robot.lastReceivedAt!) + 20000));
   vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("unavailable")));
-  renderDetails({ robot: robot, peerCounts: [], evaluatedAt: Date.now() });
+  renderDetails({
+    robot: testRobot(robot),
+    peerCounts: [],
+    evaluatedAt: Date.now(),
+  });
   await tick(robotContextPollIntervalMs);
 
   expect(
@@ -436,7 +474,7 @@ test("fleet and detail retain snapshots after a request timeout and recover on t
     return Promise.resolve(
       url.includes("/context")
         ? Response.json({
-            robot: { ...robot, batteryPercent: 45 },
+            robot: testRobot({ ...robot, batteryPercent: 45 }),
             peerCounts: [],
             evaluatedAt: Date.now(),
           })
@@ -445,7 +483,7 @@ test("fleet and detail retain snapshots after a request timeout and recover on t
   });
   vi.stubGlobal("fetch", fetcher);
   const context = {
-    robot: { ...robot, batteryPercent: 45 },
+    robot: testRobot({ ...robot, batteryPercent: 45 }),
     peerCounts: [],
     evaluatedAt: Date.now(),
   };
@@ -496,7 +534,11 @@ test("unmount cancels outstanding fleet and detail requests without restarting p
       }),
   );
   vi.stubGlobal("fetch", fetcher);
-  const context = { robot, peerCounts: [], evaluatedAt: Date.now() };
+  const context = {
+    robot: testRobot(robot),
+    peerCounts: [],
+    evaluatedAt: Date.now(),
+  };
   const { unmount } = renderHook(() => ({
     fleet: useRobotList(),
     detail: useLiveRobot(context),
@@ -563,7 +605,7 @@ test.each(["fleet", "detail"] as const)(
       return screenName === "fleet"
         ? page(batteryPercent)
         : Response.json({
-            robot: { ...robot, batteryPercent },
+            robot: testRobot({ ...robot, batteryPercent }),
             peerCounts: [],
             evaluatedAt: Date.now(),
           });
@@ -590,7 +632,7 @@ test.each(["fleet", "detail"] as const)(
       render(<RobotList />);
     } else {
       renderDetails({
-        robot: { ...robot, batteryPercent: 45 },
+        robot: testRobot({ ...robot, batteryPercent: 45 }),
         peerCounts: [],
         evaluatedAt: Date.now(),
       });
@@ -670,7 +712,7 @@ test.each(["fleet", "detail"] as const)(
       return screenName === "fleet"
         ? page(batteryPercent)
         : Response.json({
-            robot: { ...robot, batteryPercent },
+            robot: testRobot({ ...robot, batteryPercent }),
             peerCounts: [],
             evaluatedAt: Date.now(),
           });
@@ -696,7 +738,7 @@ test.each(["fleet", "detail"] as const)(
       render(<RobotList />);
     } else {
       renderDetails({
-        robot: { ...robot, batteryPercent: 45 },
+        robot: testRobot({ ...robot, batteryPercent: 45 }),
         peerCounts: [],
         evaluatedAt: Date.now(),
       });
@@ -812,7 +854,11 @@ test("a command cancels the poll in flight and stays pending until fresh data la
   const { fetcher, reads, acceptWrite } = deferredFetch();
   vi.stubGlobal("fetch", fetcher);
 
-  const context = { robot, peerCounts: [], evaluatedAt: Date.now() };
+  const context = {
+    robot: testRobot(robot),
+    peerCounts: [],
+    evaluatedAt: Date.now(),
+  };
   const { result } = renderHook(() => ({
     detail: useLiveRobot(context),
     command: useSendRobotAction(robot.id),

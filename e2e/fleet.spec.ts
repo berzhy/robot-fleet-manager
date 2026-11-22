@@ -1,11 +1,7 @@
 import { expect, type APIRequestContext, type Page } from "@playwright/test";
 
-import {
-  robotPageSize,
-  type RegistryRobot,
-  type Robot,
-} from "@/common/robots/robot";
-import type { TelemetryReport } from "@/common/telemetry/telemetry";
+import { robotPageSize, type RegistryRobot, type Robot } from "@/common/robot";
+import type { TelemetryReport } from "@/common/telemetry";
 
 import { createRobots, test } from "./fixtures";
 

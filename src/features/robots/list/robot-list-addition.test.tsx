@@ -8,11 +8,11 @@ import {
 import { afterEach, expect, test, vi } from "vitest";
 
 import { render } from "@/test/render";
-import type { Robot } from "@/common/robots/robot";
+import type { Robot } from "@/common/robot";
 import {
   createRobotBatchSchema,
   createRobotSchema,
-} from "@/common/robots/robot-schemas";
+} from "@/common/robot-schemas";
 
 import { pageMetadata, testRobot } from "@/test/robots";
 import RobotList from "./robot-list";
@@ -287,10 +287,12 @@ test.each([10, 100])(
       complete(
         Response.json(
           {
-            items: Array.from({ length: count }, (_, i) => ({
-              ...robot,
-              id: String(i),
-            })),
+            items: Array.from({ length: count }, (_, i) =>
+              testRobot({
+                ...robot,
+                id: String(i),
+              }),
+            ),
           },
           { status: 201 },
         ),

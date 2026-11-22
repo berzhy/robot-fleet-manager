@@ -1,10 +1,10 @@
 import { screen } from "@testing-library/react";
 import { expect, test } from "vitest";
 
-import { robotReading } from "@/common/robots/robot-reading";
 import { render } from "@/test/render";
 import { testRobot } from "@/test/robots";
 
+import { robotReading } from "../robot-reading";
 import LocationMap from "./location-map";
 
 const robot = testRobot({ activity: "charging" });
@@ -16,7 +16,10 @@ test("each area counts the other robots in it and separates unknown areas", () =
   render(
     <LocationMap
       reading={robotReading(
-        { ...robot, area: "Lobby", lastReceivedAt: freshReport },
+        testRobot(
+          { ...robot, area: "Lobby", lastReceivedAt: freshReport },
+          evaluatedAt,
+        ),
         evaluatedAt,
         false,
       )}
@@ -65,7 +68,7 @@ test.each([
     render(
       <LocationMap
         reading={robotReading(
-          { ...robot, area: "Base", ...changes },
+          testRobot({ ...robot, area: "Base", ...changes }, evaluatedAt),
           evaluatedAt,
           unverified,
         )}
@@ -86,7 +89,11 @@ test("each site with a drawing gets its own, and other sites a generic one", () 
   function planFor(site: string) {
     const { container, unmount } = render(
       <LocationMap
-        reading={robotReading({ ...robot, site }, evaluatedAt, false)}
+        reading={robotReading(
+          testRobot({ ...robot, site }, evaluatedAt),
+          evaluatedAt,
+          false,
+        )}
         peerCounts={[]}
       />,
     );
@@ -108,7 +115,11 @@ test.each([
 ])("%s describes its facility", (site, details) => {
   render(
     <LocationMap
-      reading={robotReading({ ...robot, site }, evaluatedAt, false)}
+      reading={robotReading(
+        testRobot({ ...robot, site }, evaluatedAt),
+        evaluatedAt,
+        false,
+      )}
       peerCounts={[]}
     />,
   );
@@ -120,7 +131,7 @@ test("a site with the generic drawing does not borrow another site's details", (
   render(
     <LocationMap
       reading={robotReading(
-        { ...robot, site: "Detail demo" },
+        testRobot({ ...robot, site: "Detail demo" }, evaluatedAt),
         evaluatedAt,
         false,
       )}

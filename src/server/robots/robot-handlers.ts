@@ -1,13 +1,13 @@
 import "server-only";
 
-import { robotPageSize } from "@/common/robots/robot";
+import { robotPageSize } from "@/common/robot";
 import {
   createRobotBatchSchema,
   robotActionRequestSchema,
   robotFiltersSchema,
   robotPageSchema,
   robotPageSizeSchema,
-} from "@/common/robots/robot-schemas";
+} from "@/common/robot-schemas";
 
 import { readJsonBody } from "../http/requests";
 import { errorResponse, jsonResponse } from "../http/responses";

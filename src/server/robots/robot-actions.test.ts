@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { robotProblemCodes } from "@/common/robots/robot-problems";
+import { robotProblemCodes } from "@/common/robot-problems";
 import { openTestDatabase, removeTestDatabase } from "@/test/database";
 import { testRobotInput } from "@/test/robots";
 

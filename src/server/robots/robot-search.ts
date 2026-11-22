@@ -7,17 +7,12 @@ import {
   formatIntegrationType,
   formatActivity,
   formatConnection,
-} from "@/common/robots/robot-labels";
+} from "@/common/robot-labels";
 import {
   robotProblemCodes,
   robotProblemDetails,
-} from "@/common/robots/robot-problems";
-import {
-  robotTypes,
-  robotActivities,
-  integrationTypes,
-  type RobotActivity,
-} from "@/common/robots/robot";
+} from "@/common/robot-problems";
+import { robotTypes, robotActivities, integrationTypes } from "@/common/robot";
 
 import { robots, latestTelemetry } from "../db/schema";
 
@@ -49,7 +44,8 @@ export function robotSearchCondition(
         ),
       ],
       ["offline", offline],
-      ["unknown", sql`${latestTelemetry.receivedAt} is null`],
+      // No report yet.
+      [null, sql`${latestTelemetry.receivedAt} is null`],
     ] as const
   )
     .filter(([status]) =>
@@ -68,7 +64,7 @@ export function robotSearchCondition(
           robots.type,
           robots.integrationType,
           latestTelemetry.problemCode,
-          sql`coalesce(${latestTelemetry.activity}, ${"unknown" satisfies RobotActivity})`,
+          latestTelemetry.activity,
         ].map((column) => sql`${column} like ${pattern} escape '\\'`),
         ...robotTypes
           .filter((type) => formatRobotType(type).toLowerCase().includes(query))
@@ -78,12 +74,12 @@ export function robotSearchCondition(
             formatIntegrationType(type).toLowerCase().includes(query),
           )
           .map((type) => eq(robots.integrationType, type)),
-        ...robotActivities
+        ...[...robotActivities, null]
           .filter((activity) =>
             formatActivity(activity).toLowerCase().includes(query),
           )
           .map((activity) =>
-            activity === "unknown"
+            activity === null
               ? sql`${latestTelemetry.activity} is null`
               : eq(latestTelemetry.activity, activity),
           ),

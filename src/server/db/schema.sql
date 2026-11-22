@@ -42,8 +42,7 @@ CREATE TABLE latest_telemetry (
       'idle',
       'returning',
       'charging',
-      'needs-attention',
-      'unknown'
+      'needs-attention'
     )
   )
 ) WITHOUT ROWID;

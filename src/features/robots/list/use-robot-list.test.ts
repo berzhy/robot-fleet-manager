@@ -2,7 +2,7 @@ import { act, waitFor } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 
 import { renderHook } from "@/test/render";
-import type { RobotPage } from "@/common/robots/robot";
+import type { RobotPage } from "@/common/robot";
 
 import { getRobots } from "../api/robot-api";
 import { pageMetadata } from "@/test/robots";

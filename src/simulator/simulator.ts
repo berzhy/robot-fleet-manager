@@ -1,6 +1,6 @@
 import { setTimeout as delay } from "node:timers/promises";
-import type { RegistryRobot } from "@/common/robots/robot";
-import { maxReportsPerBatch } from "@/common/telemetry/telemetry";
+import type { RegistryRobot } from "@/common/robot";
+import { maxReportsPerBatch } from "@/common/telemetry";
 import {
   advanceRobot,
   applyControl,

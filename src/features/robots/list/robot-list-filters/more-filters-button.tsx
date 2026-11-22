@@ -8,7 +8,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { useId, useState } from "react";
 
-import type { FilterOptions } from "@/common/robots/robot-filters";
+import type { FilterOptions } from "@/common/robot-filters";
 
 import useRobotListView, { setRobotListFilters } from "../use-robot-list-view";
 

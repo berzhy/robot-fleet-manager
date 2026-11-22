@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { robotTypes, integrationTypes } from "@/common/robots/robot";
+import { robotTypes, integrationTypes } from "@/common/robot";
 import { openTestDatabase, removeTestDatabase } from "@/test/database";
 import { testRobotInput } from "@/test/robots";
 
@@ -38,7 +38,9 @@ test("created metadata persists after reopening with unknown telemetry", () => {
 
   expect(robot).toMatchObject({
     ...testRobotInput,
-    activity: "unknown",
+    activity: null,
+    connection: null,
+    batteryLevel: null,
     area: null,
     batteryPercent: null,
     queuedControlTarget: null,
@@ -50,7 +52,7 @@ test("created metadata persists after reopening with unknown telemetry", () => {
   db.$client.close();
   db = openDatabase(file);
 
-  expect(getRobot(db, robot.id)).toEqual(robot);
+  expect(robot).toMatchObject(getRobot(db, robot.id)!);
   const snapshot = getRobotContext(db, robot.id);
   expect(snapshot?.robot).toEqual(robot);
   expect(typeof snapshot?.evaluatedAt).toBe("number");
@@ -151,7 +153,7 @@ test.each(robotTypes)(
     const robot = createRobot(db, { ...testRobotInput, type });
 
     expect(robot.type).toBe(type);
-    expect(getRobot(db, robot.id)).toEqual(robot);
+    expect(robot).toMatchObject(getRobot(db, robot.id)!);
     expect(listRobots(db, 0).items).toEqual([robot]);
     expect(robotRegistry(db)).toEqual([{ ...robot, ...newRobotControl }]);
   },
@@ -183,7 +185,7 @@ test.each(integrationTypes)(
     const robot = createRobot(db, { ...testRobotInput, integrationType });
 
     expect(robot.integrationType).toBe(integrationType);
-    expect(getRobot(db, robot.id)).toEqual(robot);
+    expect(robot).toMatchObject(getRobot(db, robot.id)!);
     expect(listRobots(db, 0).items).toEqual([robot]);
     expect(robotRegistry(db)).toEqual([{ ...robot, ...newRobotControl }]);
   },

@@ -9,7 +9,7 @@ import { Activity } from "react";
 import { afterEach, expect, test, vi } from "vitest";
 
 import { render } from "@/test/render";
-import type { Robot, RobotPage } from "@/common/robots/robot";
+import type { Robot, RobotPage } from "@/common/robot";
 
 import { pageMetadata, testRobot } from "@/test/robots";
 import RobotList from "./robot-list";
@@ -109,11 +109,13 @@ test.each(["Clear search", "Clear filters"])(
 );
 
 test("requests pages and keeps the pager usable while loading", async () => {
-  const rows = Array.from({ length: 10 }, (_, i) => ({
-    ...robot,
-    id: String(i),
-    name: `Robot ${i}`,
-  }));
+  const rows = Array.from({ length: 10 }, (_, i) =>
+    testRobot({
+      ...robot,
+      id: String(i),
+      name: `Robot ${i}`,
+    }),
+  );
   let resolve!: (response: Response) => void;
   const fetcher = vi
     .fn()
@@ -135,7 +137,9 @@ test("requests pages and keeps the pager usable while loading", async () => {
   expect(next).toHaveFocus();
 
   act(() =>
-    resolve(Response.json(page([{ ...robot, name: "Last robot" }], 21, 1))),
+    resolve(
+      Response.json(page([testRobot({ ...robot, name: "Last robot" })], 21, 1)),
+    ),
   );
   await waitFor(() =>
     expect(

@@ -9,13 +9,13 @@ import Stack from "@mui/material/Stack";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import Skeleton from "@mui/material/Skeleton";
-import { fleetViews } from "@/common/robots/robot-filters";
-import type { RobotFilters } from "@/common/robots/robot-schemas";
 import {
   criticalBatteryPercent,
+  fleetViews,
   lowBatteryPercent,
-} from "@/common/robots/robot";
-import { delayedReportMaxAgeMs } from "@/common/telemetry/freshness";
+  offlineAfterMs,
+} from "@/common/robot-filters";
+import type { RobotFilters } from "@/common/robot-schemas";
 
 import useRobotList from "../use-robot-list";
 import useRobotListView, { setRobotListFilters } from "../use-robot-list-view";
@@ -27,7 +27,7 @@ type ProblemView = Exclude<RobotFilters["view"], "all">;
 const explanations = {
   all: "All robots matching the search and the selected location, manufacturer, type and integration.",
   "needs-attention": `Offline, a reported problem, or critical battery at or below ${criticalBatteryPercent}% while not charging.`,
-  offline: `Last report received more than ${delayedReportMaxAgeMs / 1000} seconds ago. Robots with no reports are Unknown.`,
+  offline: `Last report received more than ${offlineAfterMs / 1000} seconds ago. Robots with no reports are Unknown.`,
   "low-battery": `Last-reported battery at or below ${lowBatteryPercent}%, including Returning but excluding Charging.`,
 };
 

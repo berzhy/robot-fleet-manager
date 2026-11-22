@@ -1,5 +1,5 @@
-import { robotActivities } from "@/common/robots/robot";
-import { robotProblemCodes } from "@/common/robots/robot-problems";
+import { robotActivities } from "@/common/robot";
+import { robotProblemCodes } from "@/common/robot-problems";
 import {
   afterAll,
   afterEach,
@@ -20,7 +20,7 @@ import {
 import { robotHandlers } from "../robots/robot-handlers";
 import { telemetryHandlers } from "./telemetry-handlers";
 import { ingestTelemetry } from "./telemetry";
-import { telemetryBatchSchema } from "@/common/telemetry/telemetry";
+import { telemetryBatchSchema } from "@/common/telemetry";
 
 const db = openDatabase(":memory:");
 

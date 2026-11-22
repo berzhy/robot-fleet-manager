@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import type { RobotContext } from "@/common/robots/robot";
+import type { RobotContext } from "@/common/robot";
 
 import { isRobotNotFound } from "../api/robot-api";
 import { robotContextOptions } from "../api/robot-queries";

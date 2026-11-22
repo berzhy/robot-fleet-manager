@@ -8,7 +8,7 @@ import {
 import { afterEach, expect, test, vi } from "vitest";
 
 import { render } from "@/test/render";
-import type { Robot } from "@/common/robots/robot";
+import type { Robot } from "@/common/robot";
 
 import { pageMetadata, testRobot } from "@/test/robots";
 import RobotList from "./robot-list";
@@ -261,7 +261,7 @@ test("an already removed robot closes confirmation and refreshes the fleet", asy
 });
 
 test("deleting the last robot on a page requests the previous page", async () => {
-  const previous = { ...robot, id: "previous", name: "Bishop" };
+  const previous = testRobot({ ...robot, id: "previous", name: "Bishop" });
   const fetcher = vi
     .fn()
     .mockResolvedValueOnce(response([previous], 11))
@@ -501,7 +501,7 @@ test("an uncertain delete timeout refreshes the fleet with the dialog still open
 });
 
 test("deleting all robots from a later page never shows cached rows as current", async () => {
-  const cached = { ...robot, id: "cached", name: "Bishop" };
+  const cached = testRobot({ ...robot, id: "cached", name: "Bishop" });
   let deleted = false;
   let releaseFirstPage: ((response: Response) => void) | undefined;
   vi.stubGlobal(

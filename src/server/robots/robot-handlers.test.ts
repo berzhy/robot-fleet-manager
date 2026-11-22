@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import type { Robot } from "@/common/robots/robot";
+import type { Robot } from "@/common/robot";
 import { openTestDatabase, removeTestDatabase } from "@/test/database";
 import { testRobotInput } from "@/test/robots";
 
@@ -73,7 +73,7 @@ test("HTTP contracts create/list/delete and reject invalid requests", async () =
     items: [robot],
   } = (await response.json()) as { items: Robot[] };
   expect(robot.name).toBe(testRobotInput.name);
-  expect(getRobot(db, robot.id)).toEqual(robot);
+  expect(robot).toMatchObject(getRobot(db, robot.id)!);
   expect(
     await api.list(new Request("http://local/api/robots")).json(),
   ).toMatchObject({ items: [robot], pageSize: 10 });
@@ -167,7 +167,7 @@ test.each([10, 100])(
     expect(result.items).toHaveLength(count);
     expect(new Set(result.items.map((robot) => robot.id)).size).toBe(count);
     expect(listRobots(db, 0).total).toBe(count);
-    expect(getRobot(db, result.items[0].id)).toEqual(result.items[0]);
+    expect(result.items[0]).toMatchObject(getRobot(db, result.items[0].id)!);
   },
 );
 

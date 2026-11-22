@@ -1,7 +1,7 @@
 import { initializeRobot } from "./simulation";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { runSimulator } from "./simulator";
-import type { RegistryRobot } from "@/common/robots/robot";
+import type { RegistryRobot } from "@/common/robot";
 
 const robot: RegistryRobot = {
   problemCode: null,
@@ -19,7 +19,10 @@ const robot: RegistryRobot = {
   lastReceivedAt: null,
   area: null,
   batteryPercent: null,
-  activity: "unknown",
+  activity: null,
+  connection: null,
+  batteryLevel: null,
+  blockedActions: {},
 };
 
 let controller: AbortController;

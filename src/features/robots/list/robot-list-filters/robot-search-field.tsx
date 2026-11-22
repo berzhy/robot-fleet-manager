@@ -13,8 +13,7 @@ import {
   type Ref,
 } from "react";
 
-import { appliedSearch } from "@/common/robots/robot-list-params";
-
+import { appliedSearch } from "../robot-list-params";
 import useRobotListView, { setRobotListFilters } from "../use-robot-list-view";
 
 import { searchFieldId } from "./filter-fields";

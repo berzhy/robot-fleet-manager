@@ -1,12 +1,9 @@
 import "server-only";
 import { eq, sql } from "drizzle-orm";
-import {
-  actionControlTargets,
-  actionUnavailable,
-  type RobotAction,
-} from "@/common/robots/robot-actions";
+import { actionControlTargets, type RobotAction } from "@/common/robot-actions";
 import type { FleetDatabase } from "../db/database";
 import { robots } from "../db/schema";
+import { toRobot } from "./robot-status";
 import { getRobot } from "./robots";
 
 type RobotActionRequest =
@@ -26,7 +23,7 @@ export function requestRobotAction(
       return { outcome: "not-found" };
     }
 
-    const reason = actionUnavailable(robot, action, Date.now());
+    const reason = toRobot(robot, Date.now()).blockedActions[action];
     if (reason) {
       return { outcome: "unavailable", reason };
     }

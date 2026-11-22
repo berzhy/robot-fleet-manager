@@ -1,11 +1,15 @@
-import { robotProblemCodes } from "@/common/robots/robot-problems";
-import type { ControlTarget, RegistryRobot } from "@/common/robots/robot";
-import type { TelemetryReport } from "@/common/telemetry/telemetry";
+import { robotProblemCodes } from "@/common/robot-problems";
+import type {
+  ControlTarget,
+  RegistryRobot,
+  RobotActivity,
+} from "@/common/robot";
+import type { TelemetryReport } from "@/common/telemetry";
 
 export type SimulatedRobot = {
   battery: number;
   problemCode: RegistryRobot["problemCode"];
-  activity: RegistryRobot["activity"];
+  activity: RobotActivity;
   area: string;
   target: ControlTarget;
   appliedRevision: number;
@@ -55,7 +59,7 @@ export function initializeRobot(robot: RegistryRobot): SimulatedRobot {
   return {
     problemCode: robot.problemCode,
     battery: robot.batteryPercent ?? 22 + (hash % 79),
-    activity: robot.activity === "unknown" ? "idle" : robot.activity,
+    activity: robot.activity ?? "idle",
     area: robot.area ?? "Base",
     target: robot.controlTarget,
     appliedRevision: robot.appliedControlRevision,
@@ -157,9 +161,8 @@ export function advanceRobot(
           state.remaining = departureDelay;
         }
         break;
-      // Faults and unknown activity hold until a control command changes them.
+      // A fault holds until a control command changes it.
       case "needs-attention":
-      case "unknown":
         break;
     }
   }

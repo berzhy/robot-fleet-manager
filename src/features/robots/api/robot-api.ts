@@ -1,12 +1,13 @@
 import { z } from "zod";
 
-import type { RobotAction } from "@/common/robots/robot-actions";
+import type { RobotAction } from "@/common/robot-actions";
+import type { CreateRobotInput } from "@/common/robot-schemas";
+import type { Robot, RobotContext, RobotPage } from "@/common/robot";
+
 import {
   robotFilterSearchParams,
   type RobotListParams,
-} from "@/common/robots/robot-list-params";
-import type { CreateRobotInput } from "@/common/robots/robot-schemas";
-import type { Robot, RobotContext, RobotPage } from "@/common/robots/robot";
+} from "../list/robot-list-params";
 
 const requestTimeoutMs = 5_000;
 

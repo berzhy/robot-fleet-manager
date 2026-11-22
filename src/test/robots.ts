@@ -1,5 +1,6 @@
-import type { Robot, RobotPage } from "@/common/robots/robot";
-import type { CreateRobotInput } from "@/common/robots/robot-schemas";
+import type { Robot, RobotPage } from "@/common/robot";
+import type { CreateRobotInput } from "@/common/robot-schemas";
+import { toRobot, type RobotRow } from "@/server/robots/robot-status";
 
 /** What a test registers when the details do not matter to it. */
 export const testRobotInput: CreateRobotInput = {
@@ -10,25 +11,33 @@ export const testRobotInput: CreateRobotInput = {
   site: "Munich",
 };
 
-/** A registered robot that has not reported yet; a test overrides what it checks. */
-export function testRobot(overrides: Partial<Robot> = {}): Robot {
-  return {
-    id: "test",
-    name: "Test robot",
-    manufacturer: "Test manufacturer",
-    type: "inspection",
-    integrationType: "vendor-api",
-    site: "Munich",
-    createdAt: "2026-11-14T12:00:00.000Z",
-    area: null,
-    activity: "unknown",
-    problemCode: null,
-    batteryPercent: null,
-    lastReceivedAt: null,
-    queuedControlTarget: null,
-    ...overrides,
-  };
+/**
+ * A registered robot that has not reported yet; a test overrides what it
+ * checks. The server's fields are worked out at `evaluatedAt`, so a test that
+ * changes a stored field passes the robot through here again.
+ */
+export function testRobot(
+  overrides: Partial<RobotRow> = {},
+  evaluatedAt = Date.now(),
+): Robot {
+  return toRobot({ ...testRow, ...overrides }, evaluatedAt);
 }
+
+const testRow: RobotRow = {
+  id: "test",
+  name: "Test robot",
+  manufacturer: "Test manufacturer",
+  type: "inspection",
+  integrationType: "vendor-api",
+  site: "Munich",
+  createdAt: "2026-11-14T12:00:00.000Z",
+  area: null,
+  activity: null,
+  problemCode: null,
+  batteryPercent: null,
+  lastReceivedAt: null,
+  queuedControlTarget: null,
+};
 
 export function pageMetadata(
   total = 0,

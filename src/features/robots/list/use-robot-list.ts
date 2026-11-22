@@ -5,8 +5,9 @@ import {
 } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
-import type { RobotFilters } from "@/common/robots/robot-schemas";
-import { robotFilterSearchParams } from "@/common/robots/robot-list-params";
+import type { RobotFilters } from "@/common/robot-schemas";
+
+import { robotFilterSearchParams } from "./robot-list-params";
 
 import { robotListOptions } from "../api/robot-queries";
 

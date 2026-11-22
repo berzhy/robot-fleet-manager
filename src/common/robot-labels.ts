@@ -1,6 +1,6 @@
-import type { ConnectionStatus } from "../telemetry/freshness";
+import type { ConnectionStatus, Robot, RobotActivity } from "./robot";
 
-import type { Robot } from "./robot";
+const unknownLabel = "Unknown";
 
 export const robotTypeLabels = {
   cleaning: "Cleaning robot",
@@ -21,14 +21,12 @@ const activityLabels = {
   returning: "Returning",
   charging: "Charging",
   "needs-attention": "Needs attention",
-  unknown: "Unknown",
-} satisfies Record<Robot["activity"], string>;
+} satisfies Record<RobotActivity, string>;
 
 const connectionLabels = {
   online: "Online",
   delayed: "Delayed",
   offline: "Offline",
-  unknown: "Unknown",
 } satisfies Record<ConnectionStatus, string>;
 
 export function formatRobotType(type: Robot["type"]) {
@@ -39,10 +37,12 @@ export function formatIntegrationType(type: Robot["integrationType"]) {
   return integrationTypeLabels[type];
 }
 
-export function formatActivity(activity: Robot["activity"]) {
-  return activityLabels[activity];
+/** `null` is a robot that has not reported yet. */
+export function formatActivity(activity: RobotActivity | null) {
+  return activity === null ? unknownLabel : activityLabels[activity];
 }
 
-export function formatConnection(status: ConnectionStatus) {
-  return connectionLabels[status];
+/** `null` is a robot that has not reported yet. */
+export function formatConnection(status: ConnectionStatus | null) {
+  return status === null ? unknownLabel : connectionLabels[status];
 }

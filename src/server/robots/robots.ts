@@ -3,26 +3,24 @@ import "server-only";
 import { and, count, desc, eq, lte, ne, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 
-import type { RobotFilters } from "@/common/robots/robot-schemas";
 import {
-  criticalBatteryPercent,
-  lowBatteryPercent,
   robotPageSize,
   type RegistryRobot,
   type Robot,
-  type RobotActivity,
+  type RobotContext,
   type RobotPage,
-} from "@/common/robots/robot";
-import type { CreateRobotInput } from "@/common/robots/robot-schemas";
-
+} from "@/common/robot";
 import {
-  onlineReportMaxAgeMs,
-  delayedReportMaxAgeMs,
-} from "@/common/telemetry/freshness";
+  criticalBatteryPercent,
+  lowBatteryPercent,
+  offlineAfterMs,
+} from "@/common/robot-filters";
+import type { CreateRobotInput, RobotFilters } from "@/common/robot-schemas";
 
 import type { FleetDatabase } from "../db/database";
 import { latestTelemetry, robots } from "../db/schema";
 import { robotSearchCondition } from "./robot-search";
+import { onlineReportMaxAgeMs, toRobot, type RobotRow } from "./robot-status";
 
 const selection = {
   problemCode: latestTelemetry.problemCode,
@@ -34,8 +32,7 @@ const selection = {
   integrationType: robots.integrationType,
   site: robots.site,
   area: latestTelemetry.area,
-  // A parameter rather than SQL text, so the value is type-checked.
-  activity: sql<RobotActivity>`coalesce(${latestTelemetry.activity}, ${"unknown" satisfies RobotActivity})`,
+  activity: latestTelemetry.activity,
   batteryPercent: latestTelemetry.batteryPercent,
   lastReceivedAt: latestTelemetry.receivedAt,
   queuedControlTarget: sql<
@@ -60,9 +57,7 @@ export function listRobots(
   const onlineCutoff = new Date(
     evaluatedAt - onlineReportMaxAgeMs,
   ).toISOString();
-  const delayedCutoff = new Date(
-    evaluatedAt - delayedReportMaxAgeMs,
-  ).toISOString();
+  const delayedCutoff = new Date(evaluatedAt - offlineAfterMs).toISOString();
 
   const offline = sql<boolean>`${latestTelemetry.receivedAt} < ${delayedCutoff}`;
   const notCharging = ne(latestTelemetry.activity, "charging");
@@ -126,7 +121,8 @@ export function listRobots(
         .orderBy(desc(robots.createdAt), desc(robots.id))
         .limit(pageSize)
         .offset(page * pageSize)
-        .all(),
+        .all()
+        .map((row) => toRobot(row, evaluatedAt)),
       total: summary[filters.view],
       page,
       pageSize,
@@ -154,7 +150,7 @@ export function listRobots(
 export function getRobot(
   db: Pick<FleetDatabase, "select">,
   id: string,
-): Robot | undefined {
+): RobotRow | undefined {
   return db
     .select(selection)
     .from(robots)
@@ -172,24 +168,31 @@ export function createRobots(
   db: FleetDatabase,
   inputs: CreateRobotInput[],
 ): Robot[] {
+  const createdAt = new Date().toISOString();
   const rows = inputs.map((input) => ({
     ...input,
     id: randomUUID(),
-    createdAt: new Date().toISOString(),
+    createdAt,
   }));
 
   // One INSERT, so the batch is stored whole or not at all.
   db.insert(robots).values(rows).run();
 
-  return rows.map((row) => ({
-    ...row,
-    activity: "unknown",
-    problemCode: null,
-    area: null,
-    batteryPercent: null,
-    lastReceivedAt: null,
-    queuedControlTarget: null,
-  }));
+  const evaluatedAt = Date.now();
+  return rows.map((row) =>
+    toRobot(
+      {
+        ...row,
+        activity: null,
+        problemCode: null,
+        area: null,
+        batteryPercent: null,
+        lastReceivedAt: null,
+        queuedControlTarget: null,
+      },
+      evaluatedAt,
+    ),
+  );
 }
 
 export function deleteAllRobots(db: FleetDatabase) {
@@ -201,14 +204,19 @@ export function deleteRobot(db: FleetDatabase, id: string) {
 }
 
 export function robotRegistry(db: FleetDatabase): RegistryRobot[] {
+  const evaluatedAt = Date.now();
   return db
     .select(registrySelection)
     .from(robots)
     .leftJoin(latestTelemetry, eq(robots.id, latestTelemetry.robotId))
-    .all();
+    .all()
+    .map((row) => toRobot(row, evaluatedAt));
 }
 
-export function getRobotContext(db: FleetDatabase, id: string) {
+export function getRobotContext(
+  db: FleetDatabase,
+  id: string,
+): RobotContext | undefined {
   return db.transaction((tx) => {
     const robot = getRobot(tx, id);
     if (!robot) {
@@ -224,6 +232,7 @@ export function getRobotContext(db: FleetDatabase, id: string) {
       .orderBy(latestTelemetry.area)
       .all();
 
-    return { robot, peerCounts, evaluatedAt: Date.now() };
+    const evaluatedAt = Date.now();
+    return { robot: toRobot(robot, evaluatedAt), peerCounts, evaluatedAt };
   });
 }

@@ -1,4 +1,4 @@
-import { robotProblemCodes } from "@/common/robots/robot-problems";
+import { robotProblemCodes } from "@/common/robot-problems";
 import { expect, test } from "vitest";
 import {
   advanceRobot,
@@ -6,7 +6,7 @@ import {
   applyControl,
   telemetryAvailable,
 } from "./simulation";
-import type { RegistryRobot } from "@/common/robots/robot";
+import type { RegistryRobot } from "@/common/robot";
 
 const robot: RegistryRobot = {
   problemCode: null,
@@ -24,7 +24,10 @@ const robot: RegistryRobot = {
   lastReceivedAt: null,
   batteryPercent: null,
   area: null,
-  activity: "unknown",
+  activity: null,
+  connection: null,
+  batteryLevel: null,
+  blockedActions: {},
 };
 
 function tick(state: ReturnType<typeof initializeRobot>, seconds: number) {

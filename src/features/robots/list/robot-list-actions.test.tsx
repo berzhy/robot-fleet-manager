@@ -3,7 +3,7 @@ import { afterEach, expect, test, vi } from "vitest";
 
 import { render } from "@/test/render";
 
-import { pageMetadata, workingRobot } from "@/test/robots";
+import { pageMetadata, testRobot, workingRobot } from "@/test/robots";
 import RobotList from "./robot-list";
 
 afterEach(() => {
@@ -43,7 +43,10 @@ test.each([
       return Promise.resolve(
         Response.json({
           items: [
-            { ...workingRobot, lastReceivedAt: new Date().toISOString() },
+            testRobot({
+              ...workingRobot,
+              lastReceivedAt: new Date().toISOString(),
+            }),
           ],
           page: 0,
           pageSize: 20,
@@ -89,13 +92,13 @@ test("a command holds up only its own robot, without replacing the table", async
     return Promise.resolve(
       Response.json({
         items: [
-          { ...workingRobot, lastReceivedAt: reportedNow },
-          {
+          testRobot({ ...workingRobot, lastReceivedAt: reportedNow }),
+          testRobot({
             ...workingRobot,
             id: "other",
             name: "Bolt",
             lastReceivedAt: reportedNow,
-          },
+          }),
         ],
         total: 2,
         page: 0,

@@ -8,12 +8,12 @@ import {
 import type { ComponentProps } from "react";
 import { expect, test, vi, afterEach, onTestFinished } from "vitest";
 
-import { robotReading } from "@/common/robots/robot-reading";
 import { render } from "@/test/render";
 import { testRobot } from "@/test/robots";
-import type { Robot, RobotContext } from "@/common/robots/robot";
-import { actionLabels } from "@/common/robots/robot-actions";
+import type { Robot, RobotContext } from "@/common/robot";
+import { actionLabels } from "@/common/robot-actions";
 
+import { robotReading } from "../robot-reading";
 import { formatRobotTimestamp } from "../utils/robot-formatters";
 
 import ActivityControls from "./activity-controls";
@@ -84,14 +84,14 @@ test("details show the robot, missing values, and the way back", async () => {
 test("a stale report is labelled as last reported, problem included", () => {
   const evaluatedAt = Date.parse("2026-11-14T12:03:00.000Z");
   renderDetails({
-    robot: {
+    robot: testRobot({
       ...robot,
       activity: "needs-attention",
       problemCode: "path-blocked",
       area: "Lobby",
       batteryPercent: 40,
       lastReceivedAt: "2026-11-14T12:00:00.000Z",
-    },
+    }),
     peerCounts: [],
     evaluatedAt,
   });
@@ -117,12 +117,12 @@ test.each([
   "%s at %s%% shows %s beside the battery level",
   (activity, batteryPercent, icon) => {
     renderDetails({
-      robot: {
+      robot: testRobot({
         ...robot,
         activity,
         batteryPercent,
         lastReceivedAt: new Date().toISOString(),
-      },
+      }),
       peerCounts: [],
       evaluatedAt: Date.now(),
     });
@@ -136,7 +136,7 @@ test.each([
 test("the exact time of the last report is reachable by keyboard", async () => {
   const lastReceivedAt = "2026-11-14T12:00:00.000Z";
   renderDetails({
-    robot: { ...robot, lastReceivedAt },
+    robot: testRobot({ ...robot, lastReceivedAt }),
     peerCounts: [],
     evaluatedAt: Date.parse("2026-11-14T12:03:00.000Z"),
   });
@@ -187,12 +187,12 @@ function renderControls(
   render(
     <ActivityControls
       reading={robotReading(
-        {
+        testRobot({
           ...robot,
           batteryPercent: 80,
           lastReceivedAt: new Date(now).toISOString(),
           ...overrides,
-        },
+        }),
         now,
         false,
       )}
@@ -211,7 +211,7 @@ test.each([
   ["charging", "start", false],
   // Without a problem code there is nothing to retry yet.
   ["needs-attention", "retry", true],
-  ["unknown", "start", true],
+  [null, "start", true],
 ] as const)(
   "%s shows one activity control with the correct availability",
   async (activity, action, isUnavailable) => {
@@ -343,13 +343,13 @@ test.each([
 ] as const)(
   "%s explains the problem and recovery guidance",
   async (problemCode, label, guidance) => {
-    const online: Robot = {
+    const online: Robot = testRobot({
       ...robot,
       activity: "needs-attention",
       problemCode,
       batteryPercent: 80,
       lastReceivedAt: new Date().toISOString(),
-    };
+    });
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
@@ -378,14 +378,14 @@ test.each([
 ] as const)(
   "%s preserves reported status while requesting and refreshing, then dismisses success",
   async (action, activity, problemCode) => {
-    const online: Robot = {
+    const online: Robot = testRobot({
       ...robot,
       activity,
       problemCode,
       area: "Lobby",
       batteryPercent: 80,
       lastReceivedAt: new Date().toISOString(),
-    };
+    });
     const context = () =>
       Response.json({ robot: online, peerCounts: [], evaluatedAt: Date.now() });
     let resolveAction!: (response: Response) => void;
@@ -466,12 +466,12 @@ test.each([
 );
 
 test("activity requests are guarded while pending and telemetry confirms the change", async () => {
-  const online: Robot = {
+  const online: Robot = testRobot({
     ...robot,
     activity: "working" as const,
     batteryPercent: 80,
     lastReceivedAt: new Date().toISOString(),
-  };
+  });
   let resolveAction!: (value: Response) => void;
   let observed: Robot = online;
   const fetcher = vi
@@ -515,7 +515,7 @@ test("activity requests are guarded while pending and telemetry confirms the cha
   ).toHaveLength(1);
   expect(stop).toHaveAttribute("aria-disabled", "true");
 
-  observed = { ...online, activity: "idle" };
+  observed = testRobot({ ...online, activity: "idle" });
   resolveAction(new Response(null, { status: 202 }));
 
   await waitFor(() =>
@@ -559,12 +559,12 @@ test("activity requests are guarded while pending and telemetry confirms the cha
 });
 
 test("a command result is reported after leaving the details screen", async () => {
-  const online: Robot = {
+  const online: Robot = testRobot({
     ...robot,
     activity: "working" as const,
     batteryPercent: 80,
     lastReceivedAt: new Date().toISOString(),
-  };
+  });
 
   let resolveAction!: (value: Response) => void;
 
@@ -610,12 +610,12 @@ test("a command result is reported after leaving the details screen", async () =
 });
 
 test("activity controls stay disabled until the command refresh lands", async () => {
-  const online: Robot = {
+  const online: Robot = testRobot({
     ...robot,
     activity: "working" as const,
     batteryPercent: 80,
     lastReceivedAt: new Date().toISOString(),
-  };
+  });
 
   let resolveAction!: (value: Response) => void;
   let resolveRefresh: ((value: Response) => void) | undefined;
@@ -663,7 +663,7 @@ test("activity controls stay disabled until the command refresh lands", async ()
   await act(async () => {
     resolveRefresh!(
       Response.json({
-        robot: { ...online, activity: "idle" },
+        robot: testRobot({ ...online, activity: "idle" }),
         peerCounts: [],
         evaluatedAt: Date.now(),
       }),
@@ -683,12 +683,12 @@ test("activity controls stay disabled until the command refresh lands", async ()
 });
 
 test("failed action keeps reported activity and explains the failure", async () => {
-  const online: Robot = {
+  const online: Robot = testRobot({
     ...robot,
     activity: "working" as const,
     batteryPercent: 80,
     lastReceivedAt: new Date().toISOString(),
-  };
+  });
   vi.stubGlobal(
     "fetch",
     vi.fn().mockImplementation((_url: string, init?: RequestInit) =>
@@ -719,12 +719,12 @@ test("failed action keeps reported activity and explains the failure", async () 
 });
 
 test("an action the server refuses shows the server's reason", async () => {
-  const online: Robot = {
+  const online: Robot = testRobot({
     ...robot,
     activity: "working" as const,
     batteryPercent: 80,
     lastReceivedAt: new Date().toISOString(),
-  };
+  });
   vi.stubGlobal(
     "fetch",
     vi.fn().mockImplementation((_url: string, init?: RequestInit) =>

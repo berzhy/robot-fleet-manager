@@ -1,5 +1,5 @@
 import "server-only";
-import { telemetryBatchSchema } from "@/common/telemetry/telemetry";
+import { telemetryBatchSchema } from "@/common/telemetry";
 import type { FleetDatabase } from "../db/database";
 import { readJsonBody } from "../http/requests";
 import { errorResponse, jsonResponse } from "../http/responses";

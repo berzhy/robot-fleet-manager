@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { generateRobotInput } from "../src/features/robots/list/generate-robot-input";
-import { robotActivities, robotPageSize } from "../src/common/robots/robot";
+import { robotActivities, robotPageSize } from "../src/common/robot";
 import { createSchema } from "../src/server/db/create-schema";
 import { openDatabase } from "../src/server/db/database";
 import { latestTelemetry } from "../src/server/db/schema";
@@ -23,10 +23,6 @@ const areas = ["Base", "Lobby", "Floor 1", "Warehouse"];
 // Spread report times over a minute, so the fleet has online, delayed and
 // offline robots.
 const reportSpreadMs = 60_000;
-// "unknown" is what a robot without a report shows; these robots all report.
-const reportedActivities = robotActivities.filter(
-  (activity) => activity !== "unknown",
-);
 
 const robotCount = Number(process.argv[2] ?? defaultRobotCount);
 const directory = mkdtempSync(join(tmpdir(), "fleet-benchmark-"));
@@ -45,7 +41,7 @@ try {
       .values(
         robots.map((robot, index) => {
           const activity =
-            reportedActivities[(start + index) % reportedActivities.length];
+            robotActivities[(start + index) % robotActivities.length];
           return {
             robotId: robot.id,
             activity,

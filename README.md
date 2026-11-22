@@ -32,7 +32,7 @@ A fleet manager asks three questions, and the two screens answer them:
 
 Trust in the data is the theme that runs through it. Telemetry arrives about once a second, but the screen polls; reports go missing; a command is accepted long before the robot applies it. So:
 
-- **Connection is measured, not reported.** A robot is Online while its last report is at most 10 s old, Delayed up to 15 s, then Offline; Unknown before its first report. The server stamps when each report arrived, so the robot's clock does not matter, and each poll is evaluated at one instant (`evaluatedAt`), so every row on the screen agrees.
+- **Connection is measured, not reported.** A robot is Online while its last report is at most 10 s old, Delayed up to 15 s, then Offline; Unknown before its first report, which the API sends as `null`. The server stamps when each report arrived, so the robot's clock does not matter, and each poll is evaluated at one instant (`evaluatedAt`), so every row on the screen agrees.
 - **Failed refreshes are visible.** The last good data stays on screen, a warning says live updates stopped, and connection states are marked unverified. Actions still go through: the server checks each one against the latest report.
 - **A command is a target, not an event.** Sending Stop stores the target and bumps a revision; the robot reads it from the registry and acknowledges the revision in its telemetry. Until it does, the control shows the command as queued. The server checks availability against the latest report (HTTP 409 with the reason), so a stale screen cannot send something the robot can no longer do.
 
@@ -56,9 +56,9 @@ Sections read their own data instead of receiving everything from one root compo
 
 ### Business rules live in one place
 
-`src/common/robots` holds the fleet's rules as plain functions shared by the server and the browser: which actions are available and why, the main action for a robot's state, when a command counts as queued, and the battery levels. `robotReading()` works out what a robot's last report means at the poll's time (connection, staleness, battery level) once, and every component renders from that reading.
+The server works out what each robot's last report means at the poll's time (`evaluatedAt`) and sends it with the robot: its connection, its battery level, and why each action it rules out is unavailable. `src/server/robots/robot-status.ts` is the only place those rules live, and the browser renders what it receives. `src/common` holds just the contract the server, the browser and the simulator share: types, enums, request schemas and labels.
 
-The battery and offline rules must exist in SQL too, because the server counts the views. Rather than generate SQL from TypeScript, a test runs the real SQL views over every activity × battery × report age and checks both put each robot in the same view.
+The battery and offline rules must exist in SQL too, because the server counts the views. Rather than generate SQL from TypeScript, a test runs the real SQL views over every activity × battery × report age, boundaries included, and checks each robot lands in the views its own fields say.
 
 ### Writes don't lock each other
 

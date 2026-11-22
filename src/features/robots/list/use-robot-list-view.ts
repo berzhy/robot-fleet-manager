@@ -1,12 +1,12 @@
 import { useSearchParams } from "next/navigation";
 
-import type { RobotFilters } from "@/common/robots/robot-schemas";
+import type { RobotFilters } from "@/common/robot-schemas";
 import {
   parseRobotListParams,
   robotListParamKeys,
   robotListSearchParams,
   type RobotListParams,
-} from "@/common/robots/robot-list-params";
+} from "./robot-list-params";
 
 export default function useRobotListView(): RobotListParams {
   return parseRobotListParams(useSearchParams());

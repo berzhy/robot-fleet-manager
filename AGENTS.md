@@ -8,6 +8,14 @@ Pay extra attention to architecture, structure, code cleanlines and code quality
 - **Shared `sx` constant**: a recipe repeated across files (`src/theme/illustration.ts`). Promote to the theme only when it becomes an app-wide rule.
 - **Theme values in code**: `theme.vars.palette` (CSS variables are always on; tests render with the app theme through `@/test/render`).
 
+## Where code goes
+
+- **`src/app`**: Next routes only (pages and `api/**` handlers), wiring features to the server.
+- **`src/common`**: the contract shared by server, UI and simulator: types, enums, zod schemas and labels. No fleet rules.
+- **`src/server`**: data access and fleet rules; it sends each robot with its connection, battery level and blocked actions.
+- **`src/features`**: UI by feature; **`src/shared`**: UI used by more than one feature or the app shell.
+- **`src/simulator`**: the robot simulator, which reaches the app only over HTTP.
+
 ## Where tests go
 
 - **Unit tests** sit next to the code they test: `<unit>.test.ts(x)`, or `<unit>-<behaviour>.test.tsx` when one unit needs several suites (`robot-list-deletion.test.tsx`). Shared test support lives in `src/test/` (render with providers, robot fixtures, test database).

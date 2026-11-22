@@ -14,18 +14,18 @@ import cleaning from "@/assets/robots/cleaning.webp";
 import delivery from "@/assets/robots/delivery.webp";
 import inspection from "@/assets/robots/inspection.webp";
 import security from "@/assets/robots/security.webp";
-import type { Robot } from "@/common/robots/robot";
-import type { RobotReading } from "@/common/robots/robot-reading";
+import type { Robot } from "@/common/robot";
 import {
   formatActivity,
   formatIntegrationType,
   formatRobotType,
-} from "@/common/robots/robot-labels";
-import { robotProblemDetails } from "@/common/robots/robot-problems";
+} from "@/common/robot-labels";
+import { robotProblemDetails } from "@/common/robot-problems";
 import { useNotifications } from "@/shared/notifications/notification-provider";
 import { monospaceFontFamily } from "@/theme/theme";
 
 import ConnectionStatus from "../connection-status/connection-status";
+import type { RobotReading } from "../robot-reading";
 import TimeAgo from "../time-ago/time-ago";
 import { batteryLevelColors, formatBattery } from "../utils/robot-formatters";
 
@@ -137,15 +137,8 @@ export default function RobotSummary({
 
 /** Telemetry, labelled as last reported once it may be out of date. */
 function LiveValues({ reading }: { reading: RobotReading }) {
-  const {
-    robot,
-    evaluatedAt,
-    connection,
-    isStale,
-    unverified,
-    isLastKnown,
-    batteryLevel,
-  } = reading;
+  const { robot, evaluatedAt, isStale, unverified, isLastKnown } = reading;
+  const { connection, batteryLevel } = robot;
   const problem = robot.problemCode && robotProblemDetails[robot.problemCode];
 
   function label(name: string) {

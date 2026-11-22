@@ -13,11 +13,11 @@ import {
   formatConnection,
   formatIntegrationType,
   formatRobotType,
-} from "@/common/robots/robot-labels";
-import { robotProblemDetails } from "@/common/robots/robot-problems";
-import type { Robot } from "@/common/robots/robot";
-import type { RobotReading } from "@/common/robots/robot-reading";
+} from "@/common/robot-labels";
+import { robotProblemDetails } from "@/common/robot-problems";
+import type { Robot } from "@/common/robot";
 
+import type { RobotReading } from "../../robot-reading";
 import { ConnectionIndicator } from "../../connection-status/connection-status";
 import TimeAgo from "../../time-ago/time-ago";
 import {
@@ -44,8 +44,8 @@ export default function RobotTableRow({
   rowHeight: number;
   onDelete: (robot: Robot, trigger: HTMLButtonElement) => void;
 }) {
-  const { robot, evaluatedAt, connection, isStale, unverified, batteryLevel } =
-    reading;
+  const { robot, evaluatedAt, isStale, unverified } = reading;
+  const { connection, batteryLevel } = robot;
   const connectionLabel = formatConnection(connection);
 
   return (
