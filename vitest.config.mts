@@ -7,7 +7,7 @@ export default defineConfig({
         plugins: [react()],
         resolve: { tsconfigPaths: true },
         test: {
-          name: "browser",
+          name: "dom",
           environment: "jsdom",
           setupFiles: ["./vitest.setup.ts"],
           include: ["src/**/*.test.{ts,tsx}"],
