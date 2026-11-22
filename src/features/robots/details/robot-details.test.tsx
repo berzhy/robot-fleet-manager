@@ -8,7 +8,8 @@ import {
 import type { ComponentProps } from "react";
 import { expect, test, vi, afterEach, onTestFinished } from "vitest";
 
-import { render } from "@/query/test-utils";
+import { render } from "@/test/render";
+import { testRobot } from "@/test/robots";
 import type { Robot, RobotContext } from "@/modules/robots/robot";
 import { actionLabels } from "@/modules/robots/robot-actions";
 
@@ -17,22 +18,7 @@ import { formatRobotTimestamp } from "../utils/robot-formatters";
 import ActivityControls from "./activity-controls";
 import RobotDetails from "./robot-details";
 
-const robot: Robot = {
-  problemCode: null,
-  id: "test",
-  name: "Test robot",
-  manufacturer: "Test manufacturer",
-  type: "inspection" as const,
-  integrationType: "vendor-api" as const,
-  site: "Munich",
-  area: null,
-  activity: "charging",
-  batteryPercent: null,
-  lastTelemetryAt: null,
-  queuedControlTarget: null,
-  lastReceivedAt: null,
-  createdAt: "2026-11-14T12:00:00.000Z",
-};
+const robot = testRobot({ activity: "charging" });
 
 function renderDetails(context: RobotContext) {
   return render(<RobotDetails initialContext={context} />);

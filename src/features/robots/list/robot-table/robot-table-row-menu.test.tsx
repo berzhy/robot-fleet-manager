@@ -1,9 +1,9 @@
 import { fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 
-import { render } from "@/query/test-utils";
+import { render } from "@/test/render";
 
-import { workingRobot } from "../../test-fixtures";
+import { workingRobot } from "@/test/robots";
 import RobotTableRowMenu from "./robot-table-row-menu";
 
 afterEach(() => {

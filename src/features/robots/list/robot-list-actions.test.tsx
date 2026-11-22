@@ -1,9 +1,9 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 
-import { render } from "@/query/test-utils";
+import { render } from "@/test/render";
 
-import { pageMetadata, workingRobot } from "../test-fixtures";
+import { pageMetadata, workingRobot } from "@/test/robots";
 import RobotList from "./robot-list";
 
 afterEach(() => {

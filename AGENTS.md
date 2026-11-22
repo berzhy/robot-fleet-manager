@@ -6,7 +6,12 @@ Pay extra attention to architecture, structure, code cleanlines and code quality
 - **Component props first**: dedicated MUI props (`spacing`, `align`, `variant`, `color`) and native props (SVG `opacity`) before `sx`.
 - **Component `sx`**: layout, and looks that belong to that one component. Use palette keys (`"text.secondary"`), never colour literals.
 - **Shared `sx` constant**: a recipe repeated across files (`src/theme/illustration.ts`). Promote to the theme only when it becomes an app-wide rule.
-- **Theme values in code**: `theme.vars.palette` (CSS variables are always on; tests render with the app theme through `@/query/test-utils`).
+- **Theme values in code**: `theme.vars.palette` (CSS variables are always on; tests render with the app theme through `@/test/render`).
+
+## Where tests go
+
+- **Unit tests** sit next to the code they test: `<unit>.test.ts(x)`, or `<unit>-<behaviour>.test.tsx` when one unit needs several suites (`robot-list-deletion.test.tsx`). Shared test support lives in `src/test/` (render with providers, robot fixtures, test database).
+- **End-to-end tests** live in `e2e/`, with shared fixtures and helpers in `e2e/fixtures.ts`.
 
 ## Code quality bar
 

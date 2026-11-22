@@ -1,7 +1,7 @@
 import { act } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 
-import { renderHook } from "@/query/test-utils";
+import { renderHook } from "@/test/render";
 
 import { usePendingRobotAction, useSendRobotAction } from "./robot-mutations";
 

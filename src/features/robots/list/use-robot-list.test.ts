@@ -1,11 +1,11 @@
 import { act, waitFor } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 
-import { renderHook } from "@/query/test-utils";
+import { renderHook } from "@/test/render";
 import type { RobotPage } from "@/modules/robots/robot";
 
 import { getRobots } from "../api/robot-api";
-import { pageMetadata } from "../test-fixtures";
+import { pageMetadata } from "@/test/robots";
 import useRobotList, {
   useRobotListAnnouncement,
   useRobotListPageCorrection,

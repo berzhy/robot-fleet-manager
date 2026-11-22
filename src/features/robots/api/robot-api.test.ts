@@ -1,4 +1,4 @@
-import { pageMetadata } from "../test-fixtures";
+import { pageMetadata } from "@/test/robots";
 import { afterEach, expect, test, vi } from "vitest";
 import {
   ApiError,

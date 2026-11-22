@@ -7,28 +7,13 @@ import {
   type RobotPage,
 } from "@/modules/robots/robot";
 
-import { render } from "@/query/test-utils";
+import { render } from "@/test/render";
 
-import { pageMetadata } from "../../test-fixtures";
+import { pageMetadata, testRobot } from "@/test/robots";
 import { setRobotListFilters } from "../use-robot-list-view";
 import RobotTable from "./robot-table";
 
-const robot: Robot = {
-  problemCode: null,
-  id: "test",
-  name: "Test robot",
-  manufacturer: "Test manufacturer",
-  type: "inspection" as const,
-  integrationType: "vendor-api" as const,
-  site: "Munich",
-  area: null,
-  activity: "charging",
-  batteryPercent: null,
-  lastTelemetryAt: null,
-  queuedControlTarget: null,
-  lastReceivedAt: null,
-  createdAt: "2026-11-14T12:00:00.000Z",
-};
+const robot = testRobot({ activity: "charging" });
 
 const tableHandlers = {
   onAdd: () => {},

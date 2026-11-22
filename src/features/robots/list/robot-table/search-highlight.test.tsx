@@ -1,7 +1,7 @@
 import { screen } from "@testing-library/react";
 import { expect, test } from "vitest";
 
-import { render } from "@/query/test-utils";
+import { render } from "@/test/render";
 
 import SearchHighlight from "./search-highlight";
 

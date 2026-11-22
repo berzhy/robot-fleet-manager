@@ -8,28 +8,13 @@ import {
 import { Activity } from "react";
 import { afterEach, expect, test, vi } from "vitest";
 
-import { render } from "@/query/test-utils";
+import { render } from "@/test/render";
 import type { Robot, RobotPage } from "@/modules/robots/robot";
 
-import { pageMetadata } from "../test-fixtures";
+import { pageMetadata, testRobot } from "@/test/robots";
 import RobotList from "./robot-list";
 
-const robot: Robot = {
-  problemCode: null,
-  id: "one",
-  name: "Atlas",
-  manufacturer: "Maker",
-  type: "inspection" as const,
-  integrationType: "vendor-api" as const,
-  site: "Munich",
-  area: null,
-  activity: "unknown",
-  batteryPercent: null,
-  lastTelemetryAt: null,
-  queuedControlTarget: null,
-  lastReceivedAt: null,
-  createdAt: "2026-11-14T12:00:00.000Z",
-};
+const robot = testRobot({ id: "one", name: "Atlas", manufacturer: "Maker" });
 
 const page = (items: Robot[], total = items.length, index = 0): RobotPage => ({
   items,

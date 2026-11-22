@@ -1,7 +1,7 @@
 import { fireEvent, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 
-import { render } from "@/query/test-utils";
+import { render } from "@/test/render";
 
 import ErrorPage from "./error";
 

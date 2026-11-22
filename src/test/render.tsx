@@ -15,7 +15,7 @@ import { afterEach } from "vitest";
 import { NotificationProvider } from "@/shared/notifications/notification-provider";
 import AppThemeProvider from "@/theme/theme-provider";
 
-import { createQueryClient } from "./query-client";
+import { createQueryClient } from "@/query/query-client";
 
 // Keep notifications within async act, including tests that control polling timers.
 notifyManager.setScheduler(queueMicrotask);

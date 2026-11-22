@@ -1,8 +1,8 @@
 import { act, fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 
-import { renderHook, render } from "@/query/test-utils";
-import type { Robot, RobotContext } from "@/modules/robots/robot";
+import { renderHook, render } from "@/test/render";
+import type { RobotContext } from "@/modules/robots/robot";
 import type { CreateRobotInput } from "@/modules/robots/robot-validation";
 
 import { useCreateRobots, useSendRobotAction } from "./api/robot-mutations";
@@ -21,24 +21,19 @@ import {
   setRobotListFilters,
   setRobotListPage,
 } from "./list/use-robot-list-view";
-import { pageMetadata } from "./test-fixtures";
+import { pageMetadata, testRobot } from "@/test/robots";
 
-const robot: Robot = {
-  problemCode: null,
+const robot = testRobot({
   id: "live",
   name: "Live robot",
   manufacturer: "Maker",
-  type: "inspection" as const,
-  integrationType: "vendor-api" as const,
-  site: "Munich",
   createdAt: "2026-01-01T00:00:00.000Z",
-  batteryPercent: 50,
   activity: "working",
   area: "Lobby",
+  batteryPercent: 50,
   lastTelemetryAt: "2026-01-01T00:00:00.000Z",
-  queuedControlTarget: null,
   lastReceivedAt: "2026-01-01T00:00:00.000Z",
-};
+});
 
 const page = (battery = 50) =>
   Response.json({

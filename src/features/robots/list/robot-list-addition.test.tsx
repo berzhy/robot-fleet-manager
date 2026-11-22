@@ -7,32 +7,21 @@ import {
 } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 
-import { render } from "@/query/test-utils";
+import { render } from "@/test/render";
 import type { Robot } from "@/modules/robots/robot";
 import {
   createRobotBatchSchema,
   createRobotSchema,
 } from "@/modules/robots/robot-validation";
 
-import { pageMetadata } from "../test-fixtures";
+import { pageMetadata, testRobot } from "@/test/robots";
 import RobotList from "./robot-list";
 
-const robot: Robot = {
-  problemCode: null,
+const robot = testRobot({
   id: "new",
   name: "New robot",
   manufacturer: "Maker",
-  type: "inspection" as const,
-  integrationType: "vendor-api" as const,
-  site: "Munich",
-  area: null,
-  activity: "unknown",
-  batteryPercent: null,
-  lastTelemetryAt: null,
-  queuedControlTarget: null,
-  lastReceivedAt: null,
-  createdAt: "2026-11-14T12:00:00.000Z",
-};
+});
 function response(items: Robot[], total = items.length, page = 0) {
   return Response.json({
     items,
