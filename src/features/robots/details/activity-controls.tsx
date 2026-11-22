@@ -9,7 +9,11 @@ import type { Robot } from "@/modules/robots/robot";
 import { actionLabels, type RobotAction } from "@/modules/robots/robot-actions";
 
 import { actionIcons } from "../robot-action-icons";
-import { commandUnavailable, isActionQueued } from "../use-robot-command";
+import {
+  commandUnavailable,
+  isActionQueued,
+  otherChangePendingReason,
+} from "../use-robot-command";
 
 const tileSizePx = 120;
 const tileIconSizePx = 32;
@@ -41,9 +45,8 @@ export default function ActivityControls({
     if (pendingAction) {
       return "Sending command…";
     }
-    // The write lock covers every robot change, not only this robot's.
     if (pending) {
-      return "Another change is in progress";
+      return otherChangePendingReason;
     }
     return commandUnavailable(robot, action, evaluatedAt, unverified);
   }

@@ -91,6 +91,10 @@ test("pending action prevents overlapping mutations without replacing the table"
   vi.stubGlobal("fetch", fetcher);
   render(<RobotList />);
 
+  const trigger = await screen.findByRole("button", {
+    name: "Actions for Atlas",
+  });
+  trigger.focus();
   const menu = await openMenu();
   const row = screen.getByTestId("robot-row-control");
   fireEvent.click(
@@ -98,11 +102,18 @@ test("pending action prevents overlapping mutations without replacing the table"
   );
 
   await waitFor(() =>
-    expect(
-      screen.getByRole("button", { name: "Actions for Atlas" }),
-    ).toBeDisabled(),
+    expect(screen.getByTestId("fleet-add-robot")).toBeDisabled(),
   );
-  expect(screen.getByTestId("fleet-add-robot")).toBeDisabled();
+  // Keyboard users keep their place in the row while the command is sent.
+  await waitFor(() => expect(trigger).toHaveFocus());
+
+  const pendingMenu = await openMenu();
+  for (const name of [/Start activity/, /Delete/]) {
+    const item = within(pendingMenu).getByRole("menuitem", { name });
+    expect(item).toHaveAttribute("aria-disabled", "true");
+    expect(item).toHaveTextContent("Another change is in progress");
+  }
+  fireEvent.keyDown(pendingMenu, { key: "Escape" });
   expect(screen.getByTestId("robot-row-control")).toBe(row);
   expect(
     fetcher.mock.calls.filter(([, init]) => init?.method === "POST"),

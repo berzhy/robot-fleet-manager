@@ -185,9 +185,18 @@ test("creation locks pagination and deletion, then refreshes the current later p
     await Promise.resolve();
   });
   expect(screen.getByTestId("fleet-previous-page")).toBeDisabled();
-  expect(
-    within(screen.getByTestId("robot-row-new")).getByTestId("robot-actions"),
-  ).toBeDisabled();
+  const actions = within(screen.getByTestId("robot-row-new")).getByTestId(
+    "robot-actions",
+  );
+  vi.spyOn(actions, "getBoundingClientRect").mockReturnValue(
+    new DOMRect(0, 0, 40, 40),
+  );
+  fireEvent.click(actions);
+  expect(await screen.findByTestId("robot-delete")).toHaveAttribute(
+    "aria-disabled",
+    "true",
+  );
+  fireEvent.keyDown(screen.getByRole("menu"), { key: "Escape" });
 
   act(() => complete(createdResponse([robot])));
   await waitFor(() =>

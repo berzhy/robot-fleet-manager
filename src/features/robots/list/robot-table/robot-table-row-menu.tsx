@@ -12,7 +12,10 @@ import type { Robot } from "@/modules/robots/robot";
 
 import { useRobotWriteLock } from "../../api/robot-mutations";
 import { actionIcons } from "../../robot-action-icons";
-import useRobotCommand, { commandUnavailable } from "../../use-robot-command";
+import useRobotCommand, {
+  commandUnavailable,
+  otherChangePendingReason,
+} from "../../use-robot-command";
 
 export default function RobotTableRowMenu({
   robot,
@@ -36,7 +39,8 @@ export default function RobotTableRowMenu({
       <IconButton
         data-testid="robot-actions"
         size="small"
-        disabled={isWritePending}
+        // Stays enabled during a write: closing the menu returns focus here,
+        // and a disabled button would drop it. The items say why they wait.
         id={buttonId}
         aria-label={`Actions for ${robot.name}`}
         aria-haspopup="menu"
@@ -56,12 +60,9 @@ export default function RobotTableRowMenu({
         onClose={() => setAnchor(null)}
       >
         {robotActions.map((action) => {
-          const reason = commandUnavailable(
-            robot,
-            action,
-            evaluatedAt,
-            unverified,
-          );
+          const reason = isWritePending
+            ? otherChangePendingReason
+            : commandUnavailable(robot, action, evaluatedAt, unverified);
           const Icon = actionIcons[action];
           return (
             <MenuItem
@@ -86,8 +87,9 @@ export default function RobotTableRowMenu({
         })}
         <MenuItem
           data-testid="robot-delete"
+          disabled={isWritePending}
           onClick={() => {
-            if (anchor) {
+            if (anchor && !isWritePending) {
               onDelete(robot, anchor);
             }
             setAnchor(null);
@@ -96,7 +98,10 @@ export default function RobotTableRowMenu({
           <ListItemIcon>
             <DeleteIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText>Delete</ListItemText>
+          <ListItemText
+            primary="Delete"
+            secondary={isWritePending ? otherChangePendingReason : undefined}
+          />
         </MenuItem>
       </Menu>
     </>

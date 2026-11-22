@@ -11,6 +11,9 @@ import { useNotifications } from "@/shared/notifications/notification-provider";
 import { ApiError, isRequestTimeout } from "./api/robot-api";
 import { useRobotWriteLock, useSendRobotAction } from "./api/robot-mutations";
 
+/** The write lock covers every robot change, not only this robot's. */
+export const otherChangePendingReason = "Another change is in progress";
+
 /**
  * Why a screen cannot offer an action now. Data that may be out of date
  * blocks every action before the robot's own state is considered. A queued
