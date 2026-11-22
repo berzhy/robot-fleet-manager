@@ -8,7 +8,7 @@ import {
 import { afterEach, expect, test, vi } from "vitest";
 
 import { render } from "@/test/render";
-import type { Robot } from "@/common/robot";
+import type { Robot } from "@/common/types";
 
 import { pageMetadata, testRobot } from "@/test/robots";
 import RobotList from "./robot-list";

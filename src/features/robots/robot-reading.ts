@@ -1,4 +1,4 @@
-import type { Robot } from "@/common/robot";
+import type { Robot } from "@/common/types";
 
 /**
  * A robot as one poll saw it, with what that means for the screen. Screens

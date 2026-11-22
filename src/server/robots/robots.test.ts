@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { robotTypes, integrationTypes } from "@/common/robot";
+import { integrationTypes, robotTypes } from "@/common/constants";
 import { openTestDatabase, removeTestDatabase } from "@/test/database";
 import { testRobotInput } from "@/test/robots";
 
@@ -147,15 +147,29 @@ test("batch creation rolls back every insert if a later database write fails", (
   expect(listRobots(db, 0).total).toBe(0);
 });
 
+test("a new robot is in the registry with no report and the default command", () => {
+  const robot = createRobot(db, testRobotInput);
+
+  expect(robotRegistry(db)).toEqual([
+    {
+      id: robot.id,
+      activity: null,
+      problemCode: null,
+      batteryPercent: null,
+      area: null,
+      ...newRobotControl,
+    },
+  ]);
+});
+
 test.each(robotTypes)(
-  "%s type persists in creation, list, details and registry",
+  "%s type persists in creation, list and details",
   (type) => {
     const robot = createRobot(db, { ...testRobotInput, type });
 
     expect(robot.type).toBe(type);
     expect(robot).toMatchObject(getRobot(db, robot.id)!);
     expect(listRobots(db, 0).items).toEqual([robot]);
-    expect(robotRegistry(db)).toEqual([{ ...robot, ...newRobotControl }]);
   },
 );
 
@@ -180,14 +194,13 @@ test("fresh schema rejects missing and unsupported types even outside the API", 
 });
 
 test.each(integrationTypes)(
-  "%s integration persists in list, details and registry",
+  "%s integration persists in list and details",
   (integrationType) => {
     const robot = createRobot(db, { ...testRobotInput, integrationType });
 
     expect(robot.integrationType).toBe(integrationType);
     expect(robot).toMatchObject(getRobot(db, robot.id)!);
     expect(listRobots(db, 0).items).toEqual([robot]);
-    expect(robotRegistry(db)).toEqual([{ ...robot, ...newRobotControl }]);
   },
 );
 

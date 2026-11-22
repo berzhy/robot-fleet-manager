@@ -1,7 +1,11 @@
 import { expect, test } from "vitest";
 
-import { robotActions, type RobotAction } from "@/common/robot";
-import { lowBatteryPercent, offlineAfterMs } from "@/common/robot-filters";
+import {
+  lowBatteryPercent,
+  offlineAfterMs,
+  robotActions,
+} from "@/common/constants";
+import type { RobotAction } from "@/common/types";
 
 import { onlineReportMaxAgeMs, toRobot, type RobotRow } from "./robot-status";
 

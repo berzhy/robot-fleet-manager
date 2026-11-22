@@ -1,5 +1,5 @@
-import type { Robot, RobotPage } from "@/common/robot";
-import type { CreateRobotInput } from "@/common/robot-schemas";
+import type { CreateRobotInput } from "@/common/schemas";
+import type { Robot, RobotPage } from "@/common/types";
 import { toRobot, type RobotRow } from "@/server/robots/robot-status";
 
 /** What a test registers when the details do not matter to it. */

@@ -1,45 +1,20 @@
-import type { FleetSummary, FilterOptions } from "./robot-filters";
+import type {
+  controlTargets,
+  fleetViews,
+  integrationTypes,
+  robotActions,
+  robotActivities,
+  robotProblemCodes,
+  robotTypes,
+} from "./constants";
 
-export const robotTypes = [
-  "cleaning",
-  "security",
-  "delivery",
-  "inspection",
-] as const;
-type RobotType = (typeof robotTypes)[number];
-
-export const integrationTypes = ["ros2", "vda5050", "vendor-api"] as const;
-
-export const robotPageSize = 10;
-export const robotPageSizes = [10, 20, 50] as const;
-
-export const robotActivities = [
-  "working",
-  "idle",
-  "returning",
-  "charging",
-  "needs-attention",
-] as const;
+export type RobotType = (typeof robotTypes)[number];
+export type IntegrationType = (typeof integrationTypes)[number];
 export type RobotActivity = (typeof robotActivities)[number];
-
-export const robotProblemCodes = [
-  "path-blocked",
-  "position-lost",
-  "sensor-obstructed",
-] as const;
 export type RobotProblemCode = (typeof robotProblemCodes)[number];
-
-export const robotActions = [
-  "start",
-  "stop",
-  "retry",
-  "return-to-base",
-] as const;
 export type RobotAction = (typeof robotActions)[number];
-
-/** What the robot's latest command asks of it. */
-export const controlTargets = ["work", "stop", "base"] as const;
 export type ControlTarget = (typeof controlTargets)[number];
+type FleetView = (typeof fleetViews)[number];
 
 /** How recent the robot's last report is when the server answers. */
 export type ConnectionStatus = "online" | "delayed" | "offline";
@@ -57,7 +32,7 @@ export type Robot = {
   createdAt: string;
   manufacturer: string;
   type: RobotType;
-  integrationType: (typeof integrationTypes)[number];
+  integrationType: IntegrationType;
   site: string;
   area: string | null;
   activity: RobotActivity | null;
@@ -79,14 +54,20 @@ export type Robot = {
 };
 
 /**
- * A robot as the simulator reads it from the registry: with the latest
- * command (target and revision) and the revision the robot last applied.
+ * What the simulator reads for each robot: where its last report left it,
+ * the latest command (target and revision) and the revision it last applied.
  */
-export type RegistryRobot = Robot & {
+export type RegistryRobot = Pick<
+  Robot,
+  "id" | "activity" | "problemCode" | "batteryPercent" | "area"
+> & {
   controlTarget: ControlTarget;
   controlRevision: number;
   appliedControlRevision: number;
 };
+
+type FleetSummary = Record<FleetView, number>;
+export type FilterOptions = { sites: string[]; manufacturers: string[] };
 
 export type RobotPage = {
   summary: FleetSummary;

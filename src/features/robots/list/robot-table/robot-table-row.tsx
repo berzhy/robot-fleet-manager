@@ -11,11 +11,11 @@ import type { FocusEventHandler } from "react";
 import {
   formatActivity,
   formatConnection,
-  formatIntegrationType,
-  formatRobotType,
+  integrationTypeLabels,
   robotProblemLabels,
-} from "@/common/robot-labels";
-import type { Robot } from "@/common/robot";
+  robotTypeLabels,
+} from "@/common/labels";
+import type { Robot } from "@/common/types";
 
 import type { RobotReading } from "../../robot-reading";
 import { ConnectionIndicator } from "../../connection-status/connection-status";
@@ -178,11 +178,11 @@ export default function RobotTableRow({
         />
       </TableCell>
       <TableCell data-testid="robot-type">
-        <SearchHighlight text={formatRobotType(robot.type)} search={search} />
+        <SearchHighlight text={robotTypeLabels[robot.type]} search={search} />
       </TableCell>
       <TableCell data-testid="robot-integration">
         <SearchHighlight
-          text={formatIntegrationType(robot.integrationType)}
+          text={integrationTypeLabels[robot.integrationType]}
           search={search}
         />
       </TableCell>

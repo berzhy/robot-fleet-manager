@@ -14,13 +14,13 @@ import cleaning from "@/assets/robots/cleaning.webp";
 import delivery from "@/assets/robots/delivery.webp";
 import inspection from "@/assets/robots/inspection.webp";
 import security from "@/assets/robots/security.webp";
-import type { Robot, RobotProblemCode } from "@/common/robot";
 import {
   formatActivity,
-  formatIntegrationType,
-  formatRobotType,
+  integrationTypeLabels,
   robotProblemLabels,
-} from "@/common/robot-labels";
+  robotTypeLabels,
+} from "@/common/labels";
+import type { Robot, RobotProblemCode } from "@/common/types";
 import { useNotifications } from "@/shared/notifications/notification-provider";
 import { monospaceFontFamily } from "@/theme/theme";
 
@@ -115,7 +115,7 @@ export default function RobotSummary({
           {robot.name}
         </Typography>
         <Typography color="textSecondary" sx={{ mt: 0.5 }}>
-          {robot.manufacturer} · {formatRobotType(robot.type)}
+          {robot.manufacturer} · {robotTypeLabels[robot.type]}
         </Typography>
         {missing ? (
           <Alert data-testid="robot-unavailable" severity="info" sx={{ mt: 3 }}>
@@ -257,7 +257,7 @@ function Facts({ robot, evaluatedAt }: { robot: Robot; evaluatedAt: number }) {
     >
       <Field label="Integration">
         <Typography component="dd" variant="subtitle2">
-          {formatIntegrationType(robot.integrationType)}
+          {integrationTypeLabels[robot.integrationType]}
         </Typography>
       </Field>
       <Field label="Registered">

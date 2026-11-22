@@ -1,8 +1,7 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
-import { robotActivities } from "@/common/robot";
-import { offlineAfterMs } from "@/common/robot-filters";
-import type { RobotFilters } from "@/common/robot-schemas";
+import { offlineAfterMs, robotActivities } from "@/common/constants";
+import type { RobotFilters } from "@/common/schemas";
 import { openTestDatabase, removeTestDatabase } from "@/test/database";
 import { testRobotInput } from "@/test/robots";
 

@@ -1,10 +1,10 @@
-import {
-  robotProblemCodes,
-  type ControlTarget,
-  type RegistryRobot,
-  type RobotActivity,
-} from "@/common/robot";
-import type { TelemetryReport } from "@/common/telemetry";
+import { robotProblemCodes } from "@/common/constants";
+import type { TelemetryReport } from "@/common/schemas";
+import type {
+  ControlTarget,
+  RegistryRobot,
+  RobotActivity,
+} from "@/common/types";
 
 export type SimulatedRobot = {
   battery: number;

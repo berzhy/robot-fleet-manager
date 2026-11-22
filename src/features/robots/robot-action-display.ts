@@ -4,7 +4,7 @@ import ReplayIcon from "@mui/icons-material/Replay";
 import StopIcon from "@mui/icons-material/Stop";
 import type SvgIcon from "@mui/material/SvgIcon";
 
-import type { RobotAction } from "@/common/robot";
+import type { RobotAction } from "@/common/types";
 
 export const actionLabels = {
   start: "Start activity",

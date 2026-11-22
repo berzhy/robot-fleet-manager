@@ -1,4 +1,4 @@
-import type { Robot, RobotAction } from "@/common/robot";
+import type { Robot, RobotAction } from "@/common/types";
 import { useNotifications } from "@/shared/notifications/notification-provider";
 
 import { isActionUnavailable, isRequestTimeout } from "./api/robot-api";

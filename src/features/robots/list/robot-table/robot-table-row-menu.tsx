@@ -7,7 +7,8 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import { useId, useState } from "react";
 
-import { robotActions, type Robot } from "@/common/robot";
+import { robotActions } from "@/common/constants";
+import type { Robot } from "@/common/types";
 
 import { actionIcons, actionLabels } from "../../robot-action-display";
 import { commandUnavailable } from "../../robot-commands";

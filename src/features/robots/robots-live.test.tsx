@@ -2,7 +2,7 @@ import { act, fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 
 import { renderHook, render } from "@/test/render";
-import type { RobotContext } from "@/common/robot";
+import type { RobotContext } from "@/common/types";
 
 import { useSendRobotAction } from "./api/robot-mutations";
 import {

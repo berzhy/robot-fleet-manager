@@ -1,8 +1,8 @@
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import FiberManualRecordOutlinedIcon from "@mui/icons-material/FiberManualRecordOutlined";
 import Stack from "@mui/material/Stack";
-import { formatConnection } from "@/common/robot-labels";
-import type { ConnectionStatus } from "@/common/robot";
+import { formatConnection } from "@/common/labels";
+import type { ConnectionStatus } from "@/common/types";
 
 const colors = {
   online: "success.main",

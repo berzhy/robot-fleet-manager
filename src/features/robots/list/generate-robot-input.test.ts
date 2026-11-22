@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vitest";
-import { createRobotSchema } from "@/common/robot-schemas";
+import { createRobotSchema } from "@/common/schemas";
 import { generateRobotInput } from "./generate-robot-input";
 test("generated metadata satisfies the create contract without inventing telemetry", () => {
   const input = generateRobotInput();

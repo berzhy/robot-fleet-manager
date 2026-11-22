@@ -10,7 +10,7 @@ import { expect, test, vi, afterEach, onTestFinished } from "vitest";
 
 import { render } from "@/test/render";
 import { testRobot } from "@/test/robots";
-import type { Robot, RobotContext } from "@/common/robot";
+import type { Robot, RobotContext } from "@/common/types";
 
 import { actionLabels } from "../robot-action-display";
 import { robotReading } from "../robot-reading";

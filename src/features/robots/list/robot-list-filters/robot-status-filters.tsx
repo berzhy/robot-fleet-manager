@@ -14,8 +14,8 @@ import {
   fleetViews,
   lowBatteryPercent,
   offlineAfterMs,
-} from "@/common/robot-filters";
-import type { RobotFilters } from "@/common/robot-schemas";
+} from "@/common/constants";
+import type { RobotFilters } from "@/common/schemas";
 
 import useRobotList from "../use-robot-list";
 import useRobotListView, { setRobotListFilters } from "../use-robot-list-view";

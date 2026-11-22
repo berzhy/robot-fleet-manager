@@ -1,9 +1,10 @@
 import type {
   ConnectionStatus,
-  Robot,
+  IntegrationType,
   RobotActivity,
   RobotProblemCode,
-} from "./robot";
+  RobotType,
+} from "./types";
 
 const unknownLabel = "Unknown";
 
@@ -12,13 +13,13 @@ export const robotTypeLabels = {
   security: "Security robot",
   delivery: "Delivery robot",
   inspection: "Inspection robot",
-} satisfies Record<Robot["type"], string>;
+} satisfies Record<RobotType, string>;
 
 export const integrationTypeLabels = {
   ros2: "ROS 2",
   vda5050: "VDA5050",
   "vendor-api": "Vendor API",
-} satisfies Record<Robot["integrationType"], string>;
+} satisfies Record<IntegrationType, string>;
 
 const activityLabels = {
   working: "Working",
@@ -39,14 +40,6 @@ export const robotProblemLabels = {
   "position-lost": "Position lost",
   "sensor-obstructed": "Sensor obstructed",
 } satisfies Record<RobotProblemCode, string>;
-
-export function formatRobotType(type: Robot["type"]) {
-  return robotTypeLabels[type];
-}
-
-export function formatIntegrationType(type: Robot["integrationType"]) {
-  return integrationTypeLabels[type];
-}
 
 /** `null` is a robot that has not reported yet. */
 export function formatActivity(activity: RobotActivity | null) {

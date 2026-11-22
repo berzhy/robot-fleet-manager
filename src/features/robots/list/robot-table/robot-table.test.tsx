@@ -1,7 +1,8 @@
 import { act, fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 
-import { robotPageSizes, type Robot, type RobotPage } from "@/common/robot";
+import { robotPageSizes } from "@/common/constants";
+import type { Robot, RobotPage } from "@/common/types";
 
 import { render } from "@/test/render";
 

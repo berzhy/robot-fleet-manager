@@ -4,7 +4,7 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 
-import type { RobotAction } from "@/common/robot";
+import type { RobotAction } from "@/common/types";
 
 import {
   createRobots,

@@ -1,7 +1,7 @@
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 
-import type { Robot } from "@/common/robot";
+import type { Robot } from "@/common/types";
 import { monospaceFontFamily } from "@/theme/theme";
 
 import { robotLogFixture } from "./robot-log-fixture";

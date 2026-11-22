@@ -5,7 +5,7 @@ import Tooltip from "@mui/material/Tooltip";
 import { visuallyHidden } from "@mui/utils";
 import { useId } from "react";
 
-import type { RobotAction } from "@/common/robot";
+import type { RobotAction } from "@/common/types";
 
 import { actionIcons, actionLabels } from "../robot-action-display";
 import { commandUnavailable, mainActivityAction } from "../robot-commands";

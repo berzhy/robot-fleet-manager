@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { offlineAfterMs } from "@/common/robot-filters";
+import { offlineAfterMs } from "@/common/constants";
 import { testRobot } from "@/test/robots";
 
 import { robotReading } from "./robot-reading";

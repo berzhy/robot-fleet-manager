@@ -1,13 +1,12 @@
 import { z } from "zod";
 
-import { robotPageSize } from "@/common/robot";
-import { fleetViews } from "@/common/robot-filters";
+import { fleetViews, robotPageSize } from "@/common/constants";
 import {
   robotFiltersSchema,
   robotPageSchema,
   robotPageSizeSchema,
   type RobotFilters,
-} from "@/common/robot-schemas";
+} from "@/common/schemas";
 
 export type RobotListParams = {
   page: number;

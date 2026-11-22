@@ -3,18 +3,18 @@ import "server-only";
 import { and, eq, or, sql, type SQL } from "drizzle-orm";
 
 import {
-  formatRobotType,
-  formatIntegrationType,
+  integrationTypes,
+  robotActivities,
+  robotProblemCodes,
+  robotTypes,
+} from "@/common/constants";
+import {
   formatActivity,
   formatConnection,
+  integrationTypeLabels,
   robotProblemLabels,
-} from "@/common/robot-labels";
-import {
-  robotTypes,
-  robotActivities,
-  integrationTypes,
-  robotProblemCodes,
-} from "@/common/robot";
+  robotTypeLabels,
+} from "@/common/labels";
 
 import { robots, latestTelemetry } from "../db/schema";
 
@@ -69,11 +69,11 @@ export function robotSearchCondition(
           latestTelemetry.activity,
         ].map((column) => sql`${column} like ${pattern} escape '\\'`),
         ...robotTypes
-          .filter((type) => formatRobotType(type).toLowerCase().includes(query))
+          .filter((type) => robotTypeLabels[type].toLowerCase().includes(query))
           .map((type) => eq(robots.type, type)),
         ...integrationTypes
           .filter((type) =>
-            formatIntegrationType(type).toLowerCase().includes(query),
+            integrationTypeLabels[type].toLowerCase().includes(query),
           )
           .map((type) => eq(robots.integrationType, type)),
         ...[...robotActivities, null]

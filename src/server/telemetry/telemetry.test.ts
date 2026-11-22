@@ -1,4 +1,5 @@
-import { robotActivities, robotProblemCodes } from "@/common/robot";
+import { robotActivities, robotProblemCodes } from "@/common/constants";
+import { telemetryBatchSchema } from "@/common/schemas";
 import {
   afterAll,
   afterEach,
@@ -19,7 +20,6 @@ import {
 import { robotHandlers } from "../robots/robot-handlers";
 import { telemetryHandlers } from "./telemetry-handlers";
 import { ingestTelemetry } from "./telemetry";
-import { telemetryBatchSchema } from "@/common/telemetry";
 
 const db = openDatabase(":memory:");
 
@@ -83,7 +83,9 @@ test("ingestion persists latest telemetry and receipt times in list, registry an
     Date.parse(observedAt),
   );
   const api = robotHandlers(() => db);
-  expect(await api.registry().json()).toMatchObject({ items: [robot] });
+  expect(await api.registry().json()).toMatchObject({
+    items: [{ id, activity: robot.activity, batteryPercent: 50 }],
+  });
   expect(
     await api.list(new Request("http://local/api/robots")).json(),
   ).toMatchObject({ items: [robot], total: 1 });
@@ -216,8 +218,8 @@ test("telemetry preserves problems and rejects impossible or regressing acknowle
   expect(robotRegistry(db).find((robot) => robot.id === id)).toMatchObject({
     activity: "needs-attention",
     appliedControlRevision: 2,
-    lastReceivedAt: observedAt,
   });
+  expect(getRobot(db, id)?.lastReceivedAt).toBe(observedAt);
 
   for (const invalid of [
     { activity: "needs-attention", problemCode: null },

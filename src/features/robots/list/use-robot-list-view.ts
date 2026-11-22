@@ -1,6 +1,6 @@
 import { useSearchParams } from "next/navigation";
 
-import type { RobotFilters } from "@/common/robot-schemas";
+import type { RobotFilters } from "@/common/schemas";
 import {
   parseRobotListParams,
   robotListParamKeys,

@@ -1,28 +1,17 @@
 import { initializeRobot } from "./simulation";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { runSimulator } from "./simulator";
-import type { RegistryRobot } from "@/common/robot";
+import type { RegistryRobot } from "@/common/types";
 
 const robot: RegistryRobot = {
+  id: "one",
+  activity: null,
   problemCode: null,
+  batteryPercent: null,
+  area: null,
   controlTarget: "work",
   controlRevision: 0,
   appliedControlRevision: 0,
-  id: "one",
-  name: "Test",
-  manufacturer: "Maker",
-  type: "inspection" as const,
-  integrationType: "vendor-api" as const,
-  site: "Site",
-  createdAt: "2026-01-01T00:00:00.000Z",
-  lastReceivedAt: null,
-  area: null,
-  batteryPercent: null,
-  activity: null,
-  connection: null,
-  batteryLevel: null,
-  blockedActions: {},
-  queuedActions: [],
 };
 
 let controller: AbortController;

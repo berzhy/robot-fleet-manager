@@ -4,18 +4,18 @@ import { and, count, desc, eq, lte, ne, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 
 import {
-  robotPageSize,
-  type RegistryRobot,
-  type Robot,
-  type RobotContext,
-  type RobotPage,
-} from "@/common/robot";
-import {
   criticalBatteryPercent,
   lowBatteryPercent,
   offlineAfterMs,
-} from "@/common/robot-filters";
-import type { CreateRobotInput, RobotFilters } from "@/common/robot-schemas";
+  robotPageSize,
+} from "@/common/constants";
+import type { CreateRobotInput, RobotFilters } from "@/common/schemas";
+import type {
+  RegistryRobot,
+  Robot,
+  RobotContext,
+  RobotPage,
+} from "@/common/types";
 
 import type { FleetDatabase } from "../db/database";
 import { latestTelemetry, robots } from "../db/schema";
@@ -41,7 +41,11 @@ const selection = {
 };
 
 const registrySelection = {
-  ...selection,
+  id: robots.id,
+  activity: latestTelemetry.activity,
+  problemCode: latestTelemetry.problemCode,
+  batteryPercent: latestTelemetry.batteryPercent,
+  area: latestTelemetry.area,
   controlTarget: robots.controlTarget,
   controlRevision: robots.controlRevision,
   appliedControlRevision: sql<number>`coalesce(${latestTelemetry.appliedControlRevision}, 0)`,
@@ -206,13 +210,11 @@ export function deleteRobot(db: FleetDatabase, id: string) {
 }
 
 export function robotRegistry(db: FleetDatabase): RegistryRobot[] {
-  const evaluatedAt = Date.now();
   return db
     .select(registrySelection)
     .from(robots)
     .leftJoin(latestTelemetry, eq(robots.id, latestTelemetry.robotId))
-    .all()
-    .map((row) => toRobot(row, evaluatedAt));
+    .all();
 }
 
 export function getRobotContext(

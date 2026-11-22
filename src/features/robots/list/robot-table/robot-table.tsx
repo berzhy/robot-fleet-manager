@@ -11,7 +11,7 @@ import Tooltip from "@mui/material/Tooltip";
 import { visuallyHidden } from "@mui/utils";
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 
-import type { Robot } from "@/common/robot";
+import type { Robot } from "@/common/types";
 
 import { robotReading } from "../../robot-reading";
 

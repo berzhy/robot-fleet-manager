@@ -1,4 +1,4 @@
-import type { BatteryLevel } from "@/common/robot";
+import type { BatteryLevel } from "@/common/types";
 
 export function formatBattery(value: number | null) {
   return value === null ? "Unknown" : `${Math.round(value)}%`;

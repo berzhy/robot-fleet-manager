@@ -2,11 +2,11 @@ import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 import {
   controlTargets,
+  integrationTypes,
   robotProblemCodes,
   robotTypes,
-  integrationTypes,
-  type RobotActivity,
-} from "@/common/robot";
+} from "@/common/constants";
+import type { RobotActivity } from "@/common/types";
 
 // CHECK constraints live in schema.sql; these mappings support typed queries.
 export const robots = sqliteTable("robots", {

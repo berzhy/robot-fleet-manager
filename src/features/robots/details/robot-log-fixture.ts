@@ -1,5 +1,5 @@
-import type { Robot } from "@/common/robot";
-import { formatIntegrationType, formatRobotType } from "@/common/robot-labels";
+import { integrationTypeLabels, robotTypeLabels } from "@/common/labels";
+import type { Robot } from "@/common/types";
 
 type LogEntry = { time: string; level: "INFO" | "WARN"; message: string };
 
@@ -9,7 +9,7 @@ export function robotLogFixture(robot: Robot): LogEntry[] {
     {
       time: "09:41:01",
       level: "INFO",
-      message: `Robot profile loaded: ${robot.manufacturer} · ${formatRobotType(robot.type)}`,
+      message: `Robot profile loaded: ${robot.manufacturer} · ${robotTypeLabels[robot.type]}`,
     },
     {
       time: "09:41:02",
@@ -19,7 +19,7 @@ export function robotLogFixture(robot: Robot): LogEntry[] {
     {
       time: "09:41:03",
       level: "INFO",
-      message: `Integration initialized: ${formatIntegrationType(robot.integrationType)}`,
+      message: `Integration initialized: ${integrationTypeLabels[robot.integrationType]}`,
     },
     {
       time: "09:41:04",

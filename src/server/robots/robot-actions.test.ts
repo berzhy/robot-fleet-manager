@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { robotProblemCodes } from "@/common/robot";
+import { robotProblemCodes } from "@/common/constants";
 import { openTestDatabase, removeTestDatabase } from "@/test/database";
 import { testRobotInput } from "@/test/robots";
 
 import type { FleetDatabase } from "../db/database";
 import { latestTelemetry } from "../db/schema";
-import { createRobot, robotRegistry } from "./robots";
+import { createRobot, getRobot, robotRegistry } from "./robots";
 import { robotHandlers } from "./robot-handlers";
 
 // Control state is internal: only the simulator's registry exposes it.
@@ -59,22 +59,22 @@ test("actions validate current state, persist latest intent, and stay queued unt
     controlTarget: "stop",
     controlRevision: 1,
     appliedControlRevision: 0,
-    queuedActions: ["stop"],
   });
+  expect(getRobot(db, robot.id)?.queuedActions).toEqual(["stop"]);
 
   expect((await action({ action: "return-to-base" })).status).toBe(202);
   expect(registryEntry(db, robot.id)).toMatchObject({
     controlTarget: "base",
     controlRevision: 2,
-    queuedActions: ["return-to-base"],
   });
+  expect(getRobot(db, robot.id)?.queuedActions).toEqual(["return-to-base"]);
 
   db.$client
     .prepare(
       "UPDATE latest_telemetry SET applied_control_revision = 2 WHERE robot_id = ?",
     )
     .run(robot.id);
-  expect(registryEntry(db, robot.id)?.queuedActions).toEqual([]);
+  expect(getRobot(db, robot.id)?.queuedActions).toEqual([]);
 
   db.$client
     .prepare("UPDATE latest_telemetry SET received_at = ? WHERE robot_id = ?")

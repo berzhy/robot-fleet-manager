@@ -1,7 +1,7 @@
-import { integrationTypes, robotTypes } from "@/common/robot";
-import type { FilterOptions } from "@/common/robot-filters";
-import type { RobotFilters } from "@/common/robot-schemas";
-import { integrationTypeLabels, robotTypeLabels } from "@/common/robot-labels";
+import { integrationTypes, robotTypes } from "@/common/constants";
+import { integrationTypeLabels, robotTypeLabels } from "@/common/labels";
+import type { RobotFilters } from "@/common/schemas";
+import type { FilterOptions } from "@/common/types";
 
 export type FilterField = {
   key: Exclude<keyof RobotFilters, "search" | "view">;

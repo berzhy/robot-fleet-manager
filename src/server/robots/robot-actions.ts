@@ -1,6 +1,6 @@
 import "server-only";
 import { eq, sql } from "drizzle-orm";
-import type { RobotAction } from "@/common/robot";
+import type { RobotAction } from "@/common/types";
 import type { FleetDatabase } from "../db/database";
 import { robots } from "../db/schema";
 import { actionControlTargets } from "./robot-status";

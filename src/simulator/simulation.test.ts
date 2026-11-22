@@ -5,28 +5,18 @@ import {
   applyControl,
   telemetryAvailable,
 } from "./simulation";
-import { robotProblemCodes, type RegistryRobot } from "@/common/robot";
+import { robotProblemCodes } from "@/common/constants";
+import type { RegistryRobot } from "@/common/types";
 
 const robot: RegistryRobot = {
+  id: "test",
+  activity: null,
   problemCode: null,
+  batteryPercent: null,
+  area: null,
   controlTarget: "work",
   controlRevision: 0,
   appliedControlRevision: 0,
-  id: "test",
-  name: "Test",
-  manufacturer: "Maker",
-  type: "inspection" as const,
-  integrationType: "vendor-api" as const,
-  site: "Munich",
-  createdAt: "2026-01-01T00:00:00.000Z",
-  lastReceivedAt: null,
-  batteryPercent: null,
-  area: null,
-  activity: null,
-  connection: null,
-  batteryLevel: null,
-  blockedActions: {},
-  queuedActions: [],
 };
 
 function tick(state: ReturnType<typeof initializeRobot>, seconds: number) {

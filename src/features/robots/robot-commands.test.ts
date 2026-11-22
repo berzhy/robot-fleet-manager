@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import type { RobotAction, RobotActivity } from "@/common/robot";
+import type { RobotAction, RobotActivity } from "@/common/types";
 import { testRobot } from "@/test/robots";
 
 import { commandUnavailable, mainActivityAction } from "./robot-commands";

@@ -1,7 +1,8 @@
 import { expect, type APIRequestContext, type Page } from "@playwright/test";
 
-import { robotPageSize, type RegistryRobot, type Robot } from "@/common/robot";
-import type { TelemetryReport } from "@/common/telemetry";
+import { robotPageSize } from "@/common/constants";
+import type { TelemetryReport } from "@/common/schemas";
+import type { RegistryRobot, Robot } from "@/common/types";
 
 import { createRobots, test } from "./fixtures";
 
@@ -96,7 +97,7 @@ test("adds two robots and deletes one", async ({ page, request }) => {
 async function registeredRobots(request: APIRequestContext) {
   const response = await request.get("/api/robots/registry");
   await expect(response).toBeOK();
-  const { items } = (await response.json()) as { items: Robot[] };
+  const { items } = (await response.json()) as { items: RegistryRobot[] };
   return items;
 }
 

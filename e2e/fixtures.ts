@@ -1,7 +1,7 @@
 import { expect, test as base, type APIRequestContext } from "@playwright/test";
 
-import type { Robot } from "@/common/robot";
-import type { CreateRobotInput } from "@/common/robot-schemas";
+import type { CreateRobotInput } from "@/common/schemas";
+import type { Robot } from "@/common/types";
 
 export const test = base.extend<{ emptyFleet: void }>({
   emptyFleet: [

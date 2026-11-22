@@ -1,5 +1,5 @@
-import { integrationTypes } from "@/common/robot";
-import type { CreateRobotInput } from "@/common/robot-schemas";
+import { integrationTypes } from "@/common/constants";
+import type { CreateRobotInput } from "@/common/schemas";
 
 const robotProfiles = [
   { manufacturer: "Samsung", type: "cleaning" },

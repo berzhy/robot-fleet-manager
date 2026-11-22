@@ -1,16 +1,16 @@
 import {
-  robotActions,
-  type BatteryLevel,
-  type ConnectionStatus,
-  type ControlTarget,
-  type Robot,
-  type RobotAction,
-} from "@/common/robot";
-import {
   criticalBatteryPercent,
   lowBatteryPercent,
   offlineAfterMs,
-} from "@/common/robot-filters";
+  robotActions,
+} from "@/common/constants";
+import type {
+  BatteryLevel,
+  ConnectionStatus,
+  ControlTarget,
+  Robot,
+  RobotAction,
+} from "@/common/types";
 
 // Plain functions without "server-only", so test fixtures can build robots
 // exactly as the server answers them.

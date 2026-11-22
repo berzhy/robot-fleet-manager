@@ -1,4 +1,4 @@
-import type { Robot, RobotAction } from "@/common/robot";
+import type { Robot, RobotAction } from "@/common/types";
 
 /** The obvious next thing for the robot's state: Start, Stop or Retry. */
 export function mainActivityAction(robot: Robot): RobotAction {
