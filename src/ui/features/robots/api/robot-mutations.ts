@@ -15,37 +15,31 @@ import {
 import { robotKeys } from "./robot-queries";
 
 export function useCreateRobots() {
-  const client = useQueryClient();
-
-  return useMutation({
-    mutationFn: createRobots,
-    onSettled: () => invalidateRobots(client),
-  });
+  return useRobotWrite(createRobots);
 }
 
 export function useDeleteRobot() {
-  const client = useQueryClient();
-
-  return useMutation({
-    mutationFn: deleteRobot,
-    onSettled: () => invalidateRobots(client),
-  });
+  return useRobotWrite(deleteRobot);
 }
 
 export function useDeleteAllRobots() {
-  const client = useQueryClient();
-
-  return useMutation({
-    mutationFn: deleteAllRobots,
-    onSettled: () => invalidateRobots(client),
-  });
+  return useRobotWrite(deleteAllRobots);
 }
 
 export function useSendRobotAction(robotId: string) {
+  return useRobotWrite((action: RobotAction) =>
+    sendRobotAction(robotId, action),
+  );
+}
+
+/** A write to the fleet, pending until the robots it changed are fetched again. */
+function useRobotWrite<TData, TVariables = void>(
+  mutationFn: (variables: TVariables) => Promise<TData>,
+) {
   const client = useQueryClient();
 
   return useMutation({
-    mutationFn: (action: RobotAction) => sendRobotAction(robotId, action),
+    mutationFn,
     onSettled: () => invalidateRobots(client),
   });
 }

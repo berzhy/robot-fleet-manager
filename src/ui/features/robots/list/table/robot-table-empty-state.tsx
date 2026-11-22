@@ -49,7 +49,7 @@ export default function RobotTableEmptyState({
         variant="text"
         startIcon={<AddIcon />}
         loading={adding}
-        onClick={onAdd}
+        onClick={() => onAdd()}
       >
         Add robot
       </Button>
