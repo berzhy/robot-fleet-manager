@@ -7,8 +7,10 @@ concurrency:
   group: check-${{ github.ref }}
   cancel-in-progress: true
 
+# Two jobs run side by side: the quick checks report in a few minutes and do
+# not wait on the browser install and end-to-end run.
 jobs:
-  check:
+  checks:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -21,6 +23,16 @@ jobs:
       - run: npm run format:check
       - run: npm run lint
       - run: npm test
+      - run: npm run knip
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: npm
+      - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
-      - run: npm run knip
