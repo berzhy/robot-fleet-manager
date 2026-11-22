@@ -10,7 +10,7 @@ import type { RobotContext } from "@/modules/robots/robot";
 import { robotReading } from "@/modules/robots/robot-reading";
 
 import { usePendingRobotAction } from "../api/robot-mutations";
-import { robotListHref } from "../list/use-robot-list-view";
+import { robotListHref } from "../robot-list-return";
 import useRobotCommand from "../use-robot-command";
 
 import ActivityControls from "./activity-controls";

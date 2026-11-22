@@ -1,5 +1,4 @@
 import { useSearchParams } from "next/navigation";
-import { useEffect } from "react";
 
 import type { RobotFilters } from "@/modules/robots/robot-filters";
 import {
@@ -9,26 +8,8 @@ import {
   type RobotListParams,
 } from "@/modules/robots/robot-list-params";
 
-// The list's query as the user last left it in this tab, so the way back from a
-// robot returns there. In memory only: a reload or a shared robot link opens
-// the full list, and the server never sets it.
-let lastListQuery = "";
-
 export default function useRobotListView(): RobotListParams {
   return parseRobotListParams(useSearchParams());
-}
-
-/** Remembers the list's view for robotListHref; the list page calls it once. */
-export function useRememberRobotListView() {
-  const query = useSearchParams().toString();
-  useEffect(() => {
-    lastListQuery = query;
-  }, [query]);
-}
-
-/** The robot list as the user last left it, for links back from a robot. */
-export function robotListHref() {
-  return lastListQuery ? `/robots?${lastListQuery}` : "/robots";
 }
 
 export function setRobotListPage(page: number) {

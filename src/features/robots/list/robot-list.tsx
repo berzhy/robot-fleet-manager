@@ -8,6 +8,8 @@ import { visuallyHidden } from "@mui/utils";
 import Typography from "@mui/material/Typography";
 import { useRef } from "react";
 
+import { useRememberRobotListView } from "../robot-list-return";
+
 import AddRobotSplitButton from "./add-robot-split-button";
 import DeleteRobotDialog from "./delete-robot-dialog";
 import RobotListFilters from "./robot-list-filters/robot-list-filters";
@@ -20,9 +22,7 @@ import useRobotList, {
   useRobotListAnnouncement,
   useRobotListPageCorrection,
 } from "./use-robot-list";
-import useRobotListView, {
-  useRememberRobotListView,
-} from "./use-robot-list-view";
+import useRobotListView from "./use-robot-list-view";
 
 export default function RobotList() {
   const searchFieldRef = useRef<SearchFieldHandle>(null);
