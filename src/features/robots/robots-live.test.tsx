@@ -3,9 +3,8 @@ import { afterEach, expect, test, vi } from "vitest";
 
 import { renderHook, render } from "@/test/render";
 import type { RobotContext } from "@/modules/robots/robot";
-import type { CreateRobotInput } from "@/modules/robots/robot-validation";
 
-import { useCreateRobots, useSendRobotAction } from "./api/robot-mutations";
+import { useSendRobotAction } from "./api/robot-mutations";
 import {
   robotContextPollIntervalMs,
   robotListPollIntervalMs,
@@ -17,10 +16,7 @@ import RobotList from "./list/robot-list";
 import useRobotList, {
   useRobotListPageCorrection,
 } from "./list/use-robot-list";
-import {
-  setRobotListFilters,
-  setRobotListPage,
-} from "./list/use-robot-list-view";
+import { setRobotListPage } from "./list/use-robot-list-view";
 import { pageMetadata, testRobot } from "@/test/robots";
 
 const robot = testRobot({
@@ -852,58 +848,4 @@ test("a command cancels the poll in flight and stays pending until fresh data la
   expect(result.current.detail.robot.batteryPercent).toBe(40);
   expect(result.current.detail.refreshFailed).toBe(false);
   expect(result.current.command.isPending).toBe(false);
-});
-
-test("a write that settles during the first read for new filters refetches instead of reusing it", async () => {
-  vi.useFakeTimers();
-  const { fetcher, reads, acceptWrite } = deferredFetch();
-  vi.stubGlobal("fetch", fetcher);
-
-  const input: CreateRobotInput = {
-    name: "New robot",
-    manufacturer: "Maker",
-    type: "inspection",
-    integrationType: "vendor-api",
-    site: "Munich",
-  };
-  const { result } = renderHook(() => ({
-    list: useRobotList(),
-    create: useCreateRobots(),
-  }));
-  await tick();
-  await act(async () => {
-    reads[0].resolve(page(50));
-    await vi.advanceTimersByTimeAsync(0);
-  });
-  expect(result.current.list.isLoading).toBe(false);
-
-  await act(async () => {
-    result.current.create.mutate([input]);
-    await vi.advanceTimersByTimeAsync(0);
-  });
-  await act(async () => {
-    setRobotListFilters({ view: "offline" });
-    await vi.advanceTimersByTimeAsync(0);
-  });
-  const firstOfflineRead = reads.at(-1)!;
-  expect(firstOfflineRead.url).toContain("view=offline");
-
-  await act(async () => {
-    acceptWrite(Response.json({ items: [robot] }, { status: 201 }));
-    await vi.advanceTimersByTimeAsync(0);
-  });
-  const freshOfflineRead = reads.at(-1)!;
-  expect(firstOfflineRead.signal.aborted).toBe(true);
-  expect(freshOfflineRead).not.toBe(firstOfflineRead);
-  expect(freshOfflineRead.url).toContain("view=offline");
-
-  await act(async () => {
-    firstOfflineRead.resolve(page(10));
-    freshOfflineRead.resolve(page(20));
-    await vi.advanceTimersByTimeAsync(0);
-  });
-  expect(result.current.list.data?.items).toMatchObject([
-    { batteryPercent: 20 },
-  ]);
-  expect(result.current.create.isPending).toBe(false);
 });

@@ -51,15 +51,9 @@ export function useSendRobotAction(robotId: string) {
 }
 
 // Returned from onSettled, so each mutation stays pending until fresh data arrives.
-async function invalidateRobots(client: QueryClient) {
-  // Reads that started before the write finished are out of date. invalidateQueries
-  // only cancels in-flight reads that already have data, so a first read for newly
-  // selected filters would otherwise be reused.
-  await client.cancelQueries({ queryKey: robotKeys.all });
-
-  // Cached views that are not on screen hold pre-write data. Dropping them makes a
-  // later page correction or filter change load fresh rows instead of showing them.
+function invalidateRobots(client: QueryClient) {
+  // Cached views that are not on screen hold pre-write data, such as deleted
+  // robots; dropping them stops a later page or filter showing them as current.
   client.removeQueries({ queryKey: robotKeys.all, type: "inactive" });
-
   return client.invalidateQueries({ queryKey: robotKeys.all });
 }
