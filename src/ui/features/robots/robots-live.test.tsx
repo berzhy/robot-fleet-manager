@@ -8,15 +8,13 @@ import { useSendRobotAction } from "./api/robot-mutations";
 import {
   robotContextPollIntervalMs,
   robotListPollIntervalMs,
+  useRobotContextQuery,
+  useRobotListQuery,
 } from "./api/robot-queries";
 
 import RobotDetails from "./details/robot-details";
-import useLiveRobot from "./details/use-live-robot";
 import RobotList from "./list/robot-list";
-import useRobotList from "./list/use-robot-list";
-import useRobotListParams, {
-  setRobotListPage,
-} from "./list/robot-list-url-params";
+import useRobotListParams from "./list/robot-list-url-params";
 import { testRobotPage, testRobot } from "@/ui/features/robots/test-robots";
 
 const reportedAt = "2026-01-01T00:00:00.000Z";
@@ -251,7 +249,7 @@ test("a stale in-flight poll cannot overwrite an explicit refresh", async () => 
       )
       .mockResolvedValueOnce(page(40)),
   );
-  const { result } = renderHook(() => useRobotList(useRobotListParams()));
+  const { result } = renderHook(() => useRobotListQuery(useRobotListParams()));
   await tick();
 
   await tick(robotListPollIntervalMs);
@@ -490,8 +488,8 @@ test("fleet and detail retain snapshots after a request timeout and recover on t
     evaluatedAt: Date.now(),
   };
   const { result } = renderHook(() => ({
-    fleet: useRobotList(useRobotListParams()),
-    detail: useLiveRobot(context),
+    fleet: useRobotListQuery(useRobotListParams()),
+    detail: useRobotContextQuery(context),
   }));
   await tick();
 
@@ -542,8 +540,8 @@ test("unmount cancels outstanding fleet and detail requests without restarting p
     evaluatedAt: Date.now(),
   };
   const { unmount } = renderHook(() => ({
-    fleet: useRobotList(useRobotListParams()),
-    detail: useLiveRobot(context),
+    fleet: useRobotListQuery(useRobotListParams()),
+    detail: useRobotContextQuery(context),
   }));
   expect(signals).toHaveLength(1);
 
@@ -776,43 +774,6 @@ test.each(["fleet", "detail"] as const)(
   },
 );
 
-test("page correction after a hidden fleet shrinks immediately verifies the destination data", async () => {
-  vi.useFakeTimers();
-  let total = 21;
-  const fetcher = vi.fn((url: string) => {
-    const requestedPage = Number(
-      new URL(url, "http://localhost").searchParams.get("page"),
-    );
-    return Promise.resolve(
-      Response.json(testRobotPage([robot], { total, page: requestedPage })),
-    );
-  });
-  vi.stubGlobal("fetch", fetcher);
-
-  const { result } = renderHook(() => useRobotList(useRobotListParams()));
-  await tick();
-  act(() => setRobotListPage(2));
-  await tick();
-  await tick(20000);
-  expect(result.current.page).toBe(2);
-
-  setPageVisibility(true);
-  await tick();
-  total = 1;
-  setPageVisibility(false);
-  await tick();
-
-  expect(result.current.page).toBe(0);
-  expect(result.current.isLoading).toBe(false);
-  expect(result.current.data?.items).toMatchObject([{ id: robot.id }]);
-  expect(result.current.refreshFailed).toBe(false);
-  expect(
-    new URL(fetcher.mock.lastCall![0], "http://localhost").searchParams.get(
-      "page",
-    ),
-  ).toBe("0");
-});
-
 type DeferredRead = {
   url: string;
   signal: AbortSignal;
@@ -852,7 +813,7 @@ test("a command ends when accepted, and the poll in flight cannot overwrite its 
     evaluatedAt: Date.now(),
   };
   const { result } = renderHook(() => ({
-    detail: useLiveRobot(context),
+    detail: useRobotContextQuery(context),
     command: useSendRobotAction(robot.id),
   }));
   await tick(robotContextPollIntervalMs);

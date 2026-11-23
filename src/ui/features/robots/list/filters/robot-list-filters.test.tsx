@@ -14,7 +14,7 @@ import { render } from "@/ui/test-render";
 import { testRobotPage } from "@/ui/features/robots/test-robots";
 
 import useRobotListParams from "../robot-list-url-params";
-import useRobotList from "../use-robot-list";
+import { useRobotListQuery } from "../../api/robot-queries";
 import RobotListFilters from "./robot-list-filters";
 import RobotStatusFilters from "./robot-status-filters";
 
@@ -49,7 +49,7 @@ async function filterOptionsLoaded() {
 // The filters as the list screen feeds them: the URL's view and its page of robots.
 function StatusFilters() {
   const params = useRobotListParams();
-  const { data, isLoading, loadFailed } = useRobotList(params);
+  const { data, isLoading, loadFailed } = useRobotListQuery(params);
   return (
     <RobotStatusFilters
       view={params.view}
@@ -62,7 +62,7 @@ function StatusFilters() {
 
 function ListFilters() {
   const { page, pageSize, ...filters } = useRobotListParams();
-  const { data } = useRobotList({ page, pageSize, ...filters });
+  const { data } = useRobotListQuery({ page, pageSize, ...filters });
   return <RobotListFilters filters={filters} available={data?.filterOptions} />;
 }
 

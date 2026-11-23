@@ -7,7 +7,9 @@ import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import { visuallyHidden } from "@mui/utils";
 import Typography from "@mui/material/Typography";
+import { useEffect } from "react";
 
+import { useRobotListQuery } from "../api/robot-queries";
 import { useRememberRobotListView } from "../robot-list-return";
 import { robotReading } from "../robot-reading";
 
@@ -25,14 +27,28 @@ import RobotTableFooter, {
 import RobotTableNoResultsState from "./table/robot-table-no-results-state";
 import useAddRobots from "./use-add-robots";
 import useDeleteRobotFlow from "./use-delete-robot-flow";
-import useRobotList from "./use-robot-list";
-import useRobotListParams from "./robot-list-url-params";
+import useRobotListParams, {
+  correctRobotListPage,
+} from "./robot-list-url-params";
 
 export default function RobotList() {
-  const { page: requestedPage, pageSize, ...filters } = useRobotListParams();
+  const params = useRobotListParams();
+  const { page: requestedPage, pageSize, ...filters } = params;
   useRememberRobotListView();
-  const { data, page, isLoading, loadFailed, refreshFailed, refresh } =
-    useRobotList({ page: requestedPage, pageSize, ...filters });
+  const { data, isLoading, loadFailed, refreshFailed, refresh } =
+    useRobotListQuery(params);
+
+  const page = shownRobotPage(requestedPage, pageSize, data?.total ?? 0);
+  const correctedPage =
+    data && !isLoading && page < requestedPage ? page : undefined;
+
+  // Correcting the URL, not just the shown page, keeps polling and shared links
+  // on a page that exists.
+  useEffect(() => {
+    if (correctedPage !== undefined) {
+      correctRobotListPage(requestedPage, correctedPage);
+    }
+  }, [requestedPage, correctedPage]);
 
   const { requestDelete, dialog } = useDeleteRobotFlow();
   const { addRobots, adding, addButtonRef } = useAddRobots();
@@ -131,6 +147,15 @@ export default function RobotList() {
       {dialog && <DeleteRobotDialog {...dialog} />}
     </Stack>
   );
+}
+
+/** The requested page, or the last one that exists. */
+function shownRobotPage(
+  requestedPage: number,
+  pageSize: number,
+  total: number,
+) {
+  return Math.min(requestedPage, Math.max(0, Math.ceil(total / pageSize) - 1));
 }
 
 // Read out when it changes: after loading, or when a poll changes the count.

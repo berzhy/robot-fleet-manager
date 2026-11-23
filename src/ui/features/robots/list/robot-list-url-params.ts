@@ -34,6 +34,18 @@ export function clearRobotListFilters() {
   updateUrl(({ pageSize }) => ({ ...defaultRobotListParams, pageSize }));
 }
 
+/** Moves a page past the end back, unless the URL has already moved on. */
+export function correctRobotListPage(
+  requestedPage: number,
+  correctedPage: number,
+) {
+  updateUrl((current) =>
+    current.page === requestedPage
+      ? { ...current, page: correctedPage }
+      : current,
+  );
+}
+
 // replaceState updates the URL at once. Reading window.location rather than a
 // render's snapshot keeps two changes in one tick from overwriting each other.
 function updateUrl(change: (current: RobotListParams) => RobotListParams) {

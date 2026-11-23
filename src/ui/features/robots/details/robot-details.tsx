@@ -8,6 +8,7 @@ import NextLink from "next/link";
 
 import type { RobotContext } from "@/common/types";
 
+import { useRobotContextQuery } from "../api/robot-queries";
 import { robotReading } from "../robot-reading";
 import { robotListHref } from "../robot-list-return";
 import useRobotAction from "../use-robot-action";
@@ -15,7 +16,6 @@ import useRobotAction from "../use-robot-action";
 import ActivityControls from "./activity-controls";
 import RobotDetailsTabs from "./robot-details-tabs";
 import RobotSummary from "./robot-summary";
-import useLiveRobot from "./use-live-robot";
 
 export default function RobotDetails({
   initialContext,
@@ -23,7 +23,7 @@ export default function RobotDetails({
   initialContext: RobotContext;
 }) {
   const { robot, peerCounts, missing, refreshFailed, evaluatedAt } =
-    useLiveRobot(initialContext);
+    useRobotContextQuery(initialContext);
   const { requestAction, pendingAction, unavailableReason } =
     useRobotAction(robot);
   const reading = robotReading(robot, evaluatedAt, refreshFailed);

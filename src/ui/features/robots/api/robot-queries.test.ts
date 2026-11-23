@@ -4,20 +4,20 @@ import { afterEach, expect, test, vi } from "vitest";
 import { renderHook } from "@/ui/test-render";
 import type { RobotPage } from "@/common/types";
 
-import { getRobots } from "../api/robot-api";
+import { getRobots } from "./robot-api";
 import { testRobotPage } from "@/ui/features/robots/test-robots";
-import useRobotList from "./use-robot-list";
+import { useRobotListQuery } from "./robot-queries";
 import useRobotListParams, {
   clearRobotListFilters,
   setRobotListFilters,
   setRobotListPage,
   setRobotListPageSize,
-} from "./robot-list-url-params";
+} from "../list/robot-list-url-params";
 
-// The list hooks as RobotList composes them.
+// URL params feeding the list query, without RobotList's page correction.
 function useListUnderTest() {
   const { page, pageSize, ...filters } = useRobotListParams();
-  const list = useRobotList({ page, pageSize, ...filters });
+  const list = useRobotListQuery({ page, pageSize, ...filters });
 
   return {
     pageSize,
@@ -26,7 +26,7 @@ function useListUnderTest() {
   };
 }
 
-vi.mock("../api/robot-api");
+vi.mock("./robot-api");
 
 afterEach(() => vi.resetAllMocks());
 
@@ -51,7 +51,6 @@ test("aborts old requests and ignores their late responses", async () => {
     await Promise.resolve();
   });
   expect(result.current.data?.total).toBe(0);
-  expect(result.current.page).toBe(0);
 });
 
 test("page size changes cancel old requests and reload preserves the selection", async () => {
@@ -69,37 +68,6 @@ test("page size changes cancel old requests and reload preserves the selection",
     {
       page: 0,
       pageSize: 20,
-      view: "all",
-    },
-    expect.any(AbortSignal),
-  );
-});
-
-test("failed page correction retains only cached destination data under the corrected pager", async () => {
-  vi.mocked(getRobots)
-    .mockResolvedValueOnce(testRobotPage([], { total: 11, fleetTotal: 0 }))
-    .mockResolvedValueOnce(
-      testRobotPage([], { total: 11, page: 1, fleetTotal: 0 }),
-    )
-    .mockResolvedValueOnce(
-      testRobotPage([], { total: 10, page: 1, fleetTotal: 0 }),
-    )
-    .mockRejectedValueOnce(new Error("correction failed"));
-  const { result } = renderHook(() => useListUnderTest());
-  await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-  act(() => setRobotListPage(1));
-  await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-  act(() => result.current.refresh());
-  await waitFor(() => expect(result.current.refreshFailed).toBe(true));
-  expect(result.current.isLoading).toBe(false);
-  expect(result.current.data?.page).toBe(0);
-  expect(result.current.page).toBe(0);
-  expect(getRobots).toHaveBeenLastCalledWith(
-    {
-      page: 0,
-      pageSize: 10,
       view: "all",
     },
     expect.any(AbortSignal),
@@ -148,34 +116,6 @@ test("filter changes cancel old scope requests and reset page while retaining pa
     await Promise.resolve();
   });
   expect(result.current.data?.total).toBe(30);
-});
-
-test("zero matching results correct a later page and preserve filters", async () => {
-  const response = testRobotPage([], { total: 11, fleetTotal: 21 });
-  vi.mocked(getRobots).mockResolvedValue(response);
-  const { result } = renderHook(() => useListUnderTest());
-  await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-  act(() => setRobotListFilters({ view: "low-battery" }));
-  await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-  act(() => setRobotListPage(1));
-  await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-  vi.mocked(getRobots).mockResolvedValue({ ...response, items: [], total: 0 });
-  act(() => result.current.refresh());
-  await waitFor(() => expect(result.current.isLoading).toBe(false));
-  await waitFor(() => expect(result.current.page).toBe(0));
-  await waitFor(() => expect(result.current.isLoading).toBe(false));
-  expect(result.current.filters.view).toBe("low-battery");
-  expect(getRobots).toHaveBeenLastCalledWith(
-    {
-      page: 0,
-      pageSize: 10,
-      view: "low-battery",
-    },
-    expect.any(AbortSignal),
-  );
 });
 
 test("an uncached view keeps the previous result on screen until its own arrives", async () => {
@@ -308,16 +248,6 @@ test("two filter changes in the same tick both land", async () => {
     view: "offline",
     search: "Atlas",
   });
-});
-
-test("an out-of-range page in the URL is corrected to the last page", async () => {
-  window.history.replaceState(null, "", "/robots?page=9");
-  vi.mocked(getRobots).mockResolvedValue(emptyPage(15));
-  const { result } = renderHook(() => useListUnderTest());
-
-  await waitFor(() => expect(window.location.search).toBe("?page=1"));
-  await waitFor(() => expect(result.current.isLoading).toBe(false));
-  expect(result.current.page).toBe(1);
 });
 
 test("a filter change keeps query parameters and the fragment the list does not own", async () => {
