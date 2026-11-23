@@ -7,10 +7,13 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import { useId, useState } from "react";
 
-import { robotActions } from "@/common/constants";
-import type { Robot } from "@/common/types";
+import type { Robot, RobotAction } from "@/common/types";
 
-import { actionIcons, actionLabels } from "../../robot-action-display";
+import {
+  actionIcons,
+  actionLabels,
+  mainActivityAction,
+} from "../../robot-action-display";
 import useRobotAction from "../../use-robot-action";
 
 export default function RobotTableRowMenu({
@@ -24,6 +27,7 @@ export default function RobotTableRowMenu({
   const [anchor, setAnchor] = useState<HTMLButtonElement | null>(null);
   const id = useId();
   const buttonId = `${id}-button`;
+  const actions: RobotAction[] = [mainActivityAction(robot), "return-to-base"];
 
   return (
     <>
@@ -50,12 +54,14 @@ export default function RobotTableRowMenu({
         open={Boolean(anchor)}
         onClose={() => setAnchor(null)}
       >
-        {robotActions.map((action) => {
+        {actions.map((action, position) => {
           const reason = unavailableReason(action);
           const Icon = actionIcons[action];
           return (
             <MenuItem
-              key={action}
+              // By position: one element for Start, Stop and Retry, so focus
+              // survives a live update swapping them.
+              key={position}
               disabled={Boolean(reason)}
               onClick={() => {
                 if (reason) {

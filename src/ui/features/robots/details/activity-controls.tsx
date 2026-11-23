@@ -7,7 +7,11 @@ import { useId } from "react";
 
 import type { Robot, RobotAction } from "@/common/types";
 
-import { actionIcons, actionLabels } from "../robot-action-display";
+import {
+  actionIcons,
+  actionLabels,
+  mainActivityAction,
+} from "../robot-action-display";
 
 const tileSizePx = 120;
 const tileIconSizePx = 32;
@@ -64,22 +68,6 @@ export default function ActivityControls({
       />
     </Box>
   );
-}
-
-/** The obvious next thing for the robot's state: Start, Stop or Retry. */
-function mainActivityAction(robot: Robot): RobotAction {
-  switch (robot.activity) {
-    case "working":
-    case "returning":
-      return "stop";
-    // Whether there is a problem to retry is Retry's own reason to give.
-    case "needs-attention":
-      return "retry";
-    case "idle":
-    case "charging":
-    case null:
-      return "start";
-  }
 }
 
 /** A square tile, the icon above its label; an unavailable one says why on hover or focus. */

@@ -166,8 +166,8 @@ test("keyboard explanations and Stop/Retry requests follow reported activity", a
   await row.getByTestId("robot-actions").focus();
   await page.keyboard.press("Enter");
   await expect(
-    page.getByRole("menuitem", { name: "Start activity Already working" }),
-  ).toHaveAttribute("aria-disabled", "true");
+    page.getByRole("menuitem", { name: "Start activity" }),
+  ).toHaveCount(0);
 
   await page.getByRole("menuitem", { name: "Stop activity" }).click();
   await expect(page.getByTestId("fleet-notification")).toContainText(

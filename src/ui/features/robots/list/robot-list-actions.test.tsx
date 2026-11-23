@@ -126,9 +126,9 @@ test("a command holds up only its own robot, without replacing the table", async
 
   const pendingMenu = await openMenu();
   expect(
-    within(pendingMenu).getByRole("menuitem", { name: /Start activity/ }),
+    within(pendingMenu).getByRole("menuitem", { name: /Stop activity/ }),
   ).toHaveTextContent("Sending command…");
-  for (const label of ["Start activity", "Stop activity"]) {
+  for (const label of ["Stop activity", "Return to base"]) {
     expect(
       within(pendingMenu).getByRole("menuitem", { name: new RegExp(label) }),
     ).toHaveAttribute("aria-disabled", "true");

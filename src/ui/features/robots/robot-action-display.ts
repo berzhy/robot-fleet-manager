@@ -4,7 +4,7 @@ import ReplayIcon from "@mui/icons-material/Replay";
 import StopIcon from "@mui/icons-material/Stop";
 import type SvgIcon from "@mui/material/SvgIcon";
 
-import type { RobotAction } from "@/common/types";
+import type { Robot, RobotAction } from "@/common/types";
 
 export const actionLabels = {
   start: "Start activity",
@@ -20,3 +20,19 @@ export const actionIcons = {
   "return-to-base": EvStationIcon,
   retry: ReplayIcon,
 } satisfies Record<RobotAction, typeof SvgIcon>;
+
+/** The obvious next thing for the robot's state: Start, Stop or Retry. */
+export function mainActivityAction(robot: Robot): RobotAction {
+  switch (robot.activity) {
+    case "working":
+    case "returning":
+      return "stop";
+    // Whether there is a problem to retry is Retry's own reason to give.
+    case "needs-attention":
+      return "retry";
+    case "idle":
+    case "charging":
+    case null:
+      return "start";
+  }
+}
