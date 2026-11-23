@@ -545,3 +545,35 @@ test("deleting all robots from a later page never shows cached rows as current",
     "All robots deleted.",
   );
 });
+
+test("deleting all robots shows the empty fleet before the refresh answers", async () => {
+  let deleted = false;
+  vi.stubGlobal(
+    "fetch",
+    vi.fn((_: string, init?: RequestInit) => {
+      if (init?.method === "DELETE") {
+        deleted = true;
+        return Promise.resolve(new Response(null, { status: 204 }));
+      }
+      return deleted
+        ? new Promise<Response>(() => {})
+        : Promise.resolve(response([robot], 25));
+    }),
+  );
+  render(<RobotList />);
+  await screen.findByTestId("robot-row-one");
+
+  const dialog = await openDeleteAll();
+  await act(async () => {
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Delete all robots" }),
+    );
+    await Promise.resolve();
+  });
+
+  expect(await screen.findByTestId("fleet-empty")).toBeInTheDocument();
+  expect(screen.queryByTestId("fleet-pagination")).not.toBeInTheDocument();
+  expect(screen.getByTestId("fleet-result-count")).toHaveTextContent(
+    "0 robots",
+  );
+});

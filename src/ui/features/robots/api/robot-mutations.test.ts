@@ -1,7 +1,8 @@
 import { act, waitFor } from "@testing-library/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { afterEach, expect, test, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 
+import type { RobotPage } from "@/common/types";
 import { renderHook } from "@/ui/test-render";
 import { testRobot, testRobotPage } from "@/ui/features/robots/test-robots";
 
@@ -153,4 +154,56 @@ test("overlapping commands each show their result, and the last refresh wins", a
   );
   await waitFor(() => expect(result.current.list.isFetching).toBe(false));
   expect(queuedIds()).toEqual(["first", "second"]);
+});
+
+describe("the list between a delete and its refresh", () => {
+  const listParams = {
+    page: 0,
+    pageSize: 10,
+    filters: { view: "all" as const },
+  };
+  const listKey = robotKeys.list(listParams);
+  const listed = testRobot({ id: "listed" });
+  const cachedPage = testRobotPage([listed, testRobot({ id: "other" })], {
+    total: 12,
+    fleetTotal: 30,
+    summary: { all: 20, "needs-attention": 5, offline: 3, "low-battery": 2 },
+  });
+
+  function renderList() {
+    // Reads never answer, so the cache shows what the write alone left there.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((_url: string, init?: RequestInit) =>
+        init?.method === "DELETE"
+          ? Promise.resolve(new Response(null, { status: 204 }))
+          : new Promise<Response>(() => {}),
+      ),
+    );
+    return renderHook(
+      () => ({
+        client: useQueryClient(),
+        list: useQuery(robotListOptions(listParams)),
+        deleteRobot: useDeleteRobot(),
+        deleteAll: useDeleteAllRobots(),
+      }),
+      { queryData: [[listKey, cachedPage]] },
+    );
+  }
+
+  test("deleting all robots leaves the page of an empty fleet", async () => {
+    const { result } = renderList();
+
+    await act(() => result.current.deleteAll.mutateAsync());
+
+    expect(
+      result.current.client.getQueryData<RobotPage>(listKey),
+    ).toMatchObject({
+      items: [],
+      total: 0,
+      fleetTotal: 0,
+      summary: { all: 0, "needs-attention": 0, offline: 0, "low-battery": 0 },
+      filterOptions: { sites: [], manufacturers: [] },
+    });
+  });
 });

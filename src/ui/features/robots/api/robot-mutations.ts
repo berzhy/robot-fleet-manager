@@ -1,6 +1,9 @@
 import {
   useMutation,
+  useMutationState,
   useQueryClient,
+  type MutationKey,
+  type MutationState,
   type QueryClient,
 } from "@tanstack/react-query";
 
@@ -19,37 +22,71 @@ import {
 } from "./robot-api";
 import { robotKeys } from "./robot-queries";
 
+const emptyFleet = {
+  items: [],
+  total: 0,
+  fleetTotal: 0,
+  summary: { all: 0, "needs-attention": 0, offline: 0, "low-battery": 0 },
+  filterOptions: { sites: [], manufacturers: [] },
+} satisfies Partial<RobotPage>;
+
 export function useCreateRobots() {
   return useRobotWrite(createRobots);
 }
 
 export function useDeleteRobot() {
-  return useRobotWrite(deleteRobot, (client, _result, id) =>
-    updateListedRobots(client, (robots) =>
-      robots.filter((robot) => robot.id !== id),
-    ),
-  );
+  return useRobotWrite(deleteRobot, {
+    applyResult: (client, _result, id) =>
+      updateListedPages(client, (page) => ({
+        ...page,
+        items: page.items.filter((robot) => robot.id !== id),
+      })),
+  });
 }
 
 export function useDeleteAllRobots() {
-  return useRobotWrite(deleteAllRobots, (client) =>
-    updateListedRobots(client, () => []),
-  );
+  return useRobotWrite(deleteAllRobots, {
+    applyResult: (client) =>
+      updateListedPages(client, (page) => ({ ...page, ...emptyFleet })),
+  });
 }
 
 export function useSendRobotAction(robotId: string) {
   return useRobotWrite(
     (action: RobotAction) => sendRobotAction(robotId, action),
-    (client, updated) => {
-      updateListedRobots(client, (robots) =>
-        robots.map((robot) => (robot.id === updated.id ? updated : robot)),
-      );
-      client.setQueryData<RobotContext>(
-        robotKeys.context(updated.id),
-        (context) => context && { ...context, robot: updated },
-      );
+    {
+      mutationKey: robotKeys.action(robotId),
+      applyResult: (client, updated) => {
+        updateListedPages(client, (page) => ({
+          ...page,
+          items: page.items.map((robot) =>
+            robot.id === updated.id ? updated : robot,
+          ),
+        }));
+        client.setQueryData<RobotContext>(
+          robotKeys.context(updated.id),
+          (context) => context && { ...context, robot: updated },
+        );
+      },
     },
   );
+}
+
+/** The action on its way to this robot from any screen, if any. */
+export function usePendingRobotAction(robotId: string) {
+  const [pending] = useMutationState<MutationState<Robot, Error, RobotAction>>({
+    filters: { mutationKey: robotKeys.action(robotId), status: "pending" },
+  });
+
+  return pending?.variables;
+}
+
+/**
+ * Reads the cache rather than a render, so a second click is caught before
+ * React has shown the first.
+ */
+export function isRobotActionPending(client: QueryClient, robotId: string) {
+  return client.isMutating({ mutationKey: robotKeys.action(robotId) }) > 0;
 }
 
 /**
@@ -59,15 +96,22 @@ export function useSendRobotAction(robotId: string) {
  */
 function useRobotWrite<TData, TVariables = void>(
   mutationFn: (variables: TVariables) => Promise<TData>,
-  applyResult?: (
-    client: QueryClient,
-    result: TData,
-    variables: TVariables,
-  ) => void,
+  {
+    mutationKey,
+    applyResult,
+  }: {
+    mutationKey?: MutationKey;
+    applyResult?: (
+      client: QueryClient,
+      result: TData,
+      variables: TVariables,
+    ) => void;
+  } = {},
 ) {
   const client = useQueryClient();
 
   return useMutation({
+    mutationKey,
     mutationFn,
     onSuccess: async (result, variables) => {
       await discardPreWriteReads(client);
@@ -90,12 +134,12 @@ async function discardPreWriteReads(client: QueryClient) {
   await client.cancelQueries({ queryKey: robotKeys.all });
 }
 
-function updateListedRobots(
+function updateListedPages(
   client: QueryClient,
-  update: (robots: Robot[]) => Robot[],
+  update: (page: RobotPage) => RobotPage,
 ) {
   client.setQueriesData<RobotPage>(
     { queryKey: robotKeys.lists },
-    (page) => page && { ...page, items: update(page.items) },
+    (page) => page && update(page),
   );
 }

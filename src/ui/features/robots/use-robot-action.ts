@@ -1,16 +1,25 @@
+import { useQueryClient } from "@tanstack/react-query";
+
 import type { Robot, RobotAction } from "@/common/types";
 import { useNotifications } from "@/ui/notifications/notification-provider";
 
 import { isActionUnavailable, isRequestTimeout } from "./api/robot-api";
-import { useSendRobotAction } from "./api/robot-mutations";
+import {
+  isRobotActionPending,
+  usePendingRobotAction,
+  useSendRobotAction,
+} from "./api/robot-mutations";
 import { actionLabels } from "./robot-action-display";
 
 /**
  * Sends this robot's actions from any screen and reports each outcome as a
- * notification. One action at a time: `pendingAction` is the one being sent.
+ * notification. One action per robot at a time, across screens: requests sent
+ * together could reach the server in either order, and the last one wins.
  */
 export default function useRobotAction(robot: Robot) {
+  const client = useQueryClient();
   const sendAction = useSendRobotAction(robot.id);
+  const pendingAction = usePendingRobotAction(robot.id);
   const notifications = useNotifications();
 
   function showUnavailable(reason: string) {
@@ -21,7 +30,7 @@ export default function useRobotAction(robot: Robot) {
   }
 
   function requestAction(action: RobotAction) {
-    if (sendAction.isPending) {
+    if (isRobotActionPending(client, robot.id)) {
       return;
     }
 
@@ -53,12 +62,10 @@ export default function useRobotAction(robot: Robot) {
 
   return {
     requestAction,
-    pendingAction: sendAction.isPending ? sendAction.variables : undefined,
+    pendingAction,
     /** Why the screen cannot offer the action now, or null when it can. */
     unavailableReason: (action: RobotAction) =>
-      sendAction.isPending
-        ? "Sending command…"
-        : actionUnavailable(robot, action),
+      pendingAction ? "Sending command…" : actionUnavailable(robot, action),
   };
 }
 

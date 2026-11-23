@@ -13,6 +13,7 @@ export const robotKeys = {
   lists: ["robots", "list"] as const,
   list: (params: RobotListParams) => [...robotKeys.lists, params] as const,
   context: (id: string) => [...robotKeys.all, "context", id] as const,
+  action: (id: string) => [...robotKeys.all, "action", id] as const,
 };
 
 export function robotListOptions(params: RobotListParams) {
