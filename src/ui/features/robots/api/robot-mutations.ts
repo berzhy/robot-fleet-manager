@@ -45,10 +45,14 @@ function useRobotWrite<TData, TVariables = void>(
 }
 
 // Returned from onSettled, so each mutation stays pending until fresh data arrives.
-function invalidateRobots(client: QueryClient) {
+async function invalidateRobots(client: QueryClient) {
   // List pages not on screen hold pre-write data, such as deleted robots;
   // dropping them stops a later page or filter showing them as current. Robot
   // details stay: one already known to be deleted must not show it again.
   client.removeQueries({ queryKey: robotKeys.lists, type: "inactive" });
+  // A request sent before the write may answer with pre-write data. The refetch
+  // below cancels one only for a query that already has data, and reuses it
+  // for a first load, so cancel them all first.
+  await client.cancelQueries({ queryKey: robotKeys.all });
   return client.invalidateQueries({ queryKey: robotKeys.all });
 }

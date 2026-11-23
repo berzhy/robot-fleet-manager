@@ -20,7 +20,7 @@ npm run simulator
 
 Open http://localhost:3000/robots. The fleet starts empty: add 1, 10 or 100 generated robots and watch them work, run low, report problems and drop offline. Data is stored in `data/fleet.sqlite`.
 
-Checks: `npm test` (343 unit and integration tests), `npm run test:e2e` (23 Playwright tests, against their own server and database), `npm run lint`, `npm run knip`, and `npm run benchmark` (the queries at 100k robots, see [Scale](#scale)).
+Checks: `npm test` (346 unit and integration tests), `npm run test:e2e` (23 Playwright tests, against their own server and database), `npm run lint`, `npm run knip`, and `npm run benchmark` (the queries at 100k robots, see [Scale](#scale)).
 
 ## What I built, and why
 
@@ -50,9 +50,9 @@ Trust in the data is the theme that runs through it. Telemetry arrives about onc
 
 ### Data flow
 
-URL → `useRobotListParams()` parses it → `useRobotList()` turns it into a query key and polls every 3 s → each section of the page (tiles, filters, table, footer) calls the hook itself and React Query shares the one request. Writes go the other way: a control calls `useRobotAction(robot)`, the mutation settles only after the refresh it triggers lands, and the screen never shows "done" over stale data.
+URL → `useRobotListParams()` parses it → `useRobotList(params)` turns it into a query key and polls every 3 s. `RobotList` calls both once and gives each section (tiles, filters, table, footer) what it shows, so one file shows where the list's data goes.
 
-Sections read their own data instead of receiving everything from one root component. I built the root-controller version and reverted it: the root grew, layout and focus leaked into it, and every command would have had to be passed down to the rows. The rule I kept is to lift a _derivation_ when sections must agree, not to lift the components.
+Writes stay where they happen instead of being passed down: the filters write the URL themselves (`setRobotListFilters`), and a row or the robot page sends its own commands with `useRobotAction(robot)`. A mutation settles only after the refresh it triggers lands, and that refresh never reuses a request sent before the write, so the screen never shows "done" over stale data.
 
 ### Business rules live in one place
 
