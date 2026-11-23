@@ -8,7 +8,10 @@ import type { HTMLAttributes } from "react";
 import { robotPageSizes } from "@/common/constants";
 import type { RobotFilters } from "@/common/schemas";
 
-import { setRobotListPage, setRobotListPageSize } from "../robot-list-url";
+import {
+  setRobotListPage,
+  setRobotListPageSize,
+} from "../robot-list-url-params";
 
 // MUI's pager toolbar height, kept while the pager is hidden (loading or no
 // robots) so the footer does not jump.

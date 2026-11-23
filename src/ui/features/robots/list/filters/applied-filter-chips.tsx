@@ -2,9 +2,12 @@ import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
 
-import type { RobotFilters } from "@/common/schemas";
+import { defaultRobotListParams, type RobotFilters } from "@/common/schemas";
 
-import { clearRobotListFilters, setRobotListFilters } from "../robot-list-url";
+import {
+  clearRobotListFilters,
+  setRobotListFilters,
+} from "../robot-list-url-params";
 
 import { filterControlId, getFilterChips } from "./filter-fields";
 
@@ -24,7 +27,7 @@ export default function AppliedFilterChips({
   function remove(key: keyof RobotFilters, index: number) {
     const nextChip = chips[index + 1];
 
-    setRobotListFilters({ [key]: key === "view" ? "all" : undefined });
+    setRobotListFilters({ [key]: defaultRobotListParams[key] });
     focusById(nextChip ? chipId(nextChip.key) : filterControlId(key));
   }
 

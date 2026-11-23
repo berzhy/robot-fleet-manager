@@ -14,7 +14,9 @@ import RobotDetails from "./details/robot-details";
 import useLiveRobot from "./details/use-live-robot";
 import RobotList from "./list/robot-list";
 import useRobotList from "./list/use-robot-list";
-import useRobotListParams, { setRobotListPage } from "./list/robot-list-url";
+import useRobotListParams, {
+  setRobotListPage,
+} from "./list/robot-list-url-params";
 import { testRobotPage, testRobot } from "@/ui/features/robots/test-robots";
 
 const reportedAt = "2026-01-01T00:00:00.000Z";

@@ -5,7 +5,10 @@ import Typography from "@mui/material/Typography";
 import type { RobotFilters } from "@/common/schemas";
 
 import { focusSearchField } from "../filters/robot-search-field";
-import { clearRobotListFilters, setRobotListFilters } from "../robot-list-url";
+import {
+  clearRobotListFilters,
+  setRobotListFilters,
+} from "../robot-list-url-params";
 
 export default function RobotTableNoResultsState({
   filters: { search, view, ...fields },

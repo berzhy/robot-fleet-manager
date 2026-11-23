@@ -1,12 +1,11 @@
 import "server-only";
 
-import { robotPageSize } from "@/common/constants";
+import type { z } from "zod";
+
 import {
   createRobotBatchSchema,
   robotActionRequestSchema,
-  robotFiltersSchema,
-  robotPageSchema,
-  robotPageSizeSchema,
+  robotListParamsSchema,
 } from "@/common/schemas";
 
 import { readJsonBody } from "../http/requests";
@@ -41,30 +40,19 @@ export function robotHandlers(database: () => FleetDatabase) {
     },
 
     list(request: Request) {
-      const params = new URL(request.url).searchParams;
-      const page = robotPageSchema.safeParse(params.get("page") ?? "0");
-      const pageSize = robotPageSizeSchema.safeParse(
-        params.get("pageSize") ?? String(robotPageSize),
+      const { searchParams } = new URL(request.url);
+      const params = robotListParamsSchema.safeParse(
+        Object.fromEntries(searchParams),
       );
 
-      if (!pageSize.success) {
-        return errorResponse(400, "Page size must be 10, 20 or 50.");
-      }
-      if (!page.success) {
-        return errorResponse(400, "Page must be a nonnegative integer.");
+      if (!params.success) {
+        return errorResponse(400, invalidListParamsMessage(params.error));
       }
 
-      // The schema keeps only its own keys, so page and pageSize drop out.
-      const filters = robotFiltersSchema.safeParse(Object.fromEntries(params));
-
-      if (!filters.success) {
-        return errorResponse(400, "Invalid robot filters.");
-      }
+      const { page, pageSize, ...filters } = params.data;
 
       return safely(() =>
-        jsonResponse(
-          listRobots(database(), page.data, pageSize.data, filters.data),
-        ),
+        jsonResponse(listRobots(database(), page, pageSize, filters)),
       );
     },
 
@@ -129,4 +117,16 @@ export function robotHandlers(database: () => FleetDatabase) {
       );
     },
   };
+}
+
+function invalidListParamsMessage({ issues }: z.ZodError) {
+  const fields = issues.map((issue) => issue.path[0]);
+
+  if (fields.includes("pageSize")) {
+    return "Page size must be 10, 20 or 50.";
+  }
+  if (fields.includes("page")) {
+    return "Page must be a nonnegative integer.";
+  }
+  return "Invalid robot filters.";
 }

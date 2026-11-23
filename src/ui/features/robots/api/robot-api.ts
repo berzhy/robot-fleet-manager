@@ -1,17 +1,17 @@
 import { z } from "zod";
 
-import type { CreateRobotInput } from "@/common/schemas";
+import {
+  robotFiltersSchema,
+  type CreateRobotInput,
+  type RobotListParams,
+} from "@/common/schemas";
 import type {
   Robot,
   RobotAction,
   RobotContext,
   RobotPage,
 } from "@/common/types";
-
-import {
-  robotFilterSearchParams,
-  type RobotListParams,
-} from "./robot-list-params";
+import { toSearchParams } from "@/ui/utils/search-params-helpers";
 
 const requestTimeoutMs = 5_000;
 
@@ -95,16 +95,16 @@ function robotPath(id: string) {
 }
 
 export async function getRobots(
-  { page, pageSize, filters }: RobotListParams,
+  { page, pageSize, ...filters }: RobotListParams,
   signal?: AbortSignal,
 ): Promise<RobotPage> {
-  const params = new URLSearchParams({
+  const searchParams = new URLSearchParams({
     page: String(page),
     pageSize: String(pageSize),
-    ...Object.fromEntries(robotFilterSearchParams(filters)),
+    ...Object.fromEntries(toSearchParams(robotFiltersSchema, filters)),
   });
   const response = await request(
-    `/api/robots?${params}`,
+    `/api/robots?${searchParams}`,
     "Unable to load robots.",
     { signal },
   );

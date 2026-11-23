@@ -18,7 +18,7 @@ import {
 import type { RobotFilters } from "@/common/schemas";
 import type { RobotPage } from "@/common/types";
 
-import { setRobotListFilters } from "../robot-list-url";
+import { setRobotListFilters } from "../robot-list-url-params";
 
 import { fleetViewId, fleetViewLabels } from "./filter-fields";
 

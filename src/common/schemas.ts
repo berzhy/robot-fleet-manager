@@ -6,6 +6,7 @@ import {
   maxReportsPerBatch,
   robotActions,
   robotActivities,
+  robotPageSize,
   robotPageSizes,
   robotProblemCodes,
   robotTypes,
@@ -23,7 +24,7 @@ export const createRobotSchema = z.strictObject({
 });
 export type CreateRobotInput = z.infer<typeof createRobotSchema>;
 
-export const robotPageSchema = z
+const robotPageSchema = z
   .string()
   .regex(/^(0|[1-9]\d*)$/)
   .transform(Number)
@@ -35,7 +36,7 @@ export const robotPageSchema = z
       .max(Math.floor(Number.MAX_SAFE_INTEGER / Math.max(...robotPageSizes))),
   );
 
-export const robotPageSizeSchema = z
+const robotPageSizeSchema = z
   .enum(robotPageSizes.map(String))
   .transform(Number);
 
@@ -48,6 +49,14 @@ export const robotFiltersSchema = z.object({
   view: z.enum(fleetViews).default("all"),
 });
 export type RobotFilters = z.infer<typeof robotFiltersSchema>;
+
+export const robotListParamsSchema = z.object({
+  ...robotFiltersSchema.shape,
+  pageSize: robotPageSizeSchema.default(robotPageSize),
+  page: robotPageSchema.default(0),
+});
+export type RobotListParams = z.infer<typeof robotListParamsSchema>;
+export const defaultRobotListParams = robotListParamsSchema.parse({});
 
 export const createRobotBatchSchema = z.strictObject({
   robots: z.array(createRobotSchema).min(1).max(100),

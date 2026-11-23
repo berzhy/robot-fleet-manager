@@ -8,7 +8,7 @@ import { render } from "@/ui/test-render";
 
 import { testRobotPage, testRobot } from "@/ui/features/robots/test-robots";
 import RobotList from "../robot-list";
-import { setRobotListFilters } from "../robot-list-url";
+import { setRobotListFilters } from "../robot-list-url-params";
 
 const robot = testRobot({ activity: "charging" });
 

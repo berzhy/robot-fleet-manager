@@ -2,7 +2,7 @@ import Stack from "@mui/material/Stack";
 import type { RobotFilters } from "@/common/schemas";
 import type { FilterOptions } from "@/common/types";
 
-import { setRobotListFilters } from "../robot-list-url";
+import { setRobotListFilters } from "../robot-list-url-params";
 
 import AppliedFilterChips from "./applied-filter-chips";
 import { toolbarFilterFields } from "./filter-fields";

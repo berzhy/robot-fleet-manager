@@ -24,10 +24,7 @@ test("requests a server page with cancellation and rejects HTTP failures", async
 
   const controller = new AbortController();
   expect(
-    await getRobots(
-      { page: 2, pageSize: 20, filters: { view: "all" } },
-      controller.signal,
-    ),
+    await getRobots({ page: 2, pageSize: 20, view: "all" }, controller.signal),
   ).toEqual(
     testRobotPage([], {
       page: 2,
@@ -41,7 +38,7 @@ test("requests a server page with cancellation and rejects HTTP failures", async
   });
 
   await expect(
-    getRobots({ page: 0, pageSize: 10, filters: { view: "all" } }),
+    getRobots({ page: 0, pageSize: 10, view: "all" }),
   ).rejects.toThrow("Unable to load robots.");
 });
 
@@ -175,14 +172,12 @@ test("encodes literal search text and combined filters in the list request", asy
   await getRobots({
     page: 0,
     pageSize: 20,
-    filters: {
-      view: "offline",
-      search: "Robot %_&",
-      site: "Munich & Berlin",
-      manufacturer: "A/B",
-      integrationType: "ros2",
-      type: "inspection",
-    },
+    view: "offline",
+    search: "Robot %_&",
+    site: "Munich & Berlin",
+    manufacturer: "A/B",
+    integrationType: "ros2",
+    type: "inspection",
   });
   const url = new URL(fetcher.mock.calls[0][0] as string, "http://localhost");
   expect(Object.fromEntries(url.searchParams)).toEqual({
@@ -201,10 +196,7 @@ test("caller cancellation aborts the combined read signal", async () => {
   const fetcher = vi.fn().mockResolvedValue(Response.json({ items: [] }));
   vi.stubGlobal("fetch", fetcher);
   const controller = new AbortController();
-  await getRobots(
-    { page: 0, pageSize: 10, filters: { view: "all" } },
-    controller.signal,
-  );
+  await getRobots({ page: 0, pageSize: 10, view: "all" }, controller.signal);
   const signal = (fetcher.mock.calls[0] as unknown as [string, RequestInit])[1]
     .signal!;
   expect(signal.aborted).toBe(false);

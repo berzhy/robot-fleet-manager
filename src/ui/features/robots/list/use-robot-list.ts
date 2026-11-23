@@ -1,15 +1,13 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 
-import type { RobotListParams } from "../api/robot-list-params";
+import type { RobotListParams } from "@/common/schemas";
+
 import { robotListOptions } from "../api/robot-queries";
 
-import { setRobotListPage } from "./robot-list-url";
+import { setRobotListPage } from "./robot-list-url-params";
 
-/**
- * The page of robots for these params. An out-of-range page is corrected in
- * the URL.
- */
+/** Fetches one page of robots for `params`, correcting an out-of-range page in the URL. */
 export default function useRobotList(params: RobotListParams) {
   // While the next view loads, the previous view's result stays on screen, so
   // the counts, filter options, pager and rows stay in place.

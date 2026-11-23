@@ -13,7 +13,7 @@ import { render } from "@/ui/test-render";
 
 import { testRobotPage } from "@/ui/features/robots/test-robots";
 
-import useRobotListParams from "../robot-list-url";
+import useRobotListParams from "../robot-list-url-params";
 import useRobotList from "../use-robot-list";
 import RobotListFilters from "./robot-list-filters";
 import RobotStatusFilters from "./robot-status-filters";
@@ -52,7 +52,7 @@ function StatusFilters() {
   const { data, isLoading, loadFailed } = useRobotList(params);
   return (
     <RobotStatusFilters
-      view={params.filters.view}
+      view={params.view}
       summary={data?.summary}
       isLoading={isLoading}
       loadFailed={loadFailed}
@@ -61,14 +61,9 @@ function StatusFilters() {
 }
 
 function ListFilters() {
-  const params = useRobotListParams();
-  const { data } = useRobotList(params);
-  return (
-    <RobotListFilters
-      filters={params.filters}
-      available={data?.filterOptions}
-    />
-  );
+  const { page, pageSize, ...filters } = useRobotListParams();
+  const { data } = useRobotList({ page, pageSize, ...filters });
+  return <RobotListFilters filters={filters} available={data?.filterOptions} />;
 }
 
 test("dropdowns, tiles and removable chips share one selection", async () => {

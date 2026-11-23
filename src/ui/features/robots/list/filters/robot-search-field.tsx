@@ -5,7 +5,9 @@ import InputAdornment from "@mui/material/InputAdornment";
 import TextField from "@mui/material/TextField";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 
-import { appliedSearch, setRobotListFilters } from "../robot-list-url";
+import { robotFiltersSchema } from "@/common/schemas";
+
+import { setRobotListFilters } from "../robot-list-url-params";
 
 import { searchFieldId } from "./filter-fields";
 
@@ -132,4 +134,9 @@ export default function RobotSearchField({
       }}
     />
   );
+}
+
+/** The search a typed text applies: trimmed, 2–100 characters, otherwise none. */
+function appliedSearch(text: string) {
+  return robotFiltersSchema.shape.search.safeParse(text).data;
 }

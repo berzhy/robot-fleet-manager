@@ -1,18 +1,20 @@
 import { expect, test } from "vitest";
 
-import { robotFilterSearchParams } from "../api/robot-list-params";
-
-import { parseRobotListParams, robotListSearchParams } from "./robot-list-url";
+import { robotListParamsSchema } from "@/common/schemas";
+import {
+  parseSearchParams,
+  toSearchParams,
+} from "@/ui/utils/search-params-helpers";
 
 function parse(query: string) {
-  return parseRobotListParams(new URLSearchParams(query));
+  return parseSearchParams(robotListParamsSchema, new URLSearchParams(query));
 }
 
 test("an empty query is the default view", () => {
   expect(parse("")).toEqual({
     page: 0,
     pageSize: 10,
-    filters: { view: "all" },
+    view: "all",
   });
 });
 
@@ -24,18 +26,19 @@ test("valid values are read and survive a round trip", () => {
   expect(params).toEqual({
     page: 2,
     pageSize: 20,
-    filters: {
-      view: "offline",
-      search: "Atlas",
-      site: "Munich",
-      manufacturer: "Maker",
-      integrationType: "ros2",
-      type: "inspection",
-    },
+    view: "offline",
+    search: "Atlas",
+    site: "Munich",
+    manufacturer: "Maker",
+    integrationType: "ros2",
+    type: "inspection",
   });
   expect(
-    parseRobotListParams(robotFilterSearchParams(params.filters)).filters,
-  ).toEqual(params.filters);
+    parseSearchParams(
+      robotListParamsSchema,
+      toSearchParams(robotListParamsSchema, params),
+    ),
+  ).toEqual(params);
 });
 
 test.each([
@@ -54,34 +57,47 @@ test.each([
   [`site=${"x".repeat(101)}`, { view: "all" }],
   ["type=drone", { view: "all" }],
 ])("an invalid filter %s is dropped", (query, expected) => {
-  expect(parse(query).filters).toEqual(expected);
+  expect(parse(query)).toEqual({ page: 0, pageSize: 10, ...expected });
 });
 
 test("one invalid field keeps the valid ones", () => {
   expect(parse("view=bogus&site=Munich&page=-1&pageSize=50")).toEqual({
     page: 0,
     pageSize: 50,
-    filters: { view: "all", site: "Munich" },
+    view: "all",
+    site: "Munich",
   });
 });
 
 test("search is trimmed", () => {
-  expect(parse("search=%20%20Atlas%20").filters.search).toBe("Atlas");
+  expect(parse("search=%20%20Atlas%20").search).toBe("Atlas");
 });
 
 test("the first page at the default size adds nothing to the URL", () => {
   expect(
-    robotListSearchParams({
+    toSearchParams(robotListParamsSchema, {
       page: 0,
       pageSize: 10,
-      filters: { view: "all" },
+      view: "all",
     }).toString(),
   ).toBe("");
   expect(
-    robotListSearchParams({
+    toSearchParams(robotListParamsSchema, {
       page: 2,
       pageSize: 20,
-      filters: { view: "offline" },
+      view: "offline",
     }).toString(),
   ).toBe("view=offline&pageSize=20&page=2");
+});
+
+test("unset filters are left out and values are encoded", () => {
+  expect(
+    toSearchParams(robotListParamsSchema, {
+      page: 0,
+      pageSize: 10,
+      view: "low-battery",
+      search: "a&b",
+      site: undefined,
+    }).toString(),
+  ).toBe("search=a%26b&view=low-battery");
 });

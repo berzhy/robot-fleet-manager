@@ -13,7 +13,7 @@
 - **`src/app`**: Next routes only (pages and `api/**` handlers), wiring features to the server.
 - **`src/common`**: the contract shared by server, UI and simulator, one file per kind: `constants.ts` (enum lists, thresholds), `types.ts`, `schemas.ts` (zod, with the types inferred from it) and `labels.ts`. No fleet rules.
 - **`src/server`**: data access and fleet rules; it sends each robot with its connection, battery level, blocked actions and queued actions.
-- **`src/ui`**: everything the browser runs. `features/` holds the product areas (robots, skills, integrations); app-wide UI gets a folder named for what it is: `layout/`, `theme/`, `query/`, `notifications/`, `status-pages/`, `assets/`.
+- **`src/ui`**: everything the browser runs. `features/` holds the product areas (robots, skills, integrations); app-wide UI gets a folder named for what it is: `layout/`, `theme/`, `query/`, `notifications/`, `status-pages/`, `assets/`. Pure, feature-agnostic helpers go in `utils/`.
 - **`src/simulator`**: the robot simulator, which reaches the app only over HTTP.
 
 ## Where tests go

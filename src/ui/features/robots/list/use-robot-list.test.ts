@@ -12,15 +12,16 @@ import useRobotListParams, {
   setRobotListFilters,
   setRobotListPage,
   setRobotListPageSize,
-} from "./robot-list-url";
+} from "./robot-list-url-params";
 
 // The list hooks as RobotList composes them.
 function useListUnderTest() {
-  const params = useRobotListParams();
-  const list = useRobotList(params);
+  const { page, pageSize, ...filters } = useRobotListParams();
+  const list = useRobotList({ page, pageSize, ...filters });
 
   return {
-    ...params,
+    pageSize,
+    filters,
     ...list,
   };
 }
@@ -68,9 +69,7 @@ test("page size changes cancel old requests and reload preserves the selection",
     {
       page: 0,
       pageSize: 20,
-      filters: {
-        view: "all",
-      },
+      view: "all",
     },
     expect.any(AbortSignal),
   );
@@ -101,9 +100,7 @@ test("failed page correction retains only cached destination data under the corr
     {
       page: 0,
       pageSize: 10,
-      filters: {
-        view: "all",
-      },
+      view: "all",
     },
     expect.any(AbortSignal),
   );
@@ -139,11 +136,9 @@ test("filter changes cancel old scope requests and reset page while retaining pa
     {
       page: 0,
       pageSize: 10,
-      filters: {
-        view: "offline",
-        site: "Berlin",
-        search: "Boston",
-      },
+      view: "offline",
+      site: "Berlin",
+      search: "Boston",
     },
     expect.any(AbortSignal),
   );
@@ -177,9 +172,7 @@ test("zero matching results correct a later page and preserve filters", async ()
     {
       page: 0,
       pageSize: 10,
-      filters: {
-        view: "low-battery",
-      },
+      view: "low-battery",
     },
     expect.any(AbortSignal),
   );
@@ -280,7 +273,7 @@ test("the URL's view drives the first request", () => {
   renderHook(() => useListUnderTest());
 
   expect(getRobots).toHaveBeenCalledWith(
-    { page: 1, pageSize: 20, filters: { view: "offline", site: "Munich" } },
+    { page: 1, pageSize: 20, view: "offline", site: "Munich" },
     expect.any(AbortSignal),
   );
 });

@@ -26,14 +26,13 @@ import RobotTableNoResultsState from "./table/robot-table-no-results-state";
 import useAddRobots from "./use-add-robots";
 import useDeleteRobotFlow from "./use-delete-robot-flow";
 import useRobotList from "./use-robot-list";
-import useRobotListParams from "./robot-list-url";
+import useRobotListParams from "./robot-list-url-params";
 
 export default function RobotList() {
-  const params = useRobotListParams();
-  const { filters, pageSize } = params;
+  const { page: requestedPage, pageSize, ...filters } = useRobotListParams();
   useRememberRobotListView();
   const { data, page, isLoading, loadFailed, refreshFailed, refresh } =
-    useRobotList(params);
+    useRobotList({ page: requestedPage, pageSize, ...filters });
 
   const { requestDelete, dialog } = useDeleteRobotFlow();
   const { addRobots, adding, addButtonRef } = useAddRobots();

@@ -23,7 +23,7 @@ test("a write drops list pages not on screen but keeps robot details", async () 
   const listKey = robotKeys.list({
     page: 1,
     pageSize: 10,
-    filters: { view: "all" },
+    view: "all",
   });
   const contextKey = robotKeys.context("test");
   const { result } = renderHook(
@@ -56,9 +56,7 @@ test("a write during a first load refreshes with a request sent after the write"
     .mockResolvedValue(Response.json(testRobotPage([])));
   vi.stubGlobal("fetch", fetcher);
   const { result } = renderHook(() => ({
-    list: useQuery(
-      robotListOptions({ page: 0, pageSize: 10, filters: { view: "all" } }),
-    ),
+    list: useQuery(robotListOptions({ page: 0, pageSize: 10, view: "all" })),
     deleteRobot: useDeleteRobot(),
   }));
 
@@ -78,7 +76,7 @@ test("overlapping commands each show their result, and the last refresh wins", a
   const listParams = {
     page: 0,
     pageSize: 10,
-    filters: { view: "all" as const },
+    view: "all" as const,
   };
   const reportedAt = new Date().toISOString();
   const working = { activity: "working" as const, lastReceivedAt: reportedAt };
@@ -160,7 +158,7 @@ describe("the list between a delete and its refresh", () => {
   const listParams = {
     page: 0,
     pageSize: 10,
-    filters: { view: "all" as const },
+    view: "all" as const,
   };
   const listKey = robotKeys.list(listParams);
   const listed = testRobot({ id: "listed" });

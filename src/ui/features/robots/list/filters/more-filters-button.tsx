@@ -11,7 +11,7 @@ import { useId, useState } from "react";
 import type { RobotFilters } from "@/common/schemas";
 import type { FilterOptions } from "@/common/types";
 
-import { setRobotListFilters } from "../robot-list-url";
+import { setRobotListFilters } from "../robot-list-url-params";
 
 import { moreFilterFields, moreFiltersButtonId } from "./filter-fields";
 import FilterSelect from "./filter-select";
