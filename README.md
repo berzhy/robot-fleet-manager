@@ -93,6 +93,27 @@ The browser's work stays bounded as the fleet grows. Search, filters, counts and
 - **Security:** no authentication, roles or command audit trail.
 - **Localization:** English and Europe/Berlin only.
 
+## With more time or in production
+
+**Product**
+
+- **Vendor capabilities:** drive controls from what each robot reports it can do, so a new manufacturer or skill needs no UI change.
+- **Incident workflow:** turn "Needs attention" into a queue operators can acknowledge, assign and resolve.
+- **Command lifecycle:** track each command from sent to applied or failed, with idempotency keys, history and role-aware controls.
+- **Fleet workflows:** add bulk actions and saved views.
+
+**Frontend architecture**
+
+- **Live updates:** replace polling with server-sent events that carry only changed robots, with a fresh snapshot after a reconnect.
+- **API contract:** validate responses at the boundary and version the contract, since an on-prem backend can be older than the UI.
+- **List state:** put URL reads and writes behind one list-state hook, and replace the combined query flags with one explicit content state.
+- **Search and focus:** move search syncing into its own hook, and give focus destinations one owner.
+
+**Team and operations**
+
+- **Guardrails:** enforce module boundaries in lint and keep a render budget for the largest page, 50 rows, on slower devices.
+- **Observability:** track client errors, failed refreshes and command latency.
+
 ## Testing
 
 - **Vitest:** components with the app's real providers and theme, plus the rules behind what they display.
