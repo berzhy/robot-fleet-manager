@@ -2,6 +2,12 @@
 
 A frontend proof of concept for monitoring and controlling a mixed robot fleet, built for the Olivaw engineering challenge. The UI is the product here. The simulator and server exist to give it live data, failures and delayed commands to handle.
 
+![Fleet view with live status counts, filters and the robot table](docs/fleet-view.png)
+
+![Robot view with live state, a reported problem, actions and the site map](docs/robot-view.png)
+
+![Filtering to robots that need attention, retrying one and finding it on the site map](docs/fleet-workflow.gif)
+
 ## Quick start
 
 Requires Node.js 26 and npm.
