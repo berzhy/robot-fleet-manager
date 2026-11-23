@@ -6,7 +6,7 @@ import {
   openTestDatabase,
   removeTestDatabase,
 } from "@/server/db/test-database";
-import { testRobotInput } from "@/server/robots/test-robot-input";
+import { testRobotInput } from "@/server/robots/test-robots";
 
 import type { FleetDatabase } from "../db/database";
 import { latestTelemetry } from "../db/schema";

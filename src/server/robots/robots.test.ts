@@ -4,13 +4,12 @@ import {
   openTestDatabase,
   removeTestDatabase,
 } from "@/server/db/test-database";
-import { testRobotInput } from "@/server/robots/test-robot-input";
+import { createTestRobot, testRobotInput } from "@/server/robots/test-robots";
 
 import { openDatabase, type FleetDatabase } from "../db/database";
 import { latestTelemetry, robots } from "../db/schema";
 import {
   createRobots,
-  createRobot,
   deleteRobot,
   getRobot,
   getRobotContext,
@@ -37,7 +36,7 @@ afterEach(() => {
 });
 
 test("created metadata persists after reopening with unknown telemetry", () => {
-  const robot = createRobot(db, testRobotInput);
+  const robot = createTestRobot(db);
 
   expect(robot).toMatchObject({
     ...testRobotInput,
@@ -94,8 +93,11 @@ test("pagination orders newest first with descending id tie-breaking", () => {
 });
 
 test("deletion cascades only the selected robot's telemetry", () => {
-  const first = createRobot(db, testRobotInput);
-  const second = createRobot(db, { ...testRobotInput, name: "Other robot" });
+  const first = createTestRobot(db);
+  const second = createTestRobot(db, {
+    ...testRobotInput,
+    name: "Other robot",
+  });
   const observedAt = "2026-11-15T10:00:00.000Z";
   db.insert(latestTelemetry)
     .values([
@@ -151,7 +153,7 @@ test("batch creation rolls back every insert if a later database write fails", (
 });
 
 test("a new robot is in the registry with no report and the default command", () => {
-  const robot = createRobot(db, testRobotInput);
+  const robot = createTestRobot(db);
 
   expect(robotRegistry(db)).toEqual([
     {
@@ -168,7 +170,7 @@ test("a new robot is in the registry with no report and the default command", ()
 test.each(robotTypes)(
   "%s type persists in creation, list and details",
   (type) => {
-    const robot = createRobot(db, { ...testRobotInput, type });
+    const robot = createTestRobot(db, { ...testRobotInput, type });
 
     expect(robot.type).toBe(type);
     expect(robot).toMatchObject(getRobot(db, robot.id)!);
@@ -199,7 +201,7 @@ test("fresh schema rejects missing and unsupported types even outside the API", 
 test.each(integrationTypes)(
   "%s integration persists in list and details",
   (integrationType) => {
-    const robot = createRobot(db, { ...testRobotInput, integrationType });
+    const robot = createTestRobot(db, { ...testRobotInput, integrationType });
 
     expect(robot.integrationType).toBe(integrationType);
     expect(robot).toMatchObject(getRobot(db, robot.id)!);
@@ -219,13 +221,13 @@ test("fresh schema rejects missing and unsupported integrations outside the API"
 });
 
 test("detail context counts only same-site peers per area and returns 404 for a missing robot", async () => {
-  const selected = createRobot(db, testRobotInput);
+  const selected = createTestRobot(db);
   const [lobbyPeer, otherLobbyPeer] = createRobots(db, [
     { ...testRobotInput, name: "Lobby peer" },
     { ...testRobotInput, name: "Other lobby peer" },
     { ...testRobotInput, name: "Unreported peer" },
   ]);
-  createRobot(db, { ...testRobotInput, site: "Berlin" });
+  createTestRobot(db, { ...testRobotInput, site: "Berlin" });
   db.insert(latestTelemetry)
     .values(
       [selected, lobbyPeer, otherLobbyPeer].map((robot) => ({

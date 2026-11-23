@@ -11,15 +11,11 @@ import {
 } from "vitest";
 import { createSchema } from "../db/create-schema";
 import { openDatabase } from "../db/database";
-import {
-  createRobot,
-  deleteRobot,
-  getRobot,
-  robotRegistry,
-} from "../robots/robots";
+import { deleteRobot, getRobot, robotRegistry } from "../robots/robots";
 import { robotHandlers } from "../robots/robot-handlers";
 import { telemetryHandlers } from "./telemetry-handlers";
 import { ingestTelemetry } from "./telemetry";
+import { createTestRobot } from "@/server/robots/test-robots";
 
 const db = openDatabase(":memory:");
 
@@ -41,7 +37,7 @@ beforeAll(() => createSchema(db));
 
 beforeEach(() => {
   db.$client.exec("DELETE FROM robots");
-  id = createRobot(db, input).id;
+  id = createTestRobot(db, input).id;
 });
 
 afterEach(() => {
@@ -163,7 +159,7 @@ test("invalid batches and future timestamps write nothing", async () => {
 });
 
 test("a database error rolls back the complete batch", async () => {
-  const other = createRobot(db, input);
+  const other = createTestRobot(db, input);
   db.$client.exec(
     `CREATE TRIGGER fail_telemetry BEFORE INSERT ON latest_telemetry WHEN NEW.robot_id = '${other.id}' BEGIN SELECT RAISE(ABORT, 'failure'); END;`,
   );

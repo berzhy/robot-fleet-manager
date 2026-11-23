@@ -3,11 +3,11 @@ import {
   openTestDatabase,
   removeTestDatabase,
 } from "@/server/db/test-database";
-import { testRobotInput } from "@/server/robots/test-robot-input";
+import { createTestRobot, testRobotInput } from "@/server/robots/test-robots";
 
 import type { FleetDatabase } from "../db/database";
 import { latestTelemetry } from "../db/schema";
-import { createRobot, listRobots, robotRegistry } from "./robots";
+import { listRobots, robotRegistry } from "./robots";
 import { robotHandlers } from "./robot-handlers";
 
 let db: FleetDatabase;
@@ -24,7 +24,7 @@ afterEach(() => {
 test("filters before pagination, scopes summaries without the view, and retains full options", () => {
   vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-11-15T12:00:00Z"));
   for (let index = 0; index < 22; index++) {
-    const robot = createRobot(db, testRobotInput);
+    const robot = createTestRobot(db);
     db.insert(latestTelemetry)
       .values({
         robotId: robot.id,
@@ -35,7 +35,7 @@ test("filters before pagination, scopes summaries without the view, and retains 
       })
       .run();
   }
-  createRobot(db, {
+  createTestRobot(db, {
     ...testRobotInput,
     site: "Berlin",
     manufacturer: "Other",
@@ -100,7 +100,7 @@ test.each([
   (activity, batteryPercent, age, low, attention) => {
     const now = Date.parse("2026-11-15T12:00:00Z");
     vi.spyOn(Date, "now").mockReturnValue(now);
-    const robot = createRobot(db, testRobotInput);
+    const robot = createTestRobot(db);
     db.insert(latestTelemetry)
       .values({
         robotId: robot.id,
@@ -126,7 +126,7 @@ test.each([
 );
 
 test("unknown reports do not qualify and invalid filter requests are rejected", () => {
-  createRobot(db, testRobotInput);
+  createTestRobot(db);
 
   expect(listRobots(db, 0).summary).toEqual({
     all: 1,
@@ -144,9 +144,9 @@ test("unknown reports do not qualify and invalid filter requests are rejected", 
 });
 
 test("type narrows rows and all tile counts with the other filters", () => {
-  const inspection = createRobot(db, testRobotInput);
-  createRobot(db, { ...testRobotInput, type: "cleaning" });
-  createRobot(db, { ...testRobotInput, site: "Berlin" });
+  const inspection = createTestRobot(db);
+  createTestRobot(db, { ...testRobotInput, type: "cleaning" });
+  createTestRobot(db, { ...testRobotInput, site: "Berlin" });
   db.insert(latestTelemetry)
     .values({
       robotId: inspection.id,
@@ -182,7 +182,7 @@ test("type narrows rows and all tile counts with the other filters", () => {
 
 test("search matches metadata and displayed labels before pagination and scopes tile counts", () => {
   const matching = Array.from({ length: 12 }, () =>
-    createRobot(db, {
+    createTestRobot(db, {
       ...testRobotInput,
       name: "Survey unit",
       integrationType: "ros2",
@@ -200,7 +200,7 @@ test("search matches metadata and displayed labels before pagination and scopes 
       receivedAt: new Date().toISOString(),
     })
     .run();
-  createRobot(db, {
+  createTestRobot(db, {
     ...testRobotInput,
     name: "Other",
     site: "Berlin",
@@ -258,8 +258,8 @@ test("search matches metadata and displayed labels before pagination and scopes 
 });
 
 test("search treats SQL wildcards and escapes literally and validates trimmed testRobotInput", async () => {
-  createRobot(db, { ...testRobotInput, name: "100%_unit\\dock" });
-  createRobot(db, { ...testRobotInput, name: "100XXunitXdock" });
+  createTestRobot(db, { ...testRobotInput, name: "100%_unit\\dock" });
+  createTestRobot(db, { ...testRobotInput, name: "100XXunitXdock" });
 
   for (const search of ["%_", "unit\\dock"]) {
     expect(listRobots(db, 0, 20, { view: "all", search }).total).toBe(1);
@@ -292,7 +292,7 @@ test.each([
 ] as const)("connection search at report age %s matches %s", (age, status) => {
   const now = Date.parse("2026-11-15T12:00:00Z");
   vi.spyOn(Date, "now").mockReturnValue(now);
-  const robot = createRobot(db, testRobotInput);
+  const robot = createTestRobot(db);
   db.insert(latestTelemetry)
     .values({
       robotId: robot.id,

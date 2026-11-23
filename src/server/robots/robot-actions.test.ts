@@ -4,11 +4,11 @@ import {
   openTestDatabase,
   removeTestDatabase,
 } from "@/server/db/test-database";
-import { testRobotInput } from "@/server/robots/test-robot-input";
+import { createTestRobot } from "@/server/robots/test-robots";
 
 import type { FleetDatabase } from "../db/database";
 import { latestTelemetry } from "../db/schema";
-import { createRobot, getRobot, robotRegistry } from "./robots";
+import { getRobot, robotRegistry } from "./robots";
 import { robotHandlers } from "./robot-handlers";
 
 // Control state is internal: only the simulator's registry exposes it.
@@ -29,7 +29,7 @@ afterEach(() => {
 
 test("actions validate current state, persist latest intent, and stay queued until applied", async () => {
   const api = robotHandlers(() => db);
-  const robot = createRobot(db, testRobotInput);
+  const robot = createTestRobot(db);
   const action = (value: unknown, id = robot.id) =>
     api.requestAction(
       id,
@@ -91,7 +91,7 @@ test.each(robotProblemCodes)(
   "Retry for %s reissues work with a new revision",
   async (problemCode) => {
     const api = robotHandlers(() => db);
-    const robot = createRobot(db, testRobotInput);
+    const robot = createTestRobot(db);
     db.insert(latestTelemetry)
       .values({
         robotId: robot.id,
@@ -124,7 +124,7 @@ test.each(robotProblemCodes)(
 
 test("action persistence failures roll back the target and return a generic error", async () => {
   const api = robotHandlers(() => db);
-  const robot = createRobot(db, testRobotInput);
+  const robot = createTestRobot(db);
   db.insert(latestTelemetry)
     .values({
       robotId: robot.id,
@@ -170,7 +170,7 @@ test.each(
   "Start activity from %s requires a known battery above 20%% (%s)",
   async (activity, batteryPercent) => {
     const api = robotHandlers(() => db);
-    const robot = createRobot(db, testRobotInput);
+    const robot = createTestRobot(db);
     db.insert(latestTelemetry)
       .values({
         robotId: robot.id,

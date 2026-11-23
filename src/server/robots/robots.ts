@@ -165,10 +165,6 @@ export function getRobot(
   return row && toRobot(row, evaluatedAt);
 }
 
-export function createRobot(db: FleetDatabase, input: CreateRobotInput): Robot {
-  return createRobots(db, [input])[0];
-}
-
 /** Registers robots whose input the HTTP boundary has already validated. */
 export function createRobots(
   db: FleetDatabase,
