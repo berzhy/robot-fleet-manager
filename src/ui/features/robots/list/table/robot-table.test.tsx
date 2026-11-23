@@ -7,32 +7,12 @@ import type { Robot, RobotPage } from "@/common/types";
 import { render } from "@/ui/test-render";
 
 import { testRobotPage, testRobot } from "@/ui/features/robots/test-robots";
-import useRobotListParams, { setRobotListFilters } from "../robot-list-url";
-import useRobotList from "../use-robot-list";
-import RobotTable from "./robot-table";
+import RobotList from "../robot-list";
+import { setRobotListFilters } from "../robot-list-url";
 
 const robot = testRobot({ activity: "charging" });
 
-const tableHandlers = {
-  onAdd: () => {},
-  onDelete: () => {},
-  onFocusSearch: () => {},
-  adding: false,
-};
-
 afterEach(() => vi.unstubAllGlobals());
-
-/** The table as the list screen feeds it: the URL's view and its page of robots. */
-function Table() {
-  const params = useRobotListParams();
-  return (
-    <RobotTable
-      params={params}
-      list={useRobotList(params)}
-      {...tableHandlers}
-    />
-  );
-}
 
 function robotPage(items: Robot[]): RobotPage {
   return testRobotPage(items, { pageSize: 20 });
@@ -45,7 +25,7 @@ function renderTable(snapshot: RobotPage, query = "") {
     "fetch",
     vi.fn(() => Promise.resolve(Response.json(snapshot))),
   );
-  render(<Table />);
+  render(<RobotList />);
 }
 
 test.each(robotPageSizes)(
@@ -56,7 +36,7 @@ test.each(robotPageSizes)(
       "fetch",
       vi.fn(() => new Promise<Response>(() => {})),
     );
-    render(<Table />);
+    render(<RobotList />);
 
     const table = screen.getByRole("table", { name: "Robot fleet" });
     expect(table.querySelectorAll("tbody > tr")).toHaveLength(pageSize);
@@ -78,7 +58,7 @@ test("the previous rows and the pager stay while the next view loads", async () 
     ),
   );
   window.history.replaceState(null, "", "/robots");
-  render(<Table />);
+  render(<RobotList />);
 
   const table = screen.getByRole("table", { name: "Robot fleet" });
   const footerCount = screen.getByTestId("fleet-result-count");
@@ -234,7 +214,7 @@ test("a search with no matches names the query, lists searchable fields and offe
       Promise.resolve(Response.json({ ...robotPage([]), fleetTotal: 5 })),
     ),
   );
-  render(<Table />);
+  render(<RobotList />);
 
   expect(
     await screen.findByText("No robots match “no-such-robot”."),
@@ -245,14 +225,14 @@ test("a search with no matches names the query, lists searchable fields and offe
     ),
   ).toBeVisible();
 
+  const noResults = within(screen.getByTestId("fleet-no-results"));
+
   // With no other filter, Clear filters would do the same as Clear search.
   expect(
-    within(screen.getByTestId("fleet-no-results")).queryByRole("button", {
-      name: "Clear filters",
-    }),
+    noResults.queryByRole("button", { name: "Clear filters" }),
   ).not.toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole("button", { name: "Clear search" }));
+  fireEvent.click(noResults.getByRole("button", { name: "Clear search" }));
 
   expect(window.location.search).toBe("");
 });
@@ -265,7 +245,7 @@ test("a search with no matches mentions other applied filters, which may be the 
       Promise.resolve(Response.json({ ...robotPage([]), fleetTotal: 5 })),
     ),
   );
-  render(<Table />);
+  render(<RobotList />);
 
   expect(
     await screen.findByText("No robots match “sa” with the selected filters."),

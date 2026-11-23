@@ -8,10 +8,7 @@ import type { HTMLAttributes } from "react";
 import { robotPageSizes } from "@/common/constants";
 import type { RobotFilters } from "@/common/schemas";
 
-import type { RobotListParams } from "../../api/robot-list-params";
-
 import { setRobotListPage, setRobotListPageSize } from "../robot-list-url";
-import type { RobotListResult } from "../use-robot-list";
 
 // MUI's pager toolbar height, kept while the pager is hidden (loading or no
 // robots) so the footer does not jump.
@@ -42,15 +39,18 @@ export function formatResultCount(
 }
 
 export default function RobotTableFooter({
-  params: { filters, pageSize },
-  list: { data, isLoading, page },
+  total,
+  page,
+  pageSize,
+  resultCount,
 }: {
-  params: RobotListParams;
-  list: RobotListResult;
+  /** The previous view's total while the next loads, so the pager stays. */
+  total: number;
+  page: number;
+  pageSize: number;
+  /** Absent until this view's own result arrives. */
+  resultCount?: string;
 }) {
-  // The previous view's total keeps the pager mounted while the next loads.
-  const total = data?.total ?? 0;
-
   return (
     <Box
       sx={{
@@ -103,11 +103,7 @@ export default function RobotTableFooter({
         color="textSecondary"
         sx={{ ml: "auto", pr: 2, fontVariantNumeric: "tabular-nums" }}
       >
-        {data && !isLoading ? (
-          formatResultCount(total, data.summary.all, filters)
-        ) : (
-          <Skeleton width={180} aria-hidden="true" />
-        )}
+        {resultCount ?? <Skeleton width={180} aria-hidden="true" />}
       </Typography>
     </Box>
   );

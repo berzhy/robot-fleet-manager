@@ -41,8 +41,6 @@ export default function useRobotList(params: RobotListParams) {
   };
 }
 
-export type RobotListResult = ReturnType<typeof useRobotList>;
-
 function lastRobotPage(total: number, size: number) {
   return Math.max(0, Math.ceil(total / size) - 1);
 }
