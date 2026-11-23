@@ -17,7 +17,6 @@ export default function RobotListFilters({
   available,
 }: {
   filters: RobotFilters;
-  /** Undefined until the first page arrives. */
   available: FilterOptions | undefined;
 }) {
   return (

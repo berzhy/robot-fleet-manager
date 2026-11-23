@@ -18,7 +18,8 @@ import BatteryUnknownIcon from "@mui/icons-material/BatteryUnknown";
 // size it is as tall as the digits beside it.
 const iconSizePx = 34;
 
-// Material's battery icons come in steps; each level shows the step at or below it.
+// Material's battery icons come in steps. Each level shows the step at or
+// below it, and anything under 20% shows the lowest step.
 const batteryLevels = [
   {
     minPercent: 100,
@@ -33,7 +34,6 @@ const batteryLevels = [
   { minPercent: 0, icon: Battery20Icon, chargingIcon: BatteryCharging20Icon },
 ];
 
-/** The battery as a phone shows it: filled to its level, with a bolt while charging. */
 export default function BatteryIcon({
   percent,
   isCharging,

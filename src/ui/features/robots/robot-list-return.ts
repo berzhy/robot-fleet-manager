@@ -1,12 +1,10 @@
 import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 
-// The way back from a robot to the list, shared by the two screens rather than
-// owned by either. In memory only: a reload or a shared robot link opens the
-// full list, and the server never sets it.
+// In memory only, and never set on the server: a reload or a shared robot
+// link opens the full list.
 let lastListQuery = "";
 
-/** Remembers the list's view for robotListHref; the list page calls it once. */
 export function useRememberRobotListView() {
   const query = useSearchParams().toString();
   useEffect(() => {

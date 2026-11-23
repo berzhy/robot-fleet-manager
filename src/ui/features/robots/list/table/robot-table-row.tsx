@@ -59,7 +59,7 @@ export default function RobotTableRow({
     >
       <TableCell component="th" scope="row">
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          {/* A plain div cannot carry a label; Connection names the state. */}
+          {/* Describes rather than labels: a plain div cannot carry a name. */}
           <Tooltip
             title={
               unverified ? `${connectionLabel} (unverified)` : connectionLabel
@@ -127,7 +127,7 @@ export default function RobotTableRow({
       </TableCell>
       <TableCell sx={{ fontVariantNumeric: "tabular-nums" }}>
         <Typography data-testid="robot-connection" variant="body2">
-          {/* A failed refresh is announced above the table, not on every row. */}
+          {/* A failed refresh shows above the table; this cell stays plain. */}
           <SearchHighlight text={connectionLabel} search={search} />
         </Typography>
         {isStale && robot.lastReceivedAt && (
@@ -145,7 +145,6 @@ export default function RobotTableRow({
         )}
       </TableCell>
       <TableCell data-testid="robot-activity">
-        {/* Without fresh reports the activity is what the robot last said. */}
         <Typography
           variant="body2"
           color={isStale ? "textSecondary" : undefined}

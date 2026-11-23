@@ -20,7 +20,6 @@ function requestSignal(signal?: AbortSignal) {
   return signal ? AbortSignal.any([signal, timeout]) : timeout;
 }
 
-/** A failed API response, with the server's message when it sent one. */
 export class ApiError extends Error {
   constructor(
     readonly status: number,
@@ -50,7 +49,6 @@ async function apiError(response: Response, fallbackMessage: string) {
   return new ApiError(response.status, error?.message ?? fallbackMessage);
 }
 
-/** The robot does not exist (any more). */
 export function isRobotNotFound(error: unknown) {
   return error instanceof ApiError && error.status === 404;
 }
@@ -68,7 +66,6 @@ export function isRequestTimeout(error: unknown) {
   );
 }
 
-/** Sends a request to the robot API; a failed response throws an ApiError. */
 async function request(
   path: string,
   failureMessage: string,

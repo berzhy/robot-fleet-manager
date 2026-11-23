@@ -13,7 +13,6 @@ import RobotLogs from "./robot-logs";
 
 type DetailsTab = "location" | "logs";
 
-/** The robot's location and logs, one at a time, in a card with its tabs. */
 export default function RobotDetailsTabs({
   reading,
   peerCounts,
@@ -26,7 +25,6 @@ export default function RobotDetailsTabs({
 
   return (
     <Paper variant="outlined" sx={{ px: 3, pb: 3 }}>
-      {/* The selected tab's indicator sits on this line. */}
       <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
         <Tabs
           value={tab}

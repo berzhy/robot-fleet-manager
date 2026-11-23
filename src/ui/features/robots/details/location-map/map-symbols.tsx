@@ -13,10 +13,6 @@ const chargingStationHeightPx = 20;
 // Room for the glyph's stroke at the edges of its box.
 const chargingStationInsetUnits = 1;
 
-/**
- * Where this robot is. Once its area is only last known, the centre dot goes
- * and the ring fades.
- */
 export function SelectedRobotMarker({
   isLastKnown,
   label,
@@ -54,7 +50,6 @@ export function SelectedRobotMarker({
   );
 }
 
-/** Another robot at the same site. */
 export function PeerDot() {
   return (
     <Box
@@ -71,7 +66,6 @@ export function PeerDot() {
   );
 }
 
-/** A dot per robot, up to a few rows, to show at a glance how busy an area is. */
 export function PeerDots({ count }: { count: number }) {
   const dots = Math.min(count, peerDotLimit);
 
@@ -91,7 +85,6 @@ export function PeerDots({ count }: { count: number }) {
   );
 }
 
-/** The plan's charging bay, at a size to sit beside text. */
 export function ChargingStationSymbol() {
   const inset = chargingStationInsetUnits;
 

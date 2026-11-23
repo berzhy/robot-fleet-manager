@@ -6,7 +6,10 @@ import { robotListOptions } from "../api/robot-queries";
 
 import { setRobotListPage } from "./robot-list-url";
 
-/** The page of robots the URL asks for. The list screen calls it once and passes the result down. */
+/**
+ * The page of robots for these params. An out-of-range page is corrected in
+ * the URL.
+ */
 export default function useRobotList(params: RobotListParams) {
   // While the next view loads, the previous view's result stays on screen, so
   // the counts, filter options, pager and rows stay in place.

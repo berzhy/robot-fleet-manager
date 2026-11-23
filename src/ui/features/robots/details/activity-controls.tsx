@@ -16,10 +16,6 @@ import {
 const tileSizePx = 120;
 const tileIconSizePx = 32;
 
-/**
- * Two controls: one that does the obvious next thing for the robot's state
- * (Start, Stop or Retry), and Return to base.
- */
 export default function ActivityControls({
   robot,
   pendingAction,
@@ -27,7 +23,6 @@ export default function ActivityControls({
   onAction,
 }: {
   robot: Robot;
-  /** The action being sent, if any. */
   pendingAction?: RobotAction;
   unavailableReason: (action: RobotAction) => string | null;
   onAction: (action: RobotAction) => void;
@@ -70,7 +65,6 @@ export default function ActivityControls({
   );
 }
 
-/** A square tile, the icon above its label; an unavailable one says why on hover or focus. */
 function ActionTile({
   action,
   reason,
@@ -100,8 +94,8 @@ function ActionTile({
             // Room for "Return to base" on one line.
             px: 1,
           }}
-          // MUI's disabled look without the disabled attribute: a disabled
-          // button drops keyboard focus mid-command (see robot-details.test).
+          // MUI's disabled look without the attribute: a disabled button drops
+          // keyboard focus mid-command.
           className={reason ? buttonClasses.disabled : undefined}
           aria-disabled={Boolean(reason)}
           aria-describedby={reason ? reasonId : undefined}

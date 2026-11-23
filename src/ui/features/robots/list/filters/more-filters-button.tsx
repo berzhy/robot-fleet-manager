@@ -66,7 +66,6 @@ export default function MoreFiltersButton({
             sx: (theme) => ({
               p: 2,
               width: 280,
-              // Leaves a page gutter on each side on narrow screens.
               maxWidth: `calc(100vw - ${theme.spacing(4)})`,
             }),
           },

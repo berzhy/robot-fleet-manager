@@ -40,9 +40,9 @@ export default function RobotLogs({ robot }: { robot: Robot }) {
   );
 }
 
-// Placeholder lines until robots send real logs.
 type LogEntry = { time: string; level: "INFO" | "WARN"; message: string };
 
+// Placeholder lines until robots send real logs.
 function sampleLogs(robot: Robot): LogEntry[] {
   return [
     { time: "09:41:00", level: "INFO", message: `Initializing ${robot.name}` },

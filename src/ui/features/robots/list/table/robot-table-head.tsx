@@ -16,10 +16,8 @@ type RobotTableColumn = {
   isLabelHidden?: boolean;
 };
 
-// Each width fits the column's usual text, or its header, plus the cell
-// padding; Robot fits a generated name such as "Robot 7F37424D" beside its dot.
-// On wider screens the fixed layout shares the extra space across all columns
-// in proportion, so no single column takes all of it.
+// Each width fits the column's usual text or header plus cell padding. Wider
+// screens share the extra space across all columns in proportion.
 const columns: RobotTableColumn[] = [
   { label: "Robot", widthPx: 172 },
   { label: "Location", widthPx: 148 },

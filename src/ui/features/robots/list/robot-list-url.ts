@@ -64,7 +64,6 @@ export function robotListSearchParams({
   return searchParams;
 }
 
-/** The list page, size and filters the URL asks for. */
 export default function useRobotListParams(): RobotListParams {
   return parseRobotListParams(useSearchParams());
 }

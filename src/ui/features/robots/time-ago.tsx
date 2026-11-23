@@ -60,8 +60,8 @@ const hourMs = 60 * minuteMs;
 const dayMs = 24 * hourMs;
 
 /**
- * "12 sec ago" up to a day, then the date; the exact time belongs in a
- * tooltip. Measured against the snapshot time, like the connection status.
+ * "12 sec ago" up to a day, then the date. Measured against the snapshot
+ * time, like the connection status.
  */
 export function formatTimeAgo(timestamp: string, now: number) {
   // A report stamped after the snapshot time must not read "in 2 sec".

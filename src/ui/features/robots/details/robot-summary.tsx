@@ -45,11 +45,6 @@ const problemGuidance = {
   "sensor-obstructed": "Clear the sensor obstruction before retrying activity.",
 } satisfies Record<RobotProblemCode, string>;
 
-/**
- * Who the robot is, how it is doing and what it can do, in one card. Narrow
- * screens put the picture above the rest, and below lg the actions go under
- * the information.
- */
 export default function RobotSummary({
   reading,
   missing,
@@ -97,7 +92,6 @@ export default function RobotSummary({
           width={illustrationSizePx}
           height={illustrationSizePx}
           sizes={`(min-width: ${breakpoints.values.lg}px) ${pictureWidthPx.large}px, (min-width: ${breakpoints.values.md}px) ${pictureWidthPx.medium}px, ${pictureWidthPx.small}px`}
-          // As tall as the information beside it, whole and centred.
           style={{
             width: "100%",
             height: "100%",
@@ -123,7 +117,6 @@ export default function RobotSummary({
           </Alert>
         ) : (
           <>
-            {/* The divider ends where the values do. */}
             <Box sx={{ width: "fit-content", maxWidth: 1 }}>
               <LiveValues reading={reading} />
               <Divider sx={{ mt: 3 }} />
@@ -141,7 +134,6 @@ export default function RobotSummary({
   );
 }
 
-/** Telemetry, labelled as last reported once it may be out of date. */
 function LiveValues({ reading }: { reading: RobotReading }) {
   const {
     robot,
@@ -239,7 +231,7 @@ function LiveValues({ reading }: { reading: RobotReading }) {
       {problemCode && (
         <Alert
           severity="warning"
-          // As wide as the values above, however long its text.
+          // Takes its width from the values above instead of widening them.
           sx={{ mt: 3, contain: "inline-size" }}
         >
           {isLastKnown && "Last reported problem: "}
@@ -250,7 +242,6 @@ function LiveValues({ reading }: { reading: RobotReading }) {
   );
 }
 
-/** What the robot is, which does not change between reports. */
 function Facts({ robot, evaluatedAt }: { robot: Robot; evaluatedAt: number }) {
   return (
     <Box
@@ -297,7 +288,6 @@ function Facts({ robot, evaluatedAt }: { robot: Robot; evaluatedAt: number }) {
   );
 }
 
-/** A labelled value, or several lines of one, in a definition list. */
 function Field({
   label,
   sx,
@@ -317,7 +307,6 @@ function Field({
   );
 }
 
-/** IDs are for pasting into tickets and logs, not for reading. */
 function CopyIdButton({ id }: { id: string }) {
   const notifications = useNotifications();
 

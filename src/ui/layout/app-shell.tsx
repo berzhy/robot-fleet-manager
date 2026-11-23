@@ -18,7 +18,6 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const desktop = useMediaQuery((theme) => theme.breakpoints.up("md"));
   const [navigationOpen, setNavigationOpen] = useState(false);
   const navigation = (
-    // Logo and theme toggle sit inside the landmark, not loose on the page.
     <Box
       component="nav"
       aria-label="Main navigation"

@@ -59,7 +59,7 @@ export default function RobotTable({
           aria-label="Robot fleet"
           sx={{
             minWidth: robotTableMinWidthPx,
-            // Columns keep their widths; longer text is cut short with "…".
+            // Columns keep their widths as live values change.
             tableLayout: "fixed",
           }}
         >

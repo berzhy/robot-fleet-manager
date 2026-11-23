@@ -1,7 +1,7 @@
 "use client";
 
-// A client component: the illustration's sx follows the colour scheme
-// through a function, which a server component cannot pass to MUI.
+// The illustration's sx is a function, which a server component cannot pass
+// to MUI.
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";

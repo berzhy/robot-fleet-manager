@@ -1,9 +1,6 @@
 import type { Robot } from "@/common/types";
 
-/**
- * A robot as one poll saw it, with what that means for the screen. Screens
- * render from this rather than each working it out.
- */
+/** A robot as one poll saw it, with what that means for the screen. */
 export type RobotReading = {
   robot: Robot;
   /** When the poll was answered; report ages are measured from it. */

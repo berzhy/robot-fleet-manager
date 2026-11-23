@@ -30,7 +30,6 @@ import {
 const narrowPlanWidthPx = 480;
 const onNarrowPlan = `@container (max-width: ${narrowPlanWidthPx - 1}px)`;
 
-/** Where the robot is at its site, among the site's other robots. */
 export default function LocationMap({
   reading,
   peerCounts,
@@ -127,7 +126,6 @@ export default function LocationMap({
   );
 }
 
-/** An area's name and who is in it, placed over the area on the plan. */
 function AreaLabel({
   label,
   anchor: [x, y],
@@ -154,7 +152,6 @@ function AreaLabel({
         component="p"
         sx={{
           whiteSpace: "nowrap",
-          // Smaller, with the name's weight.
           [onNarrowPlan]: {
             typography: "caption",
             fontWeight: "fontWeightMedium",
@@ -214,7 +211,6 @@ function MapLegend({ isLastKnown }: { isLastKnown: boolean }) {
       <LegendItem symbol={<SelectedRobotMarker isLastKnown={isLastKnown} />}>
         {isLastKnown ? "This robot, last reported area" : "This robot"}
       </LegendItem>
-      {/* A narrow plan has no dots; the list under it counts robots instead. */}
       <LegendItem
         symbol={<PeerDot />}
         sx={{ [onNarrowPlan]: { display: "none" } }}
@@ -258,7 +254,6 @@ function LegendItem({
   );
 }
 
-/** The plan's area for a reported one; undefined when it is not on the plan. */
 function planArea(area: string | null): FacilityArea | undefined {
   return facilityAreas.find((option) => option.name === area)?.name;
 }

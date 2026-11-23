@@ -7,7 +7,6 @@ export type FilterField = {
   key: Exclude<keyof RobotFilters, "search" | "view">;
   label: string;
   allLabel: string;
-  /** Sites and manufacturers come from the fleet; the other lists are fixed. */
   options: (available: FilterOptions) => readonly string[];
   /** Display names for coded values; other values are shown as they are. */
   optionLabels?: Readonly<Record<string, string>>;
@@ -29,7 +28,6 @@ export const toolbarFilterFields: FilterField[] = [
   },
 ];
 
-/** Filters behind the "More filters" button. */
 export const moreFilterFields: FilterField[] = [
   {
     key: "manufacturer",

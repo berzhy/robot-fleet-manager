@@ -35,7 +35,6 @@ const explanations = {
 // press. In dark mode a lower elevation would make them darker than the card.
 const tileElevation = 2;
 
-/** Faint shapes that name each kind of problem; the total needs none. */
 const problemIcons = {
   "needs-attention": ErrorOutlineOutlinedIcon,
   offline: CloudOffOutlinedIcon,
@@ -161,7 +160,6 @@ export default function RobotStatusFilters({
   );
 }
 
-/** Red marks Needs attention while it has robots; the others stay neutral. */
 function ProblemIcon({
   view,
   isAlerting,
