@@ -97,15 +97,3 @@ The browser's work stays bounded as the fleet grows. Search, filters, counts and
 
 - **Vitest:** components with the app's real providers and theme, plus the rules behind what they display.
 - **Playwright:** core flows for filtering, search, paging, commands, deletion and navigation, using an isolated server and database.
-
-## AI tools
-
-I used Claude Code for implementation, and Codex and Grok to review plans and diffs. I reviewed the changes and can explain the decisions behind them.
-
-## With more time
-
-- Sorting by urgency and a per-site overview
-- Telemetry history and trend views
-- Push updates in place of polling
-- Authentication, roles and a command audit log
-- Real coordinates and floor plans
