@@ -112,7 +112,7 @@ export function robotHandlers(database: () => FleetDatabase) {
         const result = requestRobotAction(database(), id, input.data.action);
         switch (result.outcome) {
           case "requested":
-            return new Response(null, { status: 202 });
+            return jsonResponse(result.robot, 202);
           case "not-found":
             return errorResponse(404, "Robot not found.");
           case "unavailable":

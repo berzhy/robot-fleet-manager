@@ -56,7 +56,13 @@ test("actions validate current state, persist latest intent, and stay queued unt
 
   expect((await action({ action: "start" })).status).toBe(409);
 
-  expect((await action({ action: "stop" })).status).toBe(202);
+  const accepted = await action({ action: "stop" });
+  expect(accepted.status).toBe(202);
+  expect(await accepted.json()).toMatchObject({
+    id: robot.id,
+    activity: "working",
+    queuedActions: ["stop"],
+  });
   expect(registryEntry(db, robot.id)).toMatchObject({
     activity: "working",
     controlTarget: "stop",

@@ -209,24 +209,24 @@ test("successful deletion stays successful when the table refresh fails", async 
     await Promise.resolve();
   });
 
-  // The deletion is accepted, but the dialog stays pending until the refresh settles.
-  await waitFor(() => expect(finishRefresh).toBeDefined());
-  expect(confirm).toBeDisabled();
-  expect(screen.queryByTestId("fleet-notification")).not.toBeInTheDocument();
-
-  act(() => finishRefresh(new Response(null, { status: 500 })));
+  // The server's answer is enough: the row goes with the refresh still in flight.
   await waitFor(() =>
     expect(screen.getByTestId("fleet-notification")).toHaveTextContent(
       "“Atlas” deleted.",
     ),
   );
+  expect(screen.queryByTestId("robot-row-one")).not.toBeInTheDocument();
+
+  act(() => finishRefresh(new Response(null, { status: 500 })));
   await waitFor(() =>
     expect(screen.queryByTestId("delete-robot-dialog")).not.toBeInTheDocument(),
   );
-  expect(screen.getByTestId("fleet-refresh-warning")).toHaveTextContent(
-    "Live updates interrupted",
+  await waitFor(() =>
+    expect(screen.getByTestId("fleet-refresh-warning")).toHaveTextContent(
+      "Live updates interrupted",
+    ),
   );
-  expect(screen.getByTestId("robot-row-one")).toBeInTheDocument();
+  expect(screen.queryByTestId("robot-row-one")).not.toBeInTheDocument();
   expect(screen.getByRole("textbox", { name: "Search robots" })).toHaveFocus();
 });
 

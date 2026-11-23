@@ -477,7 +477,9 @@ test("deleting the last filtered page corrects pagination and retains filters", 
     "11–11 of 11",
   );
 
+  // The pager updates first; the previous page's rows stay until this one loads.
   const row = page.getByTestId("fleet-table").locator("tbody tr");
+  await expect(row).toHaveCount(1);
   await row.getByTestId("robot-actions").click();
   await page.getByTestId("robot-delete").click();
   await page.getByTestId("delete-robot-confirm").click();

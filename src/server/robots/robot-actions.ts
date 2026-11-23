@@ -1,13 +1,13 @@
 import "server-only";
 import { eq, sql } from "drizzle-orm";
-import type { RobotAction } from "@/common/types";
+import type { Robot, RobotAction } from "@/common/types";
 import type { FleetDatabase } from "../db/database";
 import { robots } from "../db/schema";
 import { actionControlTargets } from "./robot-status";
 import { getRobot } from "./robots";
 
 type RobotActionRequest =
-  | { outcome: "requested" }
+  | { outcome: "requested"; robot: Robot }
   | { outcome: "not-found" }
   | { outcome: "unavailable"; reason: string };
 
@@ -35,6 +35,8 @@ export function requestRobotAction(
       })
       .where(eq(robots.id, id))
       .run();
-    return { outcome: "requested" };
+
+    // Read back inside the transaction, so the answer shows the queued command.
+    return { outcome: "requested", robot: getRobot(tx, id)! };
   });
 }

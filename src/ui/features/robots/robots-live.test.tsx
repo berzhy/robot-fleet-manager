@@ -839,7 +839,7 @@ function deferredFetch() {
   };
 }
 
-test("a command cancels the poll in flight and stays pending until fresh data lands", async () => {
+test("a command ends when accepted, and the poll in flight cannot overwrite its result", async () => {
   vi.useFakeTimers();
   const { fetcher, reads, acceptWrite } = deferredFetch();
   vi.stubGlobal("fetch", fetcher);
@@ -861,21 +861,25 @@ test("a command cancels the poll in flight and stays pending until fresh data la
     await vi.advanceTimersByTimeAsync(0);
   });
   await act(async () => {
-    acceptWrite(new Response(null, { status: 202 }));
+    acceptWrite(
+      Response.json(testRobot({ ...robot, batteryPercent: 45 }), {
+        status: 202,
+      }),
+    );
     await vi.advanceTimersByTimeAsync(0);
   });
 
   const [stalePoll, freshRead] = reads;
   expect(stalePoll.signal.aborted).toBe(true);
   expect(freshRead).toBeDefined();
-  expect(result.current.command.isPending).toBe(true);
+  expect(result.current.command.isPending).toBe(false);
+  expect(result.current.detail.robot.batteryPercent).toBe(45);
 
   await act(async () => {
     stalePoll.resolve(robotContext(99));
     await vi.advanceTimersByTimeAsync(0);
   });
-  expect(result.current.detail.robot.batteryPercent).toBe(50);
-  expect(result.current.command.isPending).toBe(true);
+  expect(result.current.detail.robot.batteryPercent).toBe(45);
 
   await act(async () => {
     freshRead.resolve(robotContext(40));
@@ -883,5 +887,4 @@ test("a command cancels the poll in flight and stays pending until fresh data la
   });
   expect(result.current.detail.robot.batteryPercent).toBe(40);
   expect(result.current.detail.refreshFailed).toBe(false);
-  expect(result.current.command.isPending).toBe(false);
 });

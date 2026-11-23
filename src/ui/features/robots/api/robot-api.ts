@@ -137,11 +137,16 @@ export async function createRobots(
   return result.items;
 }
 
-export async function sendRobotAction(id: string, action: RobotAction) {
-  await request(`${robotPath(id)}/actions`, "Unable to request robot action.", {
-    method: "POST",
-    json: { action },
-  });
+export async function sendRobotAction(
+  id: string,
+  action: RobotAction,
+): Promise<Robot> {
+  const response = await request(
+    `${robotPath(id)}/actions`,
+    "Unable to request robot action.",
+    { method: "POST", json: { action } },
+  );
+  return response.json() as Promise<Robot>;
 }
 
 export async function deleteRobot(id: string) {

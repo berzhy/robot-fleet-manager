@@ -33,31 +33,28 @@ test.each([
 ])(
   "Stop request response %s notifies without changing reported activity",
   async (status, notification) => {
-    const fetcher = vi.fn((url: string, init?: RequestInit) => {
-      if (init?.method === "POST") {
-        return Promise.resolve(
-          status === 409
-            ? Response.json(
-                { error: { message: "Robot isn't connected" } },
-                { status },
-              )
-            : new Response(null, { status }),
-        );
-      }
-      return Promise.resolve(
-        Response.json(
-          testRobotPage(
-            [
-              testRobot({
-                ...workingRobot,
-                lastReceivedAt: new Date().toISOString(),
-              }),
-            ],
-            { total: 1, pageSize: 20 },
-          ),
-        ),
-      );
+    const reported = testRobot({
+      ...workingRobot,
+      lastReceivedAt: new Date().toISOString(),
     });
+    const answers: Record<number, () => Response> = {
+      202: () => Response.json(reported, { status }),
+      409: () =>
+        Response.json(
+          { error: { message: "Robot isn't connected" } },
+          { status },
+        ),
+      500: () => new Response(null, { status }),
+    };
+    const fetcher = vi.fn((url: string, init?: RequestInit) =>
+      Promise.resolve(
+        init?.method === "POST"
+          ? answers[status]()
+          : Response.json(
+              testRobotPage([reported], { total: 1, pageSize: 20 }),
+            ),
+      ),
+    );
     vi.stubGlobal("fetch", fetcher);
     render(<RobotList />);
 
@@ -149,7 +146,11 @@ test("a command holds up only its own robot, without replacing the table", async
     fetcher.mock.calls.filter(([, init]) => init?.method === "POST"),
   ).toHaveLength(1);
 
-  finish(new Response(null, { status: 202 }));
+  finish(
+    Response.json(testRobot({ ...workingRobot, lastReceivedAt: reportedNow }), {
+      status: 202,
+    }),
+  );
   expect(await screen.findByTestId("fleet-notification")).toHaveTextContent(
     "Stop activity requested for",
   );

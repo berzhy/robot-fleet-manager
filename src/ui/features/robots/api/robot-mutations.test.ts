@@ -5,7 +5,11 @@ import { afterEach, expect, test, vi } from "vitest";
 import { renderHook } from "@/ui/test-render";
 import { testRobot, testRobotPage } from "@/ui/features/robots/test-robots";
 
-import { useDeleteAllRobots, useDeleteRobot } from "./robot-mutations";
+import {
+  useDeleteAllRobots,
+  useDeleteRobot,
+  useSendRobotAction,
+} from "./robot-mutations";
 import { robotKeys, robotListOptions } from "./robot-queries";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -66,5 +70,87 @@ test("a write during a first load refreshes with a request sent after the write"
   answerFirstLoad(Response.json(testRobotPage([deleted])));
   await act(() => deletion);
 
-  expect(result.current.list.data?.items).toEqual([]);
+  await waitFor(() => expect(result.current.list.data?.items).toEqual([]));
+});
+
+test("overlapping commands each show their result, and the last refresh wins", async () => {
+  const listParams = {
+    page: 0,
+    pageSize: 10,
+    filters: { view: "all" as const },
+  };
+  const reportedAt = new Date().toISOString();
+  const working = { activity: "working" as const, lastReceivedAt: reportedAt };
+  const first = testRobot({ ...working, id: "first" });
+  const second = testRobot({ ...working, id: "second" });
+  const queued = (robot: typeof first) =>
+    Response.json(testRobot({ ...robot, queuedControlTarget: "stop" }), {
+      status: 202,
+    });
+
+  const reads: {
+    signal: AbortSignal;
+    answer: (response: Response) => void;
+  }[] = [];
+  const writes = new Map<string, (response: Response) => void>();
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(
+      (url: string, init: RequestInit) =>
+        new Promise<Response>((resolve) => {
+          if (init.method === "POST") {
+            writes.set(url, resolve);
+          } else {
+            reads.push({ signal: init.signal!, answer: resolve });
+          }
+        }),
+    ),
+  );
+  const { result } = renderHook(
+    () => ({
+      list: useQuery(robotListOptions(listParams)),
+      stopFirst: useSendRobotAction("first"),
+      stopSecond: useSendRobotAction("second"),
+    }),
+    {
+      queryData: [[robotKeys.list(listParams), testRobotPage([first, second])]],
+    },
+  );
+  const queuedIds = () =>
+    result.current.list.data?.items
+      .filter((robot) => robot.queuedActions.length > 0)
+      .map((robot) => robot.id);
+
+  await waitFor(() => expect(reads).toHaveLength(1));
+  act(() => {
+    result.current.stopFirst.mutate("stop");
+    result.current.stopSecond.mutate("stop");
+  });
+  await waitFor(() => expect(writes.size).toBe(2));
+
+  writes.get("/api/robots/first/actions")!(queued(first));
+  await waitFor(() => expect(result.current.stopFirst.isSuccess).toBe(true));
+  expect(queuedIds()).toEqual(["first"]);
+  expect(result.current.stopSecond.isPending).toBe(true);
+  await waitFor(() => expect(reads).toHaveLength(2));
+
+  writes.get("/api/robots/second/actions")!(queued(second));
+  await waitFor(() => expect(result.current.stopSecond.isSuccess).toBe(true));
+  expect(queuedIds()).toEqual(["first", "second"]);
+  await waitFor(() => expect(reads).toHaveLength(3));
+  expect(reads[0].signal.aborted).toBe(true);
+  expect(reads[1].signal.aborted).toBe(true);
+
+  // An answer to a read sent before the second write is ignored.
+  reads[1].answer(Response.json(testRobotPage([first, second])));
+  reads[2].answer(
+    Response.json(
+      testRobotPage([
+        testRobot({ ...first, queuedControlTarget: "stop" }),
+        testRobot({ ...second, queuedControlTarget: "stop" }),
+      ]),
+    ),
+  );
+  await waitFor(() => expect(result.current.list.isFetching).toBe(false));
+  expect(queuedIds()).toEqual(["first", "second"]);
 });

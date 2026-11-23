@@ -15,8 +15,8 @@ export default function useAddRobots() {
   const addButtonRef = useRef<HTMLButtonElement>(null);
   const isReturningFocus = useRef(false);
 
-  // The add buttons are disabled while the write and the refresh run, which
-  // drops focus; it goes to the main add button once they are enabled again.
+  // The add buttons are disabled while the write runs, which drops focus; it
+  // goes to the main add button once they are enabled again.
   useEffect(() => {
     if (isReturningFocus.current && !createRobots.isPending) {
       isReturningFocus.current = false;

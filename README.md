@@ -52,7 +52,7 @@ Trust in the data is the theme that runs through it. Telemetry arrives about onc
 
 URL → `useRobotListParams()` parses it → `useRobotList(params)` turns it into a query key and polls every 3 s. `RobotList` calls both once and gives each section (tiles, filters, table, footer) what it shows, so one file shows where the list's data goes.
 
-Writes stay where they happen instead of being passed down: the filters write the URL themselves (`setRobotListFilters`), and a row or the robot page sends its own commands with `useRobotAction(robot)`. A mutation settles only after the refresh it triggers lands, and that refresh never reuses a request sent before the write, so the screen never shows "done" over stale data.
+Writes stay where they happen instead of being passed down: the filters write the URL themselves (`setRobotListFilters`), and a row or the robot page sends its own commands with `useRobotAction(robot)`. A write is finished when the server answers: its result goes straight into the cache and a refresh follows in the background. Requests sent before the write are cancelled first, so they cannot put old data back, and overlapping writes do not wait on each other's refresh.
 
 ### Business rules live in one place
 
@@ -62,7 +62,7 @@ The battery and offline rules must exist in SQL too, because the server counts t
 
 ### Writes don't lock each other
 
-Each write shows its own pending state until the refresh after it lands, and a robot's control takes one command at a time. Nothing else waits: commands to different robots, adds, deletes and paging run side by side. The server is the check, refusing a command the robot's latest report rules out.
+Each write shows its own pending state until the server answers, and a robot's control takes one command at a time. An accepted command then shows as queued until the robot reports applying it. Nothing else waits: commands to different robots, adds, deletes and paging run side by side. The server is the check, refusing a command the robot's latest report rules out.
 
 ### Live updates: polling
 

@@ -374,13 +374,13 @@ test.each([
 );
 
 test.each([
-  ["Start activity", "idle", null],
-  ["Stop activity", "working", null],
-  ["Return to base", "working", null],
-  ["Retry activity", "needs-attention", "path-blocked"],
+  ["Start activity", "idle", null, "work"],
+  ["Stop activity", "working", null, "stop"],
+  ["Return to base", "working", null, "base"],
+  ["Retry activity", "needs-attention", "path-blocked", "work"],
 ] as const)(
-  "%s preserves reported status while requesting and refreshing, then dismisses success",
-  async (action, activity, problemCode) => {
+  "%s preserves reported status, stays queued until the refresh, then dismisses success",
+  async (action, activity, problemCode, queuedControlTarget) => {
     const online: Robot = testRobot({
       ...robot,
       activity,
@@ -429,12 +429,18 @@ test.each([
     expect(screen.queryByText(/Last reported/)).not.toBeInTheDocument();
 
     await act(async () => {
-      resolveAction(new Response(null, { status: 202 }));
-      await Promise.resolve();
+      resolveAction(
+        Response.json(testRobot({ ...online, queuedControlTarget }), {
+          status: 202,
+        }),
+      );
+      await vi.advanceTimersByTimeAsync(0);
     });
 
-    // Accepted, but controls stay locked and quiet until the refresh lands.
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    // Accepted: reported at once, and queued while the refresh is in flight.
+    expect(screen.getByRole("status")).toHaveTextContent(
+      `${action} requested for “Test robot”.`,
+    );
     expect(screen.getByTestId("robot-connection")).toHaveTextContent(
       /^Online$/,
     );
@@ -452,9 +458,6 @@ test.each([
       await vi.advanceTimersByTimeAsync(0);
     });
 
-    expect(screen.getByRole("status")).toHaveTextContent(
-      `${action} requested for “Test robot”.`,
-    );
     expect(button).toHaveAttribute("aria-disabled", "false");
 
     await act(async () => vi.advanceTimersByTimeAsync(6000));
@@ -519,7 +522,7 @@ test("activity requests are guarded while pending and telemetry confirms the cha
   expect(stop).toHaveAttribute("aria-disabled", "true");
 
   observed = testRobot({ ...online, activity: "idle" });
-  resolveAction(new Response(null, { status: 202 }));
+  resolveAction(Response.json(observed, { status: 202 }));
 
   await waitFor(() =>
     expect(screen.getByTestId("robot-activity")).toHaveTextContent("Idle"),
@@ -549,7 +552,7 @@ test("activity requests are guarded while pending and telemetry confirms the cha
   );
 
   observed = online;
-  resolveAction(new Response(null, { status: 202 }));
+  resolveAction(Response.json(observed, { status: 202 }));
 
   await waitFor(() =>
     expect(
@@ -603,7 +606,7 @@ test("a command result is reported after leaving the details screen", async () =
   // Navigating away unmounts the screen; the app-level provider stays.
   rerender(<></>);
   await act(async () => {
-    resolveAction(new Response(null, { status: 202 }));
+    resolveAction(Response.json(online, { status: 202 }));
     await Promise.resolve();
   });
 
@@ -612,7 +615,7 @@ test("a command result is reported after leaving the details screen", async () =
   );
 });
 
-test("activity controls stay disabled until the command refresh lands", async () => {
+test("an accepted command stays queued without waiting for the refresh", async () => {
   const online: Robot = testRobot({
     ...robot,
     activity: "working" as const,
@@ -645,13 +648,19 @@ test("activity controls stay disabled until the command refresh lands", async ()
     await Promise.resolve();
   });
 
-  resolveAction(new Response(null, { status: 202 }));
+  resolveAction(
+    Response.json(testRobot({ ...online, queuedControlTarget: "stop" }), {
+      status: 202,
+    }),
+  );
 
-  // The action was accepted, but the refresh it triggered is still in flight:
-  // commands stay disabled against the pre-command activity until it lands.
+  // The server's answer is enough to report the command and show it queued,
+  // with the refresh it triggered still in flight.
   await waitFor(() => expect(resolveRefresh).toBeDefined());
+  expect(await screen.findByRole("status")).toHaveTextContent(
+    "Stop activity requested for “Test robot”.",
+  );
   expect(stop).toHaveAttribute("aria-disabled", "true");
-  expect(screen.queryByRole("status")).not.toBeInTheDocument();
 
   await act(async () => {
     fireEvent.click(stop);
@@ -676,9 +685,6 @@ test("activity controls stay disabled until the command refresh lands", async ()
 
   await waitFor(() =>
     expect(screen.getByTestId("robot-activity")).toHaveTextContent("Idle"),
-  );
-  expect(screen.getByRole("status")).toHaveTextContent(
-    "Stop activity requested for “Test robot”.",
   );
   expect(
     screen.getByRole("button", { name: "Start activity" }),
