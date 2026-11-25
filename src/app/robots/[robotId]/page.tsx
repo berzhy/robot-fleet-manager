@@ -6,19 +6,19 @@ import { cache, Suspense } from "react";
 
 import RobotDetails from "@/ui/features/robots/details/robot-details";
 import { getDatabase } from "@/server/db/runtime-database";
-import { getRobotContext } from "@/server/robots/robots";
+import { getRobotSnapshot } from "@/server/robots/robots";
 
 // The title and the page read the robot once per request, so they agree.
-const readRobotContext = cache(async (robotId: string) => {
+const readRobotSnapshot = cache(async (robotId: string) => {
   await io();
-  return getRobotContext(getDatabase(), robotId);
+  return getRobotSnapshot(getDatabase(), robotId);
 });
 
 export async function generateMetadata({
   params,
 }: PageProps<"/robots/[robotId]">): Promise<Metadata> {
   const { robotId } = await params;
-  const snapshot = await readRobotContext(robotId);
+  const snapshot = await readRobotSnapshot(robotId);
   return { title: snapshot?.robot.name ?? "Robot not found" };
 }
 
@@ -38,10 +38,10 @@ async function RobotContent({
   params: Promise<{ robotId: string }>;
 }) {
   const { robotId } = await params;
-  const snapshot = await readRobotContext(robotId);
+  const snapshot = await readRobotSnapshot(robotId);
   if (!snapshot) {
     notFound();
   }
 
-  return <RobotDetails initialContext={snapshot} />;
+  return <RobotDetails initialSnapshot={snapshot} />;
 }

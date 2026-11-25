@@ -13,7 +13,7 @@ import type { CreateRobotInput, RobotFilters } from "@/common/schemas";
 import type {
   RegistryRobot,
   Robot,
-  RobotContext,
+  RobotSnapshot,
   RobotPage,
 } from "@/common/types";
 
@@ -213,10 +213,10 @@ export function robotRegistry(db: FleetDatabase): RegistryRobot[] {
     .all();
 }
 
-export function getRobotContext(
+export function getRobotSnapshot(
   db: FleetDatabase,
   id: string,
-): RobotContext | undefined {
+): RobotSnapshot | undefined {
   return db.transaction((tx) => {
     const evaluatedAt = Date.now();
     const robot = getRobot(tx, id, evaluatedAt);

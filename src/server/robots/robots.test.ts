@@ -12,7 +12,7 @@ import {
   createRobots,
   deleteRobot,
   getRobot,
-  getRobotContext,
+  getRobotSnapshot,
   listRobots,
   robotRegistry,
 } from "./robots";
@@ -55,10 +55,10 @@ test("created metadata persists after reopening with unknown telemetry", () => {
   db = openDatabase(file);
 
   expect(robot).toMatchObject(getRobot(db, robot.id)!);
-  const snapshot = getRobotContext(db, robot.id);
+  const snapshot = getRobotSnapshot(db, robot.id);
   expect(snapshot?.robot).toEqual(robot);
   expect(typeof snapshot?.evaluatedAt).toBe("number");
-  expect(getRobotContext(db, "missing")).toBeUndefined();
+  expect(getRobotSnapshot(db, "missing")).toBeUndefined();
 });
 
 test("pagination orders newest first with descending id tie-breaking", () => {
@@ -220,7 +220,7 @@ test("fresh schema rejects missing and unsupported integrations outside the API"
   expect(listRobots(db, 0).total).toBe(0);
 });
 
-test("detail context counts only same-site peers per area and returns 404 for a missing robot", async () => {
+test("robot snapshot counts only same-site peers per area and returns 404 for a missing robot", async () => {
   const selected = createTestRobot(db);
   const [lobbyPeer, otherLobbyPeer] = createRobots(db, [
     { ...testRobotInput, name: "Lobby peer" },
@@ -239,15 +239,15 @@ test("detail context counts only same-site peers per area and returns 404 for a 
     )
     .run();
 
-  const context = getRobotContext(db, selected.id)!;
+  const snapshot = getRobotSnapshot(db, selected.id)!;
 
-  expect(context.robot.id).toBe(selected.id);
-  expect(context.peerCounts).toEqual([
+  expect(snapshot.robot.id).toBe(selected.id);
+  expect(snapshot.peerCounts).toEqual([
     { area: null, count: 1 },
     { area: "Lobby", count: 2 },
   ]);
 
-  const response = robotHandlers(() => db).context(selected.id);
+  const response = robotHandlers(() => db).snapshot(selected.id);
 
   expect(response.status).toBe(200);
   expect(await response.json()).toMatchObject({
@@ -255,5 +255,5 @@ test("detail context counts only same-site peers per area and returns 404 for a 
     peerCounts: [{ area: null }, { area: "Lobby" }],
   });
 
-  expect(robotHandlers(() => db).context("missing").status).toBe(404);
+  expect(robotHandlers(() => db).snapshot("missing").status).toBe(404);
 });

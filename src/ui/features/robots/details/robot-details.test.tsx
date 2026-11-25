@@ -10,7 +10,7 @@ import { expect, test, vi, afterEach, onTestFinished } from "vitest";
 
 import { render } from "@/ui/test-render";
 import { testRobot } from "@/ui/features/robots/test-robots";
-import type { Robot, RobotContext } from "@/common/types";
+import type { Robot, RobotSnapshot } from "@/common/types";
 
 import { actionLabels } from "../robot-action-display";
 import { formatRobotTimestamp } from "../time-ago";
@@ -21,8 +21,8 @@ import RobotDetails from "./robot-details";
 
 const robot = testRobot({ activity: "charging" });
 
-function renderDetails(context: RobotContext) {
-  return render(<RobotDetails initialContext={context} />);
+function renderDetails(snapshot: RobotSnapshot) {
+  return render(<RobotDetails initialSnapshot={snapshot} />);
 }
 
 test("details show the robot, missing values, and the way back", async () => {
@@ -389,7 +389,7 @@ test.each([
       batteryPercent: 80,
       lastReceivedAt: new Date().toISOString(),
     });
-    const context = () =>
+    const snapshot = () =>
       Response.json({ robot: online, peerCounts: [], evaluatedAt: Date.now() });
     let resolveAction!: (response: Response) => void;
     let resolveRefresh!: (response: Response) => void;
@@ -401,7 +401,7 @@ test.each([
       .mockImplementationOnce(
         () => new Promise<Response>((resolve) => (resolveRefresh = resolve)),
       )
-      .mockImplementation(() => Promise.resolve(context()));
+      .mockImplementation(() => Promise.resolve(snapshot()));
     vi.stubGlobal("fetch", fetcher);
     renderDetails({ robot: online, peerCounts: [], evaluatedAt: Date.now() });
     await act(async () => {});
@@ -454,7 +454,7 @@ test.each([
     expect(fetcher).toHaveBeenCalledTimes(2);
 
     await act(async () => {
-      resolveRefresh(context());
+      resolveRefresh(snapshot());
       await vi.advanceTimersByTimeAsync(0);
     });
 

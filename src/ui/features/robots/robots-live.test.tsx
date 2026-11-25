@@ -2,13 +2,13 @@ import { act, fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 
 import { renderHook, render } from "@/ui/test-render";
-import type { RobotContext } from "@/common/types";
+import type { RobotSnapshot } from "@/common/types";
 
 import { useSendRobotAction } from "./api/robot-mutations";
 import {
-  robotContextPollIntervalMs,
+  robotSnapshotPollIntervalMs,
   robotListPollIntervalMs,
-  useRobotContextQuery,
+  useRobotSnapshotQuery,
   useRobotListQuery,
 } from "./api/robot-queries";
 
@@ -42,7 +42,7 @@ const page = (battery = 50) =>
     }),
   );
 
-const robotContext = (batteryPercent: number) =>
+const robotSnapshot = (batteryPercent: number) =>
   Response.json({
     robot: testRobot({ ...robot, batteryPercent }),
     peerCounts: [],
@@ -72,7 +72,7 @@ function setPageVisibility(hidden: boolean) {
 // Answers fleet and detail polls with the same robot snapshot.
 function liveFetcher() {
   return vi.fn<(url: string, init?: RequestInit) => Promise<Response>>((url) =>
-    Promise.resolve(url.includes("/context") ? robotContext(50) : page(50)),
+    Promise.resolve(url.includes("/snapshot") ? robotSnapshot(50) : page(50)),
   );
 }
 
@@ -83,8 +83,8 @@ function robotNotFound() {
   );
 }
 
-function renderDetails(context: RobotContext) {
-  return render(<RobotDetails initialContext={context} />);
+function renderDetails(snapshot: RobotSnapshot) {
+  return render(<RobotDetails initialSnapshot={snapshot} />);
 }
 
 test("quiet polling preserves DOM and focus, retains failed data, and recovers", async () => {
@@ -183,8 +183,8 @@ test.each(["fleet", "detail"] as const)(
               { error: { message: "Robot isn't connected" } },
               { status: 409 },
             )
-          : url.includes("/context")
-            ? robotContext(50)
+          : url.includes("/snapshot")
+            ? robotSnapshot(50)
             : page(50),
       ),
     );
@@ -282,7 +282,7 @@ test("details render with the page's data and first ask again at the next poll",
   expect(screen.getByTestId("robot-details")).toBeInTheDocument();
   expect(fetcher).not.toHaveBeenCalled();
 
-  await tick(robotContextPollIntervalMs);
+  await tick(robotSnapshotPollIntervalMs);
   expect(fetcher).toHaveBeenCalledTimes(1);
 });
 
@@ -314,14 +314,14 @@ test("detail refreshes while Logs is selected and stops when its robot is delete
 
   const logs = screen.getByRole("tab", { name: "Logs" });
   fireEvent.click(logs);
-  await tick(robotContextPollIntervalMs);
+  await tick(robotSnapshotPollIntervalMs);
   expect(logs).toHaveAttribute("aria-selected", "true");
   expect(screen.getByTestId("robot-battery")).toHaveTextContent("42%");
   expect(screen.getByRole("tabpanel", { name: "Logs" })).toHaveTextContent(
     "Location configuration loaded: Berlin",
   );
 
-  await tick(robotContextPollIntervalMs);
+  await tick(robotSnapshotPollIntervalMs);
   expect(screen.getByTestId("robot-unavailable")).toHaveTextContent(
     "Robot is no longer available.",
   );
@@ -389,13 +389,13 @@ test("a confirmed detail deletion clears an earlier refresh warning", async () =
     peerCounts: [],
     evaluatedAt: Date.now(),
   });
-  await tick(robotContextPollIntervalMs);
+  await tick(robotSnapshotPollIntervalMs);
 
   expect(screen.getByTestId("robot-refresh-warning")).toHaveTextContent(
     "Live updates interrupted",
   );
 
-  await tick(robotContextPollIntervalMs);
+  await tick(robotSnapshotPollIntervalMs);
   expect(screen.getByTestId("robot-unavailable")).toHaveTextContent(
     "Robot is no longer available.",
   );
@@ -411,7 +411,7 @@ test("a failed first detail poll keeps server-verified connection information", 
     peerCounts: [],
     evaluatedAt: Date.now(),
   });
-  await tick(robotContextPollIntervalMs);
+  await tick(robotSnapshotPollIntervalMs);
 
   expect(
     within(screen.getByTestId("robot-details")).getByTestId("robot-connection"),
@@ -472,7 +472,7 @@ test("fleet and detail retain snapshots after a request timeout and recover on t
       });
     }
     return Promise.resolve(
-      url.includes("/context")
+      url.includes("/snapshot")
         ? Response.json({
             robot: testRobot({ ...robot, batteryPercent: 45 }),
             peerCounts: [],
@@ -482,14 +482,14 @@ test("fleet and detail retain snapshots after a request timeout and recover on t
     );
   });
   vi.stubGlobal("fetch", fetcher);
-  const context = {
+  const snapshot = {
     robot: testRobot({ ...robot, batteryPercent: 45 }),
     peerCounts: [],
     evaluatedAt: Date.now(),
   };
   const { result } = renderHook(() => ({
     fleet: useRobotListQuery(useRobotListParams()),
-    detail: useRobotContextQuery(context),
+    detail: useRobotSnapshotQuery(snapshot),
   }));
   await tick();
 
@@ -534,19 +534,19 @@ test("unmount cancels outstanding fleet and detail requests without restarting p
       }),
   );
   vi.stubGlobal("fetch", fetcher);
-  const context = {
+  const snapshot = {
     robot: testRobot(robot),
     peerCounts: [],
     evaluatedAt: Date.now(),
   };
   const { unmount } = renderHook(() => ({
     fleet: useRobotListQuery(useRobotListParams()),
-    detail: useRobotContextQuery(context),
+    detail: useRobotSnapshotQuery(snapshot),
   }));
   expect(signals).toHaveLength(1);
 
   // The details came with the page, so their first request is the first poll.
-  await tick(robotContextPollIntervalMs);
+  await tick(robotSnapshotPollIntervalMs);
   expect(signals).toHaveLength(2);
   expect(signals.every((signal) => !signal.aborted)).toBe(true);
 
@@ -599,7 +599,7 @@ test.each(["fleet", "detail"] as const)(
     const pollIntervalMs =
       screenName === "fleet"
         ? robotListPollIntervalMs
-        : robotContextPollIntervalMs;
+        : robotSnapshotPollIntervalMs;
 
     function response(batteryPercent: number) {
       return screenName === "fleet"
@@ -706,7 +706,7 @@ test.each(["fleet", "detail"] as const)(
     const pollIntervalMs =
       screenName === "fleet"
         ? robotListPollIntervalMs
-        : robotContextPollIntervalMs;
+        : robotSnapshotPollIntervalMs;
 
     function response(batteryPercent: number) {
       return screenName === "fleet"
@@ -807,16 +807,16 @@ test("a command ends when accepted, and the poll in flight cannot overwrite its 
   const { fetcher, reads, acceptWrite } = deferredFetch();
   vi.stubGlobal("fetch", fetcher);
 
-  const context = {
+  const snapshot = {
     robot: testRobot(robot),
     peerCounts: [],
     evaluatedAt: Date.now(),
   };
   const { result } = renderHook(() => ({
-    detail: useRobotContextQuery(context),
+    detail: useRobotSnapshotQuery(snapshot),
     command: useSendRobotAction(robot.id),
   }));
-  await tick(robotContextPollIntervalMs);
+  await tick(robotSnapshotPollIntervalMs);
   expect(reads).toHaveLength(1);
 
   await act(async () => {
@@ -839,13 +839,13 @@ test("a command ends when accepted, and the poll in flight cannot overwrite its 
   expect(result.current.detail.robot.batteryPercent).toBe(45);
 
   await act(async () => {
-    stalePoll.resolve(robotContext(99));
+    stalePoll.resolve(robotSnapshot(99));
     await vi.advanceTimersByTimeAsync(0);
   });
   expect(result.current.detail.robot.batteryPercent).toBe(45);
 
   await act(async () => {
-    freshRead.resolve(robotContext(40));
+    freshRead.resolve(robotSnapshot(40));
     await vi.advanceTimersByTimeAsync(0);
   });
   expect(result.current.detail.robot.batteryPercent).toBe(40);

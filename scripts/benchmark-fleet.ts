@@ -11,7 +11,7 @@ import { openDatabase } from "../src/server/db/database";
 import { latestTelemetry } from "../src/server/db/schema";
 import {
   createRobots,
-  getRobotContext,
+  getRobotSnapshot,
   listRobots,
 } from "../src/server/robots/robots";
 
@@ -83,7 +83,7 @@ try {
       () =>
         listRobots(db, 0, robotPageSize, { view: "all", search: "robot 4f" }),
     ],
-    ["robot details", () => getRobotContext(db, someRobot.id)],
+    ["robot details", () => getRobotSnapshot(db, someRobot.id)],
   ];
 
   console.log(`${robotCount} robots, median of ${runsPerQuery} runs:`);

@@ -8,7 +8,7 @@ import {
 import type {
   Robot,
   RobotAction,
-  RobotContext,
+  RobotSnapshot,
   RobotPage,
 } from "@/common/types";
 import { toSearchParams } from "@/ui/utils/search-params-helpers";
@@ -111,16 +111,16 @@ export async function getRobots(
   return response.json() as Promise<RobotPage>;
 }
 
-export async function getRobotContext(
+export async function getRobotSnapshot(
   id: string,
   signal?: AbortSignal,
-): Promise<RobotContext> {
+): Promise<RobotSnapshot> {
   const response = await request(
-    `${robotPath(id)}/context`,
-    "Unable to refresh robot context.",
+    `${robotPath(id)}/snapshot`,
+    "Unable to refresh robot.",
     { signal },
   );
-  return response.json() as Promise<RobotContext>;
+  return response.json() as Promise<RobotSnapshot>;
 }
 
 export async function createRobots(

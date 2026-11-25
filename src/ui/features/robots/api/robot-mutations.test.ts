@@ -25,13 +25,13 @@ test("a write drops list pages not on screen but keeps robot details", async () 
     pageSize: 10,
     view: "all",
   });
-  const contextKey = robotKeys.context("test");
+  const snapshotKey = robotKeys.snapshot("test");
   const { result } = renderHook(
     () => ({ client: useQueryClient(), deleteAll: useDeleteAllRobots() }),
     {
       queryData: [
         [listKey, testRobotPage([testRobot()])],
-        [contextKey, { robot: testRobot(), peerCounts: [], evaluatedAt: 0 }],
+        [snapshotKey, { robot: testRobot(), peerCounts: [], evaluatedAt: 0 }],
       ],
     },
   );
@@ -39,7 +39,7 @@ test("a write drops list pages not on screen but keeps robot details", async () 
   await act(() => result.current.deleteAll.mutateAsync());
 
   expect(result.current.client.getQueryData(listKey)).toBeUndefined();
-  expect(result.current.client.getQueryData(contextKey)).toBeDefined();
+  expect(result.current.client.getQueryData(snapshotKey)).toBeDefined();
 });
 
 test("a write during a first load refreshes with a request sent after the write", async () => {

@@ -3,7 +3,7 @@ import { createRobots, test } from "./fixtures";
 
 test.use({ locale: "de-DE", timezoneId: "America/New_York" });
 
-test("detail context and controls follow reported telemetry", async ({
+test("robot details and controls follow reported telemetry", async ({
   page,
   request,
 }) => {

@@ -460,7 +460,7 @@ test("delete confirmation keeps the selected robot after it leaves the filtered 
     page.getByRole("textbox", { name: "Search robots" }),
   ).toBeFocused();
   await expect(
-    await request.get(`/api/robots/${otherRobot.id}/context`),
+    await request.get(`/api/robots/${otherRobot.id}/snapshot`),
   ).toBeOK();
 });
 

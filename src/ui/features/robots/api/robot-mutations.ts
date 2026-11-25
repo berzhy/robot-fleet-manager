@@ -10,7 +10,7 @@ import {
 import type {
   Robot,
   RobotAction,
-  RobotContext,
+  RobotSnapshot,
   RobotPage,
 } from "@/common/types";
 
@@ -63,9 +63,9 @@ export function useSendRobotAction(robotId: string) {
             robot.id === updated.id ? updated : robot,
           ),
         }));
-        client.setQueryData<RobotContext>(
-          robotKeys.context(updated.id),
-          (context) => context && { ...context, robot: updated },
+        client.setQueryData<RobotSnapshot>(
+          robotKeys.snapshot(updated.id),
+          (snapshot) => snapshot && { ...snapshot, robot: updated },
         );
       },
     },

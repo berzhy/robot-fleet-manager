@@ -82,7 +82,8 @@ export type RobotPage = {
 
 /** How many of the site's other robots last reported this area. */
 export type PeerCount = { area: string | null; count: number };
-export type RobotContext = {
+/** One read of a robot and its site, so the map's counts match the robot shown. */
+export type RobotSnapshot = {
   robot: Robot;
   /** Counts rather than the robots: the map shows only how many are where. */
   peerCounts: PeerCount[];

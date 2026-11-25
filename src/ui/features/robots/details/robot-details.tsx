@@ -6,9 +6,9 @@ import Link from "@mui/material/Link";
 import Stack from "@mui/material/Stack";
 import NextLink from "next/link";
 
-import type { RobotContext } from "@/common/types";
+import type { RobotSnapshot } from "@/common/types";
 
-import { useRobotContextQuery } from "../api/robot-queries";
+import { useRobotSnapshotQuery } from "../api/robot-queries";
 import { robotReading } from "../robot-reading";
 import { robotListHref } from "../robot-list-return";
 import useRobotAction from "../use-robot-action";
@@ -18,12 +18,12 @@ import RobotDetailsTabs from "./robot-details-tabs";
 import RobotSummary from "./robot-summary";
 
 export default function RobotDetails({
-  initialContext,
+  initialSnapshot,
 }: {
-  initialContext: RobotContext;
+  initialSnapshot: RobotSnapshot;
 }) {
   const { robot, peerCounts, missing, refreshFailed, evaluatedAt } =
-    useRobotContextQuery(initialContext);
+    useRobotSnapshotQuery(initialSnapshot);
   const { requestAction, pendingAction, unavailableReason } =
     useRobotAction(robot);
   const reading = robotReading(robot, evaluatedAt, refreshFailed);

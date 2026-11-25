@@ -7,8 +7,8 @@ const handlers = robotHandlers(getDatabase);
 
 export async function GET(
   _request: Request,
-  context: RouteContext<"/api/robots/[robotId]/context">,
+  context: RouteContext<"/api/robots/[robotId]/snapshot">,
 ) {
   await io();
-  return handlers.context((await context.params).robotId);
+  return handlers.snapshot((await context.params).robotId);
 }

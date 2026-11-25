@@ -5,19 +5,19 @@ import {
 } from "@tanstack/react-query";
 
 import type { RobotListParams } from "@/common/schemas";
-import type { RobotContext } from "@/common/types";
+import type { RobotSnapshot } from "@/common/types";
 
-import { getRobotContext, getRobots, isRobotNotFound } from "./robot-api";
+import { getRobotSnapshot, getRobots, isRobotNotFound } from "./robot-api";
 
 // The simulator reports every second; one robot is cheap enough to poll faster.
 export const robotListPollIntervalMs = 3_000;
-export const robotContextPollIntervalMs = 2_000;
+export const robotSnapshotPollIntervalMs = 2_000;
 
 export const robotKeys = {
   all: ["robots"] as const,
   lists: ["robots", "list"] as const,
   list: (params: RobotListParams) => [...robotKeys.lists, params] as const,
-  context: (id: string) => [...robotKeys.all, "context", id] as const,
+  snapshot: (id: string) => [...robotKeys.all, "snapshot", id] as const,
   action: (id: string) => [...robotKeys.all, "action", id] as const,
 };
 
@@ -29,14 +29,14 @@ export function robotListOptions(params: RobotListParams) {
   });
 }
 
-function robotContextOptions(id: string) {
+function robotSnapshotOptions(id: string) {
   return queryOptions({
-    queryKey: robotKeys.context(id),
-    queryFn: ({ signal }) => getRobotContext(id, signal),
-    refetchInterval: robotContextPollIntervalMs,
+    queryKey: robotKeys.snapshot(id),
+    queryFn: ({ signal }) => getRobotSnapshot(id, signal),
+    refetchInterval: robotSnapshotPollIntervalMs,
     // Server-rendered data stays fresh until the first poll. Invalidation
     // still refetches at once.
-    staleTime: robotContextPollIntervalMs,
+    staleTime: robotSnapshotPollIntervalMs,
   });
 }
 
@@ -59,18 +59,18 @@ export function useRobotListQuery(params: RobotListParams) {
 }
 
 /**
- * Starts from the server's context rather than a one-off cache entry: Next
+ * Starts from the server's snapshot rather than a one-off cache entry: Next
  * keeps a page you leave mounted but hidden, and the cache can drop the robot
  * meanwhile, so going Back refills it from here.
  */
-export function useRobotContextQuery(initialContext: RobotContext) {
+export function useRobotSnapshotQuery(initialSnapshot: RobotSnapshot) {
   const query = useQuery({
-    ...robotContextOptions(initialContext.robot.id),
-    initialData: initialContext,
+    ...robotSnapshotOptions(initialSnapshot.robot.id),
+    initialData: initialSnapshot,
     // Its age, so an old render refreshes as soon as it is shown again.
-    initialDataUpdatedAt: initialContext.evaluatedAt,
+    initialDataUpdatedAt: initialSnapshot.evaluatedAt,
     // A deleted robot stays deleted: no more polls or refetches on focus.
-    enabled: (contextQuery) => !isRobotNotFound(contextQuery.state.error),
+    enabled: (snapshotQuery) => !isRobotNotFound(snapshotQuery.state.error),
   });
 
   // A failed refetch keeps the last data, so a deleted robot still shows its name.

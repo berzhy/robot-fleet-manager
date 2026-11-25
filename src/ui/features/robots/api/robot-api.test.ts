@@ -5,7 +5,7 @@ import {
   createRobots,
   deleteAllRobots,
   getRobots,
-  getRobotContext,
+  getRobotSnapshot,
   deleteRobot as dataDeleteRobot,
   isRobotNotFound,
   sendRobotAction,
@@ -145,21 +145,21 @@ test("detail requests encode IDs, support cancellation, and distinguish deletion
   vi.stubGlobal("fetch", fetcher);
 
   const controller = new AbortController();
-  const deleted = await getRobotContext("robot/id", controller.signal).catch(
+  const deleted = await getRobotSnapshot("robot/id", controller.signal).catch(
     (error: unknown) => error,
   );
   expect(isRobotNotFound(deleted)).toBe(true);
-  expect(fetcher).toHaveBeenCalledWith("/api/robots/robot%2Fid/context", {
+  expect(fetcher).toHaveBeenCalledWith("/api/robots/robot%2Fid/snapshot", {
     cache: "no-store",
     signal: expect.any(AbortSignal) as AbortSignal,
   });
 
-  const failure = await getRobotContext("failure").catch(
+  const failure = await getRobotSnapshot("failure").catch(
     (error: unknown) => error,
   );
   expect(isRobotNotFound(failure)).toBe(false);
   expect(failure).toMatchObject({
-    message: "Unable to refresh robot context.",
+    message: "Unable to refresh robot.",
   });
 });
 

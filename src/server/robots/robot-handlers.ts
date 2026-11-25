@@ -16,7 +16,7 @@ import {
   createRobots,
   deleteRobot,
   deleteAllRobots,
-  getRobotContext,
+  getRobotSnapshot,
   listRobots,
   robotRegistry,
 } from "./robots";
@@ -72,11 +72,11 @@ export function robotHandlers(database: () => FleetDatabase) {
       );
     },
 
-    context(id: string) {
+    snapshot(id: string) {
       return safely(() => {
-        const context = getRobotContext(database(), id);
-        return context
-          ? jsonResponse(context)
+        const snapshot = getRobotSnapshot(database(), id);
+        return snapshot
+          ? jsonResponse(snapshot)
           : errorResponse(404, "Robot not found.");
       });
     },
