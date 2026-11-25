@@ -1,8 +1,8 @@
 import { useState, type ComponentProps } from "react";
 
 import { useNotifications } from "@/ui/notifications/notification-provider";
+import { isRequestTimeout } from "@/ui/utils/api-request";
 
-import { isRequestTimeout } from "../api/robot-api";
 import { useDeleteAllRobots, useDeleteRobot } from "../api/robot-mutations";
 
 import type DeleteRobotDialog from "./delete-robot-dialog";

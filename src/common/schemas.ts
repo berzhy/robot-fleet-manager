@@ -98,3 +98,8 @@ export const telemetryBatchSchema = z
 export type TelemetryReport = z.infer<
   typeof telemetryBatchSchema
 >["reports"][number];
+
+export const apiErrorBodySchema = z.object({
+  error: z.object({ message: z.string() }),
+});
+export type ApiErrorBody = z.infer<typeof apiErrorBodySchema>;

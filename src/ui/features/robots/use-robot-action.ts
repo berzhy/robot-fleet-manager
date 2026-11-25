@@ -2,8 +2,9 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import type { Robot, RobotAction } from "@/common/types";
 import { useNotifications } from "@/ui/notifications/notification-provider";
+import { isRequestTimeout } from "@/ui/utils/api-request";
 
-import { isActionUnavailable, isRequestTimeout } from "./api/robot-api";
+import { isActionUnavailable } from "./api/robot-api";
 import {
   isRobotActionPending,
   usePendingRobotAction,

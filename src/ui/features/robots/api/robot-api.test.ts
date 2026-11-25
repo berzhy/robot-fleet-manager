@@ -1,7 +1,7 @@
 import { testRobotPage } from "@/ui/features/robots/test-robots";
 import { afterEach, expect, test, vi } from "vitest";
+import { ApiError } from "@/ui/utils/api-request";
 import {
-  ApiError,
   createRobots,
   deleteAllRobots,
   getRobots,

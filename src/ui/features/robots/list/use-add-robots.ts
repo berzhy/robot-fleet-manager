@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 
 import { useNotifications } from "@/ui/notifications/notification-provider";
+import { isRequestTimeout } from "@/ui/utils/api-request";
 
-import { isRequestTimeout } from "../api/robot-api";
 import { useCreateRobots } from "../api/robot-mutations";
 
 import { generateRobotInput } from "./generate-robot-input";

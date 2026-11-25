@@ -1,3 +1,5 @@
+import type { ApiErrorBody } from "@/common/schemas";
+
 export function jsonResponse(value: unknown, status = 200) {
   return Response.json(value, {
     status,
@@ -7,5 +9,5 @@ export function jsonResponse(value: unknown, status = 200) {
 
 /** The status says what failed; the message says it in the operator's words. */
 export function errorResponse(status: number, message: string) {
-  return jsonResponse({ error: { message } }, status);
+  return jsonResponse({ error: { message } } satisfies ApiErrorBody, status);
 }
