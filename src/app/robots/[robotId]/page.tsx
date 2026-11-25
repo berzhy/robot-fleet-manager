@@ -8,8 +8,9 @@ import RobotDetails from "@/ui/features/robots/details/robot-details";
 import { getDatabase } from "@/server/db/runtime-database";
 import { getRobotSnapshot } from "@/server/robots/robots";
 
-// The title and the page read the robot once per request, so they agree.
-const readRobotSnapshot = cache(async (robotId: string) => {
+// Seeds the client query, which polls from here. The title shares this one
+// read per request, so it agrees with the page.
+const readInitialSnapshot = cache(async (robotId: string) => {
   await io();
   return getRobotSnapshot(getDatabase(), robotId);
 });
@@ -18,7 +19,7 @@ export async function generateMetadata({
   params,
 }: PageProps<"/robots/[robotId]">): Promise<Metadata> {
   const { robotId } = await params;
-  const snapshot = await readRobotSnapshot(robotId);
+  const snapshot = await readInitialSnapshot(robotId);
   return { title: snapshot?.robot.name ?? "Robot not found" };
 }
 
@@ -38,7 +39,7 @@ async function RobotContent({
   params: Promise<{ robotId: string }>;
 }) {
   const { robotId } = await params;
-  const snapshot = await readRobotSnapshot(robotId);
+  const snapshot = await readInitialSnapshot(robotId);
   if (!snapshot) {
     notFound();
   }
