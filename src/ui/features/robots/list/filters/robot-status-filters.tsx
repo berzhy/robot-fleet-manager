@@ -32,7 +32,8 @@ const explanations = {
 };
 
 // Lifted off the table card by a soft shadow, so the tiles read as things to
-// press. In dark mode a lower elevation would make them darker than the card.
+// press. Dark mode shows elevation as a lighter fill instead, the same as the
+// card's, so there an outline gives the tiles their edge.
 const tileElevation = 2;
 
 const problemIcons = {
@@ -77,7 +78,15 @@ export default function RobotStatusFilters({
       {fleetViews.map((view) => {
         const selected = selectedView === view;
         return (
-          <Card key={view} elevation={tileElevation}>
+          <Card
+            key={view}
+            elevation={tileElevation}
+            sx={(theme) =>
+              theme.applyStyles("dark", {
+                border: `1px solid ${theme.vars.palette.divider}`,
+              })
+            }
+          >
             <Tooltip
               title={explanations[view]}
               // Below the tile: above it, the tooltip covers the Add robot button.
